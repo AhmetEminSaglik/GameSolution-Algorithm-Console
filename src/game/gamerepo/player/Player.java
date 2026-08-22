@@ -17,6 +17,7 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
     protected PlayerMove playerMove;
     protected String name;
     protected PrintAble printableFileScore;
+    protected PrintAble printableFileTotalScoreCount;
     protected boolean printAbleEveryStep;
 
     protected int squareTotalSolvedValue = 0;
@@ -30,10 +31,7 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
 //        game.setPlayer(this);
 
 
-        name = "Unknow " + getClass().getSimpleName() + " name ";
-//        int squareEdge = game.getModel().getGameSquares().length;
-//
-//        printableFileScore = new FileWriteProcess((squareEdge * squareEdge) + "_EverySingleSquareTotalValue");
+
     }
     public  void startTimeKeeper(){
         timeKeeper = new TimeKeeper();
@@ -67,8 +65,9 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
 
 
         int squareEdge = game.getModel().getGameSquares().length;
-        printableFileScore = new FileWriteProcess((squareEdge * squareEdge) + "_EverySingleSquareTotalValue");
-
+        printableFileScore = new FileWriteProcess((squareEdge * squareEdge) + "_Completed");
+        printableFileTotalScoreCount = new FileWriteProcess((squareEdge * squareEdge) + "_EverySingleSquareTotalValue");
+        name = "Unknow " + getClass().getSimpleName() + " name ";
     }
 
     public void clearVisitedDirections() {
@@ -178,6 +177,14 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
 
     public PrintAble getPrintableFileScore() {
         return printableFileScore;
+    }
+
+    public PrintAble getPrintableFileTotalScoreCount() {
+        return printableFileTotalScoreCount;
+    }
+
+    public void setPrintableFileTotalScoreCount(PrintAble printableFileTotalScoreCount) {
+        this.printableFileTotalScoreCount = printableFileTotalScoreCount;
     }
 
     public IPlayerInput getIPlayerInput() {

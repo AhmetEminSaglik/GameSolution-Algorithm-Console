@@ -2,6 +2,7 @@ package game.gamerepo;
 
 public class Model {
 
+    private String gameMapAreaName;
     private int gameSquares[][];
     private boolean visitedAreas[][];
 
@@ -21,5 +22,7 @@ public class Model {
         this.visitedAreas = visitedAreas;
     }
 
-
+    public String getGameMapAreaName() {
+        return gameSquares.length + "x" + gameSquares[0].length;
+    }
 }

@@ -43,4 +43,10 @@ public class FirstSolution_Combination extends BaseSolution {
         setMoveForward(new MoveForward(getGame()));
         setMoveBack(new MoveBack(getGame()));
     }
+
+    @Override
+    public Integer getSolutionCreatedOrder() {
+        return 1;
+    }
+
 }

@@ -60,9 +60,9 @@ public abstract class Move implements IMove { // ICalculateMove
             fillGameSquare.printStepInGameSquare();
         }
 
-//        if (game.getPlayer().getGameRule().isGameOver(game)) {
-//            appendFileSquareTotalSolvedValue();
-//        }
+        if (game.getPlayer().getGameRule().isGameOver(game)) {
+            appendFileSquareTotalSolvedValue();
+        }
 
 //        StringFormat stringFormat = new StringFormat();
 //        String text = stringFormat.getStringFormatArray(game.getPlayer().getVisitedDirections());
@@ -112,6 +112,7 @@ public abstract class Move implements IMove { // ICalculateMove
     }
 
     void appendFileSquareTotalSolvedValue() {
+//        todo: burasi, db'ye kaydedilecek kaldirildi.
 
         int locationX = game.getPlayer().getLocation().getX();
         int locationY = game.getPlayer().getLocation().getY();
@@ -127,7 +128,7 @@ public abstract class Move implements IMove { // ICalculateMove
             text += "\n";
         }
 
-//        game.getPlayer().getPrintableFileScore().append(text);
+        game.getPlayer().getPrintableFileTotalScoreCount().append(text);
         game.getPlayer().resetSquareTotalSolvedValue();
 
     }

@@ -28,6 +28,11 @@ public class SecondSolution_CalculateForwardAvailableWays extends BaseSolution {
     }
 
     @Override
+    public Integer getSolutionCreatedOrder() {
+        return 2;
+    }
+
+    @Override
     public String toString() {
         return "Second Solution  {" + super.toString() + '}';
     }

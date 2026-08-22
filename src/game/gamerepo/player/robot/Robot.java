@@ -2,7 +2,6 @@ package game.gamerepo.player.robot;
 
 import compass.Compass;
 import compass.DirectionCompass;
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gameover.RobotGameOver;
 import game.gamerepo.player.Player;
@@ -10,8 +9,8 @@ import game.gamerepo.player.robot.memory.RobotMemory;
 import game.gamerepo.player.robot.solution.BaseSolution;
 import game.location.DirectionLocation;
 import game.play.PlayerMove;
-import game.play.input.robot.RobotInput;
 import game.rule.BaseGameRule;
+import print.FileWriteProcess;
 
 
 public class Robot extends Player {
@@ -31,8 +30,17 @@ public class Robot extends Player {
         printAbleEveryStep = false;
     }
 
+    @Override
+    public void setGame(Game game) {
+        super.setGame(game);
 
+        if (getSolution() != null) {
 
+            printableFileScore = new FileWriteProcess(getSolution().getSolutionFileName() + "_Completed");
+            printableFileTotalScoreCount = new FileWriteProcess(getSolution().getSolutionFileName() + "_EverySingleSquareTotalValue");
+            name = "Unknow " + getClass().getSimpleName() + " name ";
+        }
+    }
 
     @Override
     public Compass getCompass() {
@@ -52,7 +60,7 @@ public class Robot extends Player {
         this.solution = solution;
         solution.buildRobotMove();
 
-        setName(solution.getClass().getSimpleName() + "_" + game.getModel().getGameSquares());
+        setName(solution.getSolutionFileName());
         setPlayerMove();
 
     }

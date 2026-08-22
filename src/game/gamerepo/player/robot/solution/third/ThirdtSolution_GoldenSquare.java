@@ -38,4 +38,9 @@ public class ThirdtSolution_GoldenSquare extends BaseSolution {
         setMoveForward(new MoveForwardThirdSolution(getGame()));
         setMoveBack(new MoveBackThirdSolution(getGame()));
     }
+
+    @Override
+    public Integer getSolutionCreatedOrder() {
+        return 3;
+    }
 }

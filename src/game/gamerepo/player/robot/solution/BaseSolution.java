@@ -10,6 +10,7 @@ import squareprocess.SquareProcess;
 public abstract class BaseSolution {
     private Game game;
     public Location playerLocation;
+
     public BaseSolution(Game game) {
         this.game = game;
 
@@ -47,4 +48,10 @@ public abstract class BaseSolution {
     }
 
     public abstract void buildRobotMove();
+
+    public final String getSolutionFileName() {
+        return "Solution-" + getSolutionCreatedOrder()+"-"+game.getModel().getGameMapAreaName();
+    }
+
+    public abstract Integer getSolutionCreatedOrder();
 }

@@ -1,0 +1,62 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Env / secrets ###
+portfolio-parent/**/.env
+!portfolio-parent/**/.env.example
+portfolio-parent/**/application.properties~
+
+### Scratch / temp debug scripts ###
+.scratch/
+frontend/.scratch/
+
+
+# Java compiled classes
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Build output
+target/
+out/
+
+# Algorithm run outputs (generated result dumps, not source)
+tamamlananlar/
+*_Completed.txt
+*_EverySingleSquareTotalValue.txt
+2_5x5.txt

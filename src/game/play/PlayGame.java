@@ -8,6 +8,8 @@ import game.gamerepo.player.robot.Robot;
 import game.location.DirectionLocation;
 import game.move.Move;
 import print.EasylyReadNumber;
+import print.FileWriteProcess;
+import print.PrintAble;
 import printarray.StringFormat;
 
 public class PlayGame {
@@ -18,12 +20,13 @@ public class PlayGame {
     public ComparisonOfSolutions comparisonOfSolutions;
     StringFormat stringFormat = new StringFormat();
     TimeCalcuation timeCalcuation;
+    private PrintAble printable;
 //    int startLocationX, startLocationY;
 
     public PlayGame(Game game) {
         this.game = game;
         player = game.getPlayer();
-//        printable = new FileWriteProcess(game.getPlayer().getName());
+        printable = new FileWriteProcess(game.getPlayer().getName());
     }
 
 
@@ -38,7 +41,7 @@ public class PlayGame {
         Move moveForwardOrBack;
 
         printTableIfPersonPlays();
-//        appendFileSolutionName();
+        appendFileSolutionName();
 //        startLocationX = game.getPlayer().getLocation().getX();
 //        startLocationY = game.getPlayer().getLocation().getY();
 
@@ -85,12 +88,12 @@ public class PlayGame {
 
         String scoreValue = new EasylyReadNumber().getReadableNumberInStringFormat(squareTotalSolvedValue);
 
-//        game.getPlayer().getPrintableFileScore().append(scoreValue);
+        game.getPlayer().getPrintableFileScore().append(scoreValue);
 
 
         String text = "[" + locationX + "]" + "[" + locationY + "] = " + scoreValue + "\n";
 
-//        game.getPlayer().getPrintableFileScore().append(text);
+        game.getPlayer().getPrintableFileScore().append(text);
         game.getPlayer().resetSquareTotalSolvedValue();
 
     }
@@ -107,10 +110,8 @@ public class PlayGame {
         if (player.getStep() == Math.pow(game.getModel().getGameSquares().length, 2)) {
             player.getScore().increaseTotalGameFinishedScore();
 //            System.out.println("Total Solved : " + player.getScore().getTotalGameFinishedScore());
-            printGamelastStuation(game);
+//            printGamelastStuation(game);
             player.increaseSquareTotalSolvedValue();
-
-
         }
     }
 
@@ -149,7 +150,7 @@ public class PlayGame {
 
 
         text += "\n\n ========================================================== \n\n\n";
-//        game.getPlayer().getPrintableFileScore().append(text);
+        game.getPlayer().getPrintableFileScore().append(text);
 
     }
 
@@ -158,22 +159,22 @@ public class PlayGame {
     }
 
     void appendFileSolutionName() {
-        String text = ">>>>>>>>>>>>>>  " + ((Robot) player).getSolution().getClass().getSimpleName() + " : \n\n";
+//        String text = ">>>>>>>>>>>>>>  " + ((Robot) player).getSolution().getClass().getSimpleName() + " : \n\n";
 //        game.getPlayer().getPrintableFileScore().append(text);
 
     }
 
 
-    void printGamelastStuation(Game game) {
+    void printGamelastStuation(Game game) { // todo: burasi printe ediliyordu. db'ye save edilecek. loglama icin burasi tekrar aktif edilebilir.
         String textWillAppendToFile = " Finished totalGame : " + player.getScore().getTotalGameFinishedScore() + "\n";
         textWillAppendToFile += "RoundCounter : " + getEasyReadyNumber(game.getRoundCounter()) + '\n' + "" +
                 "Counter of Moving Back " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfMovingBackLose()) + "\n" +
                 "Step : " + player.getStep() + "\n";
 
 
-        textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares
-        System.out.println(textWillAppendToFile);
-        System.out.println();
+//        textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares
+//        System.out.println(textWillAppendToFile);
+//        System.out.println();
 //        printToFile(textWillAppendToFile);
     }
 

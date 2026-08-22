@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="GameSolutionAlgorithmWithoutFrame:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/GameSolutionAlgorithmWithoutFrame_jar</output-path>
-    <root id="archive" name="GameSolutionAlgorithmWithoutFrame.jar">
-      <element id="module-output" name="GameSolutionAlgorithmWithoutFrame" />
-    </root>
-  </artifact>
-</component>
