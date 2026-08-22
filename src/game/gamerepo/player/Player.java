@@ -62,12 +62,6 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
         game.setPlayer(this);
         score = new Score(game, this);
         clearVisitedDirections();
-
-
-        int squareEdge = game.getModel().getGameSquares().length;
-        printableFileScore = new FileWriteProcess((squareEdge * squareEdge) + "_Completed");
-        printableFileTotalScoreCount = new FileWriteProcess((squareEdge * squareEdge) + "_EverySingleSquareTotalValue");
-        name = "Unknow " + getClass().getSimpleName() + " name ";
     }
 
     public void clearVisitedDirections() {

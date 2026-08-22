@@ -31,18 +31,6 @@ public class Robot extends Player {
     }
 
     @Override
-    public void setGame(Game game) {
-        super.setGame(game);
-
-        if (getSolution() != null) {
-
-            printableFileScore = new FileWriteProcess(getSolution().getSolutionFileName() + "_Completed");
-            printableFileTotalScoreCount = new FileWriteProcess(getSolution().getSolutionFileName() + "_EverySingleSquareTotalValue");
-            name = "Unknow " + getClass().getSimpleName() + " name ";
-        }
-    }
-
-    @Override
     public Compass getCompass() {
         return new DirectionCompass();
     }
@@ -62,7 +50,12 @@ public class Robot extends Player {
 
         setName(solution.getSolutionFileName());
         setPlayerMove();
+        initSolutionFiles();
+    }
 
+    private void initSolutionFiles() {
+        printableFileScore = new FileWriteProcess(getSolution().getSolutionFileName() + "_Completed");
+        printableFileTotalScoreCount = new FileWriteProcess(getSolution().getSolutionFileName() + "_EverySingleSquareTotalValue");
     }
 
     @Override
