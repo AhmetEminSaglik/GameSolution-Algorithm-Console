@@ -30,13 +30,14 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
 //        game.setPlayer(this);
 
 
-        timeKeeper = new TimeKeeper();
-
-
         name = "Unknow " + getClass().getSimpleName() + " name ";
 //        int squareEdge = game.getModel().getGameSquares().length;
 //
 //        printableFileScore = new FileWriteProcess((squareEdge * squareEdge) + "_EverySingleSquareTotalValue");
+    }
+    public  void startTimeKeeper(){
+        timeKeeper = new TimeKeeper();
+
     }
  /*   public Player(Game game) {
         this.game = game;

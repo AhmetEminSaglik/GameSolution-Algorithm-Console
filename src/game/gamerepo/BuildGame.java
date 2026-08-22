@@ -5,7 +5,7 @@ import validation.SquareValidationGame;
 
 import java.util.Scanner;
 
-public class BuildGame implements IDetermineEdgeValue {
+public class BuildGame /*implements IDetermineEdgeValue*/ {
 
     // horizontalSquare and verticalSquare are unnecessary. But later I may need them if I want to play as a rectangle instead of square
     private int edgeValue;
@@ -33,7 +33,7 @@ public class BuildGame implements IDetermineEdgeValue {
         }
     }
 
-    public Game createGame() throws InterruptedException {
+    public Game createGame() /*throws InterruptedException */{
 
         game.setModel(new Model());
 
@@ -73,7 +73,7 @@ public class BuildGame implements IDetermineEdgeValue {
         this.game = game;
     }
 
-    @Override
+//    @Override
     public int determineEdgeValue() {
         System.out.print("Determine Edge value of Square :  ");
         return new Scanner(System.in).nextInt();

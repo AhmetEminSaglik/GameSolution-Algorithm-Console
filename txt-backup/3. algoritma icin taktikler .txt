@@ -1,0 +1,26 @@
+
+1 - ) Bitis noktasi olucak ->  buraya ulasilabilen tek kare -> Altin kare  , degeri =1;
+
+2 - ) Altin karenin 2  bagi varsa  : 1 tanesi cikis, digeri buraya ulasimi olan tek yol --> bu da altin kare olucak
+
+3 - ) 2. madde son altin karenin 2 den fazla yolu olana kadar devam eder.
+
+4 - ) Eger Son altin karenin 2 den fazla bagi varsa orasi son altin kare olur. Ve etrafindaki baglarin sayisi 2 ye indirilene kadar ilerlenmez.
+
+5 - ) Eger Altin karenin sayisi 2 olursa  soyle bir islem yapilir :
+                                                        (Altin Karenin Degeri) + 1 + player.Step  = Max square ise o zaman altin kareden ilerlenir ve hizli gecisler acilir.
+                                                            Hizli gecis demek ==> Tek yoldan dogruca gecis var demektir.
+
+-------------
+1- Cikis durumu belirlendigi anda,  cikis durumunun etrafina bakilir ve gidebilecegi ilk noktayi altin kare Listesine(ArrayList/)  kordinatli bir sekilde eklenir  --> GoldenSquare extends SpecialSquare,
+2- Sonra Altin karenin etrafi incelenir. 2 tane gidilebilecek yon varsa  ve secilen yon  cikis noktasi veya altin nokta degilse o zaman o noktayi altin nokta yap.
+     Ve degerini +1 yap  (is visited ozelligi olacagi icin son adim atilan yere denk gelse bile orada duracaktir. )
+
+3-  Kareyi Altin nokta yaptiktan sonra otomatik olarak tekrardan 2. fonksiyon devreye girecek ve 2 den fazla yol olana kadar devam edicek.
+4-  ilerlenebilecek yonler bakilir. Eger bu yonler icinde altin nokta varsa ve buyuk ihtimalle  bag sayisi 2 den fazla olucaktir. Diger yonlerden gidilecek
+5- En son altin kare ile karsi karsiya kalinca.    5 - ) teki islem yapilacak  ya geri adim atilacak ya da hizli gecis ozelligi verilecek (Islem yapmadan tek yoldan git)
+
+
+
+6 - ) Geri adim atarken: cikis noktasindayiz 1 adim geri attik. Burayi altin kare yapicaz
+7 - ) Geri adim attiktan sonra gidilebilecek kac tane yon var hesaplanir. Bu yonler arasinda  altin kareye denk gelinirse, O zaman altin karenin degerine bakilir ve ondan daha buyuktteki butun altin kareler listeden kaldirilir.

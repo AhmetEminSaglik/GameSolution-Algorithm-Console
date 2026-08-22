@@ -73,7 +73,17 @@ public class Main {
         } else if (input.equals("2")) {
             Robot robot = new Robot();
             robot.setGame(game);
-            baseSolution = new FirstSolution_Combination(game);
+            System.out.println("Please select the solution algorithm : " +
+                    "\n1-) First Solution : Combination" +
+                    "\n2-) Second Solution : Calculate Forward Ways");
+            input = new Scanner(System.in).nextLine();
+
+            if(input.equals("1")){
+                baseSolution = new FirstSolution_Combination(game);
+            }
+            else{
+                baseSolution = new SecondSolution_CalculateForwardAvailableWays(game);
+            }
             robot.setSolution(baseSolution);
             robot.setIPlayerInput(new RobotInput(robot.getSolution(), game));
             return robot;

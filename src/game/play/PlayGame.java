@@ -3,6 +3,7 @@ package game.play;
 import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.Player;
+import game.gamerepo.player.person.Person;
 import game.gamerepo.player.robot.Robot;
 import game.location.DirectionLocation;
 import game.move.Move;
@@ -31,11 +32,12 @@ public class PlayGame {
     }
 
     public void playGame() {
+        player.startTimeKeeper();
 
         prepareGame = new PrepareGame(game);
         Move moveForwardOrBack;
 
-//        printGamelastStuation(game);
+        printTableIfPersonPlays();
 //        appendFileSolutionName();
 //        startLocationX = game.getPlayer().getLocation().getX();
 //        startLocationY = game.getPlayer().getLocation().getY();
@@ -60,7 +62,8 @@ public class PlayGame {
 //                printGamelastStuation(game);
 //            }
 
-//                printGamelastStuation(game);
+            printTableIfPersonPlays();
+
 //            printGamelastStuation(game);
 //            if(player.getStep()==25){
 //                ShowPanel.show(getClass()," 25 e ulasti");
@@ -179,5 +182,9 @@ public class PlayGame {
 //        printable.append(text);
     }
 
-
+    void printTableIfPersonPlays(){
+        if(player instanceof Person){
+            printGamelastStuation(game);
+        }
+    }
 }

@@ -116,6 +116,31 @@ Game Dimension : 6-6
   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+ Finished totalGame : 8250272
+RoundCounter : 49_235_525_282
+Counter of Moving Back 7_255_589_880
+Step : 36
+|21 ||18 || 2 ||22 ||19 || 1 |
+|26 ||13 || 8 ||27 ||14 ||36 |
+| 3 ||32 ||20 ||17 ||33 ||23 |
+| 9 || 6 ||29 ||12 || 7 ||28 |
+|25 ||16 ||34 ||24 ||15 ||35 |
+| 4 ||31 ||10 || 5 ||30 ||11 |
+----------------------------------
+
+
+All Solutions are DONE  ::::
+
+Total Number Solved 8_250_272
+Elapsed time : 6:13:47:798
+RoundCounter (while loop)  : 49_235_541_971
+Counter of Moving Back  (while loop)  : 7_255_592_440
+
+FirstSolution_Combination
+Game Dimension : 6-6
+
+------------------------------------------
+
    Finished totalGame : 8250272
   RoundCounter : 1_470_780_072
   Counter of Moving Back 146_583_187
@@ -129,13 +154,13 @@ Game Dimension : 6-6
   ----------------------------------
 
 
-  All Solutions are DONE  ::::
+All Solutions are DONE  ::::
 
-  Total Number Solved 8_250_272
-   Elapsed time : 0:23:24:791
-   RoundCounter (while loop)  : 1_470_818_233
-   Counter of Moving Back  (while loop)  : 146_586_782
+Total Number Solved 8_250_272
+Elapsed time : 0:23:24:791
+RoundCounter (while loop)  : 1_470_818_233
+Counter of Moving Back  (while loop)  : 146_586_782
 
-  SecondSolution_CalculateForwardAvailableWays
-  Game Dimension : 6-6
-  ----------------
+SecondSolution_CalculateForwardAvailableWays
+Game Dimension : 6-6
+  -----------------------------------------------------------
