@@ -145,6 +145,7 @@ public class PlayGame {
         }
 
         text += "\nRound Counter (While loop)  : " + getEasyReadyNumber(game.getRoundCounter());
+        text += "\nTotal Dummy Step  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove());
         if (game.getOverLongRoundCounter() > 0) {
             text += "OverLongRoundCounter : " + game.getOverLongRoundCounter() + "   (this means that==> "
                     + game.getOverLongRoundCounter() + " * " + Long.MAX_VALUE + " + " + game.getRoundCounter() + ")";

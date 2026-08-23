@@ -21,7 +21,7 @@ public class MoveBack extends Move {
     public void updateVisitedDirection() {
         if (game.getPlayer().getStep() == Math.pow(game.getModel().getGameSquares().length,2)) {
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();
-            System.out.println("geri adim atma kilidi acildi");
+//            System.out.println("geri adim atma kilidi acildi");
         }
 
        if (game.getPlayer().getScore().isLockedCounterOfMovingBackLose() == true) {
