@@ -43,7 +43,7 @@ public class Game {
         }
     }
 
-    public long     getRoundCounter() {
+    public long getRoundCounter() {
         return roundCounter;
     }
 

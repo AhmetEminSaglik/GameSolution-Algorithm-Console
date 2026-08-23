@@ -18,6 +18,7 @@ public class UpdateForMovedBack extends UpdateValuesInGameModel {
     @Override
     public void updatePlayerStepValue() {
         game.getPlayer().decreaseStep();
+//        game.getPlayer().getScore().increaseCounterTotalBackStep();
     }
 
     @Override

@@ -8,7 +8,8 @@ public class Score {
     String playedTime;
     /* Geri adim atilmasi beklenmeyen yerden geri adim atilinca tekrardan geri adim kapatilacan kadar acik olur bu haliyle hesaplaniliyor*/
     public boolean lockedCounterOfMovingBackLose = true;
-    long counterOfMovingBackLose = 0;
+    long counterOfDummyBackMove = 0;
+    private  long counterTotalBackStep = 0;
     long totalGameFinishedScore = 0;
     int overLongTotalGameFinishedScore = 0;
 
@@ -39,12 +40,12 @@ public class Score {
         return overLongTotalGameFinishedScore;
     }
 
-    public void increaseCounterOfMovingBackLose() {
-        counterOfMovingBackLose++;
+    public void increaseCounterOfDummyBackMove() {
+        counterOfDummyBackMove++;
     }
 
-    public void decreaseCounterOfMovingBackLose() {
-        counterOfMovingBackLose--;
+    public void decreaseCounterOfDummyBackMove() {
+        counterOfDummyBackMove--;
 
     }
 
@@ -60,7 +61,19 @@ public class Score {
         lockedCounterOfMovingBackLose = false;
     }
 
-    public long getCounterOfMovingBackLose() {
-        return counterOfMovingBackLose;
+    public long getCounterOfDummyBackMove() {
+        return counterOfDummyBackMove;
+    }
+
+    public void increaseCounterTotalBackStep() {
+        counterTotalBackStep++;
+    }
+
+    public void decreaseCounterTotalBackStep() {
+        counterTotalBackStep--;
+    }
+
+    public long getCounterTotalBackStep() {
+        return counterTotalBackStep;
     }
 }

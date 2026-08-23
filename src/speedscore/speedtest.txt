@@ -70,11 +70,15 @@ FIRST SOLUTION :
 All Solutions are DONE  ::::
 
 Total Number Solved 8_250_272
-Elapsed time : 6:35:48:692
+Elapsed time : 6:13:47:798
 RoundCounter (while loop)  : 49_235_541_971
+Counter of Moving Back  (while loop)  : 7_255_592_440
+
 
 FirstSolution_Combination
 Game Dimension : 6-6
+
+
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 GAME SQUARE : 36 (6-6)

@@ -119,10 +119,12 @@ public class PlayGame {
     void saveGameResultToScore() {
         timeCalcuation = new TimeCalcuation();
         player.getScore().updatePlayedTime();
-        System.out.println(" Elapsed time : " + timeCalcuation.getTotalPassedTime(player));
-        System.out.println(" RoundCounter (while loop)  : " + getEasyReadyNumber(game.getRoundCounter()));
-        System.out.println(" Counter of Moving Back  (while loop)  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfMovingBackLose()));
-//        appendFileTotalSolvedValue();
+        System.out.println("Elapsed time : " + timeCalcuation.getTotalPassedTime(player));
+        System.out.println("Total Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterTotalBackStep()));
+//        System.out.println("Total Dummy Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
+        System.out.println("Total Step : " + getEasyReadyNumber(game.getRoundCounter()));
+//        System.out.println(" Total Dummy Back Step)  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
+        appendFileTotalSolvedValue();
 //        printable
     }
 
@@ -165,11 +167,12 @@ public class PlayGame {
     }
 
 
-    void printGamelastStuation(Game game) { // todo: burasi printe ediliyordu. db'ye save edilecek. loglama icin burasi tekrar aktif edilebilir.
-        String textWillAppendToFile = " Finished totalGame : " + player.getScore().getTotalGameFinishedScore() + "\n";
-        textWillAppendToFile += "RoundCounter : " + getEasyReadyNumber(game.getRoundCounter()) + '\n' + "" +
-                "Counter of Moving Back " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfMovingBackLose()) + "\n" +
-                "Step : " + player.getStep() + "\n";
+    void printGamelastStuation(Game game) {// todo: burasi printe ediliyordu. db'ye save edilecek. loglama icin burasi tekrar aktif edilebilir.
+        String textWillAppendToFile = "Finished totalGame : " + getEasyReadyNumber(player.getScore().getTotalGameFinishedScore()) + "\n";
+        textWillAppendToFile += "Total Step : " + getEasyReadyNumber(game.getRoundCounter()) + '\n' + "" +
+                "Total Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterTotalBackStep()) +
+                "\nTotal Dummy Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove())+
+                "\nStep : " + player.getStep() + "\n";
 
 
 //        textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares

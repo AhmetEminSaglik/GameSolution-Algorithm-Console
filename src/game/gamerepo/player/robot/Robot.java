@@ -14,6 +14,7 @@ import print.FileWriteProcess;
 
 
 public class Robot extends Player {
+    DirectionCompass compass = new DirectionCompass();
     private RobotMemory robotMemory;
     //    RoadMemory roadMemory = new RoadMemory();
     private BaseSolution solution;
@@ -30,9 +31,10 @@ public class Robot extends Player {
         printAbleEveryStep = false;
     }
 
+
     @Override
     public Compass getCompass() {
-        return new DirectionCompass();
+        return compass;
     }
 
 //    @Override

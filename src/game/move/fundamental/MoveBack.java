@@ -19,14 +19,15 @@ public class MoveBack extends Move {
 
     @Override
     public void updateVisitedDirection() {
-        if (game.getPlayer().getStep() == 100) {
+        if (game.getPlayer().getStep() == Math.pow(game.getModel().getGameSquares().length,2)) {
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();
             System.out.println("geri adim atma kilidi acildi");
         }
+
        if (game.getPlayer().getScore().isLockedCounterOfMovingBackLose() == true) {
 //            printGamelastStuation(game);
 //            ShowPanel.show(getClass(),"KITLI OLDUGU HALDE GERI ADIM ATTI   Step : "+game.getPlayer().getStep());
-            game.getPlayer().getScore().increaseCounterOfMovingBackLose();
+            game.getPlayer().getScore().increaseCounterOfDummyBackMove();
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();
 
         }
