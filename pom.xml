@@ -15,9 +15,30 @@
         <!-- mvn exec:java icin -->
         <exec.mainClass>Main.Main</exec.mainClass>
         <junit.version>5.10.3</junit.version>
+        <!-- Normalde atlanan test etiketleri. Ornek: sadece db testleri ->
+             mvn test -Dtest.excludedGroups=slow -Dgroups=db -->
+        <test.excludedGroups>slow,db</test.excludedGroups>
     </properties>
 
     <dependencies>
+        <!-- PostgreSQL cozum kaydi (opsiyonel calisma zamani; DB kapaliyken kullanilmaz) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        <!-- HikariCP slf4j-api ister; ciktiyi susturmak icin nop binding -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -55,7 +76,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <excludedGroups>slow</excludedGroups>
+                    <!-- "slow" (6x6 vb.) ve "db" (calisan Postgres ister) normalde atlanir.
+                         db testlerini calistir:  mvn test -Dtest.excludedGroups=slow -Dgroups=db -->
+                    <excludedGroups>${test.excludedGroups}</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

@@ -4,7 +4,7 @@
 # Sifirla: docker compose down -v       (veri silinir)
 # Baglan:  docker exec -it pathexplorer-db psql -U pathexplorer -d pathexplorer
 #
-# 5432 lokalde doluysa asagidaki "5432:5432" -> "5433:5432" yap ve
+# 5442 kullaniliyor (5432 lokalde native PostgreSQL ile cakisiyordu). Doluysa asagidaki "5442:5432" -> "5433:5432" yap ve
 # db.properties'te port'u 5433 yap.
 
 services:
@@ -17,7 +17,7 @@ services:
       POSTGRES_USER: pathexplorer
       POSTGRES_PASSWORD: pathexplorer
     ports:
-      - "5432:5432"
+      - "5442:5432"
     volumes:
       - pathexplorer_pgdata:/var/lib/postgresql/data
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro

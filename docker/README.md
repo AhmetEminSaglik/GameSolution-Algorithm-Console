@@ -27,11 +27,11 @@ docker compose down -v
 | | |
 |---|---|
 | host | `localhost` |
-| port | `5432` (doluysa `docker-compose.yml` + `db.properties` degistir) |
+| port | `5442` (5432 native PostgreSQL ile cakisiyordu; doluysa `docker-compose.yml` + `db.properties` degistir) |
 | database | `pathexplorer` |
 | user | `pathexplorer` |
 | password | `pathexplorer` |
-| JDBC URL | `jdbc:postgresql://localhost:5432/pathexplorer?reWriteBatchedInserts=true` |
+| JDBC URL | `jdbc:postgresql://localhost:5442/pathexplorer?reWriteBatchedInserts=true` |
 
 Java uygulamasi bu degerleri `db.properties` dosyasindan veya `PATHEXPLORER_DB_*`
 ortam degiskenlerinden okur (bkz. Faz 5).

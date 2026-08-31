@@ -145,21 +145,32 @@ lokal ve remote'ta aynı.
       (`solver_run` + `path_explorer_solution` + 6 partition) `psql \dt` ile görüldü.
 - [x] Commit.
 
-## FAZ 5 — JDBC persistence katmanı
+## FAZ 5 — JDBC persistence katmanı  ✅ (2026-08-31)
 
-- [ ] `pom.xml`: `org.postgresql:postgresql`, `com.zaxxer:HikariCP` (+ SLF4J nop).
-- [ ] `src/persistence/DbConfig.java` — env/`db.properties`'ten url/user/pass;
-      `reWriteBatchedInserts=true`.
-- [ ] `src/persistence/JdbcSolutionSink.java implements SolutionSink`:
-  - `beginRun` → `solver_run` insert, id al.
-  - `accept` → buffer'a ekle; `size == 1000` → `flush()`.
-  - `flush()` → `PreparedStatement.addBatch()`/`executeBatch()`, commit, buffer temizle.
-  - `endRun` → son `flush()` + `solver_run` update (finished_at, status=COMPLETED, sayaçlar).
-  - `close()` → buffer'da kalan varsa flush; bağlantı kapat.
-  - Shutdown hook: JVM kapanırsa flush + status=ABORTED.
-  - `opening` hesabı: ilk K hücre indeksi paketlenmiş (K sabiti, default 3).
-- [ ] `mvn test` yeşil (bu faz testsiz; sadece derlensin).
-- [ ] Commit: "Faz 5: JdbcSolutionSink + Hikari batch".
+- [x] `pom.xml`: `org.postgresql:postgresql 42.7.4`, `com.zaxxer:HikariCP 5.1.0`,
+      `slf4j-nop 2.0.13`. `test.excludedGroups` property (`slow,db`) — db testleri
+      `-Dtest.excludedGroups=slow -Dgroups=db` ile.
+- [x] `src/persistence/DbConfig.java` — env > `db.properties` (classpath ya da CWD) >
+      varsayilan. `isDbEnabled()` = `PATHEXPLORER_DB_ENABLED` bayragi.
+- [x] `db.properties` (kök) — lokal compose değerleri (`localhost:5442`, pathexplorer/pathexplorer).
+      **Port 5442** — 5432 lokalde native PostgreSQL ile çakışıyordu.
+- [x] `src/persistence/JdbcSolutionSink.java`:
+  - `beginRun` → `solver_run` insert (RETURNING id) + ayrı uzun-ömürlü batch bağlantısı
+    (autocommit kapalı).
+  - `accept` → buffer; `size >= batchSize` → `flush()`.
+  - `flush()` → tek `PreparedStatement` + `addBatch()`/`executeBatch()` + `commit()`;
+    hata → rollback.
+  - `endRun` → son `flush()` + `solver_run` COMPLETED update (sayaçlar, finished_at).
+  - `close()` → kalan buffer flush + kaynak kapat + shutdown hook kaldır.
+  - Shutdown hook → normal bitmemişse flush + `solver_run` ABORTED.
+  - `open1/2/3` = ilk 3 adımın hücre indeksi (`x*col + y`); adım yoksa NULL.
+  - `grid_size` = `row*1000 + col` (uygulama doldurur).
+- [x] `test/persistence/JdbcSolutionSinkDbTest.java` (`@Tag("db")`, DB yoksa `assumeTrue`
+      ile atlanır): 5x5 2. çözüm → sink → **12_400 satır DB'ye yazıldı**, `solver_run`
+      COMPLETED + total_solved 12_400 + round_counter 1_023_656, bir satır decode edilip
+      geçerli 25-hücre yol, `GROUP BY open1` çalışıyor, test verisi silindi. (~2 sn)
+- [x] `mvn test` yeşil (21 fast). `mvn test -Dtest.excludedGroups=slow -Dgroups=db` yeşil (1).
+- [x] Commit.
 
 ## FAZ 6 — Bağlama (Main)
 
@@ -190,11 +201,11 @@ lokal ve remote'ta aynı.
 
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31, Faz 4 bitti.
+**Son güncelleme:** 2026-08-31, Faz 5 bitti.
 
 **Tamamlanan:** Faz 0-3. Faz 1: 5x6=113_456 dogrulandi. Faz 2: PathCodec 3bit/adim. Faz 3: SolutionSink kancasi (5x5 12_400 cozum yakalandi).
 
-**Sıradaki:** Faz 5 — JDBC persistence katmani (Hikari + batch).
+**Sıradaki:** Faz 6 — Main entegrasyonu (opsiyonel DB kaydi).
 
 **Yeni session için notlar:**
 - Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.
