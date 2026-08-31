@@ -94,17 +94,18 @@ lokal ve remote'ta aynı.
       dikdörtgen destek bağımsız yöntemle doğrulandı.
 - [x] Commit.
 
-## FAZ 2 — Path codec (saf, DB yok)
+## FAZ 2 — Path codec (saf, DB yok)  ✅ (2026-08-31)
 
-- [ ] `src/persistence/PathCodec.java`: `byte[] encode(int[][] pathCells)` (3 bit/adım,
-      bit-packed) + `int[][] decode(byte[], startRow, startCol, rows, cols, pathLen)`.
-      8 yön vektörü tek yerde (`DIRS`).
-- [ ] `src/persistence/GridPath.java` (veya record): rows, cols, startRow, startCol,
-      `int[][] cells` (adım sırasıyla [x,y]).
-- [ ] `test/persistence/PathCodecTest.java`: encode→decode round-trip (5x5, 5x6,
-      10x10 rastgele geçerli yollar); bilinen küçük örnekte byte uzunluğu kontrolü.
-- [ ] `mvn test` yeşil.
-- [ ] Commit: "Faz 2: path codec (yon-kodlamasi, 3 bit/adim)".
+- [x] `src/persistence/PathCodec.java`: `encode(int[][] cells)` (3 bit/adım, bit-packed,
+      MSB-first) + `decode(byte[], startX, startY, pathLength)`. 8 yön vektörü `DIRS`'te.
+      Geçersiz hareket → `IllegalArgumentException`.
+- [x] `src/persistence/GridPath.java` (record): rowCount, colCount, startX, startY,
+      `int[][] cells`; `encode()`, `decode(...)`, `cellIndexAtStep(step)` = x*cols+y.
+- [x] `test/persistence/PathCodecTest.java` (4 test): round-trip (5x5/5x6/10x10/12x9,
+      her boyut 200 rastgele yol); byte uzunluğu (1 hareket→1B, 3 hareket→2B, tam 5x5→9B);
+      geçersiz hareket throw; GridPath encode/decode.
+- [x] `mvn test` yeşil (20 test).
+- [x] Commit.
 
 ## FAZ 3 — Çözüm toplama (solver içinde, DB yok)
 
