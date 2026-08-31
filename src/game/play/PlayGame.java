@@ -71,7 +71,7 @@ public class PlayGame {
 
         }
 
-        System.out.println("Total Number Solved " + getEasyReadyNumber(player.getScore().getTotalGameFinishedScore()));
+        System.out.println("Total Number Solved: " + getEasyReadyNumber(player.getScore().getTotalGameFinishedScore()));
         saveGameResultToScore();
     }
 
@@ -119,7 +119,7 @@ public class PlayGame {
         System.out.println("Total Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterTotalBackStep()));
 //        System.out.println("Total Dummy Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
         System.out.println("Total Step : " + getEasyReadyNumber(game.getRoundCounter()));
-//        System.out.println(" Total Dummy Back Step)  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
+        System.out.println("Total Dummy Back Step)  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
         appendFileTotalSolvedValue();
 //        printable
     }
