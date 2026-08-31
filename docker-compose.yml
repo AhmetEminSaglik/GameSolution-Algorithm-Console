@@ -1,0 +1,31 @@
+# PathExplorer cozum kaydi icin ayri bir PostgreSQL.
+# Kaldir:  docker compose up -d
+# Durdur:  docker compose down          (veri kalir)
+# Sifirla: docker compose down -v       (veri silinir)
+# Baglan:  docker exec -it pathexplorer-db psql -U pathexplorer -d pathexplorer
+#
+# 5432 lokalde doluysa asagidaki "5432:5432" -> "5433:5432" yap ve
+# db.properties'te port'u 5433 yap.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pathexplorer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pathexplorer
+      POSTGRES_USER: pathexplorer
+      POSTGRES_PASSWORD: pathexplorer
+    ports:
+      - "5432:5432"
+    volumes:
+      - pathexplorer_pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pathexplorer -d pathexplorer"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pathexplorer_pgdata:

@@ -124,22 +124,26 @@ lokal ve remote'ta aynı.
 - [x] `mvn test` yeşil (21 test; NoOp default → regresyon sayıları değişmedi).
 - [x] Commit.
 
-## FAZ 4 — Docker Compose + Postgres + şema
+## FAZ 4 — Docker Compose + Postgres + şema  ✅ (2026-08-31)
 
-- [ ] `docker-compose.yml`: `postgres:16`, port 5432, volume, healthcheck,
-      env (`POSTGRES_DB=pathexplorer`, user/pass).
-- [ ] `docker/initdb/01_schema.sql`:
-  - `solver_run` (id identity, public_id uuid, row_size, col_size, start_row,
-    start_col, algorithm, total_solved, round_counter, total_steps,
-    total_back_steps, dummy_back_steps, elapsed_ms, started_at, finished_at, status).
-  - `path_explorer_solution` PARTITION BY LIST (row_size, col_size) — id identity,
-    public_id uuid unique, solver_run_id fk, solution_index bigint, row_size,
-    col_size, start_row, start_col, path_len smallint, path bytea, opening int,
-    created_at timestamptz default now().
-  - Partition örnekleri: 5x5, 6x6, 7x7, 10x10 + `DEFAULT`.
-  - Index: `(solver_run_id)`, `(row_size,col_size,opening)`.
-- [ ] `docker/README.md` — `docker compose up -d`, bağlantı bilgisi, `psql` örneği.
-- [ ] Commit: "Faz 4: docker-compose + postgres sema".
+- [x] `docker-compose.yml`: `postgres:16`, `pathexplorer-db`, 5432, named volume,
+      healthcheck, initdb mount.
+- [x] `docker/initdb/01_schema.sql`:
+  - `solver_run` (id identity, public_id uuid unique, row/col_size, algorithm,
+    total_solved, round_counter, total/dummy_back_steps, elapsed_ms, status
+    RUNNING/COMPLETED/ABORTED, started_at, finished_at).
+  - `path_explorer_solution` **PARTITION BY LIST (grid_size)** — grid_size =
+    row*1000+col (uygulama doldurur; Postgres generated column'u partition key
+    kabul etmiyor). id identity, public_id uuid, solver_run_id fk, solution_index,
+    row/col_size, start_x/y, path_len, path bytea, open1/2/3 smallint,
+    created_at timestamptz. PK (id, grid_size), UNIQUE (public_id, grid_size).
+  - Partition: 5x5, 5x6, 6x6, 7x7, 10x10 + DEFAULT.
+  - Index: `(solver_run_id)`, `(grid_size, open1, open2, open3)`.
+  - Yalniz-aggregate gelecek tablosu SQL yorumunda taslak olarak var.
+- [x] `docker/README.md` — komutlar, bağlantı bilgisi, örnek sorgular.
+- [x] **DOĞRULAMA:** `docker compose up -d` → şema hatasız kuruldu, 8 tablo
+      (`solver_run` + `path_explorer_solution` + 6 partition) `psql \dt` ile görüldü.
+- [x] Commit.
 
 ## FAZ 5 — JDBC persistence katmanı
 
@@ -186,11 +190,11 @@ lokal ve remote'ta aynı.
 
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31, Faz 3 bitti.
+**Son güncelleme:** 2026-08-31, Faz 4 bitti.
 
 **Tamamlanan:** Faz 0-3. Faz 1: 5x6=113_456 dogrulandi. Faz 2: PathCodec 3bit/adim. Faz 3: SolutionSink kancasi (5x5 12_400 cozum yakalandi).
 
-**Sıradaki:** Faz 4 — docker-compose + Postgres sema.
+**Sıradaki:** Faz 5 — JDBC persistence katmani (Hikari + batch).
 
 **Yeni session için notlar:**
 - Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.
