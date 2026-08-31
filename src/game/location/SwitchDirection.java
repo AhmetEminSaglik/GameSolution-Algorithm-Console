@@ -21,6 +21,11 @@ public class SwitchDirection {
         this.compass = compass;
     }
 
+    /**
+     * value, verilen pusulada gecerli bir yon degilse ClasicError loglanir ve
+     * {@code null} donulur. Cagiran taraf null'a karsi dikkatli olmali.
+     * TODO: yonler bir enum'a alininca bu 9'lu if zinciri ve null sozlesmesi kalkacak.
+     */
     public DirectionLocation choseDirection(int value) {
 //        ShowPanel.show(getClass(),"compass.getNorth() "+compass.getNorth()+" value : "+value);
 
@@ -69,34 +74,6 @@ public class SwitchDirection {
             lastLocation.setCompass(compass);
             return lastLocation;
         }
-        /*if (compass.getNorth() == value) {
-//            System.out.println("NORTH GIRDIIII");
-            return new North();
-        }
-        if (compass.getNorthEast() == value) {
-            return new NorthEast();
-        }
-        if (compass.getEast() == value) {
-            return new East();
-        }
-        if (compass.getSouthEast() == value) {
-            return new SouthEast();
-        }
-        if (compass.getSouth() == value) {
-            return new South();
-        }
-        if (compass.getSouthWest() == value) {
-            return new SouthWest();
-        }
-        if (compass.getWest() == value) {
-            return new West();
-        }
-        if (compass.getNorthWest() == value) {
-            return new NorthWest();
-        }
-        if (compass.getLastLocation() == value) {
-            return new LastLocation();
-        }*/
 
         ErrorMessage.appearClassicError(getClass(), " compass  : " + compass.getClass().getSimpleName() + " -> Unknow Option  : " + value);
 

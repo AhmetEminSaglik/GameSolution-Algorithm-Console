@@ -33,10 +33,6 @@ public class Vertex {
         return location;
     }
 
-    /*public void setLocation(Location location) {
-        this.location = location;
-    }*/
-
     public int getAvailableWayNumber() {
         return availableWayNumber;
     }

@@ -13,7 +13,9 @@ public class CheckSquare extends BaseCheck {
         setCompass(game.getPlayer().getCompass());
         if (isIndexsSuitableForArray(game, currentProcessLocation, directionIndex)) {
             Location location = new DirectionLocation().getLocationFromCompass(getCompass(), directionIndex);
-            if (!game.getModel().getVisitedAreas()[currentProcessLocation.getX()
+            // location, gecersiz bir yon degeri gelirse null olabilir (bkz. SwitchDirection.choseDirection).
+            // Normal akista bu deger her zaman gecerli bir pusula yonu; guard sadece gizli NPE'yi engeller.
+            if (location != null && !game.getModel().getVisitedAreas()[currentProcessLocation.getX()
                     + location.getX()][currentProcessLocation.getY() + location.getY()]) {
                 return true;
             }

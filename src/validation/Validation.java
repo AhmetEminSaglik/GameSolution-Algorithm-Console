@@ -58,11 +58,10 @@ public class Validation {
         Player player = game.getPlayer();
         compass = game.getPlayer().getCompass();
         location = new DirectionLocation().getLocationFromCompass(compass, input);
-//        System.out.println("AACACA");
+
         /* kuzeyden baslayip saat yonun`de kontrol edecegi icin  yon pusulasini gonderiyoruz
         Kullanici pusulasi  kullanici girisli pusulada kullanildigi icin burada dizi indexinde kullanamiyoruz
         O yuzden bu sekilde gonderdik
-            
          */
         try {
 
@@ -81,11 +80,7 @@ public class Validation {
     }
 
     public boolean isStepValueAvailable(Game game, int step) {
-
-        if (step < Math.pow(game.getModel().getGameSquares().length, 2)) {
-            return true;
-        }
-        return false;
+        return step < game.getModel().getTotalSquareCount();
     }
 
     public Compass getCompass() {

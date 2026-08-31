@@ -49,10 +49,10 @@ public class MathFunctionForSecondSolution {
 
         if (isNavigationInRoadMemoryAvailableForThisStep()) {
             navigationService.setCompulsoryLocationToNavigation(game, navigation, lastLocation);
-            try {
-                selectedDirection = navigationService.getCompulsoryLocation(navigation);
+            DirectionLocation compulsoryDirection = navigation.getCompulsoryLocation();
+            if (compulsoryDirection != null) {
+                selectedDirection = compulsoryDirection;
                 return selectedDirection.getId();
-            } catch (Exception e) {
             }
         }
 
@@ -193,25 +193,12 @@ public class MathFunctionForSecondSolution {
     }
 
     int calculateDeadlyPoint() {
-//        CalculationDeadlyPoint calculationDeadlyPoint = new CalculationDeadlyPoint(game);
         return new CalculationDeadlyPoint(game).calculateDeadlyPoint(oneWayNumbersValue);
-//        return calculationDeadlyPoint.calculateDeadlyPoint(oneWayNumbersValue);
-        /*ExitSituation exitSituation = robot.getRobotMemory().getRoadMemory().getExitSituation();
-        double calculation = 1 - (double) (exitSituation.getSituation() + oneWayNumbersValue) / 2;
-        return decideDeadlyPointCalculation(calculation);*/
     }
-
-    /*int decideDeadlyPointCalculation(double calculation) {
-        if (calculation >= 0) {
-            return IS_FREE_SO_MOVE_FORWARD;
-        }
-        return IS_DEAD_SO_MOVE_BACK;
-    }*/
 
     void addNavigationToRoadMemoryList() {
 
         if (oneWayNumbersValue >= 1) {
-//            robot.getRobotMemory().getRoadMemory().getOneWayNumbersList().add(navigation);
             navigationService.addNavigationToRoadMemoryList(navigation, (Robot) game.getPlayer());
         }
     }

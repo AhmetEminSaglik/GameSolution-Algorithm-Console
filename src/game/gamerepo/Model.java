@@ -25,4 +25,9 @@ public class Model {
     public String getGameMapAreaName() {
         return gameSquares.length + "x" + gameSquares[0].length;
     }
+
+    /** Toplam kare sayisi (kenar * kenar). Oyunun bitis adimi bu degere esittir. */
+    public int getTotalSquareCount() {
+        return gameSquares.length * gameSquares.length;
+    }
 }

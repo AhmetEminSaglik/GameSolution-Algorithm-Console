@@ -37,25 +37,6 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
         timeKeeper = new TimeKeeper();
 
     }
- /*   public Player(Game game) {
-        this.game = game;
-        game.setPlayer(this);
-
-        clearVisitedDirections();
-        timeKeeper = new TimeKeeper();
-        score = new Score(game, this);
-
-        name = "Unknow " + getClass().getSimpleName() + " name ";
-        int squareEdge = game.getModel().getGameSquares().length;
-
-        printableFileScore = new FileWriteProcess((squareEdge * squareEdge) + "_EverySingleSquareTotalValue");
-    }*/
-
-   /* public Player(Game game, String name) {
-        super();
-        this.name = name;
-    }
-*/
 
     public void setGame(Game game) {
         this.game = game;
@@ -65,7 +46,7 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
     }
 
     public void clearVisitedDirections() {
-        visitedDirections = new boolean[(int) Math.pow(game.getModel().getGameSquares().length, 2)]
+        visitedDirections = new boolean[game.getModel().getTotalSquareCount()]
                 [new LocationsList().getListOfLocationsAccordingToPlayerCompass(game.getPlayer().getCompass()).size()];
     }
 
@@ -121,6 +102,14 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
     }
 
     public abstract Compass getCompass();
+
+    /**
+     * Sonuc dosyasinda "Solution :" satirinda gosterilecek etiket.
+     * Robot icin secili cozum algoritmasinin adi, Person icin "Person".
+     * (Onceden PlayGame icinde (Robot) cast ile aliniyordu -> Person oynayinca
+     * ClassCastException firlatiyordu.)
+     */
+    public abstract String getSolutionName();
 
     @Override
     public void updateVisitedDirection(boolean sealOrUnseal, int step, DirectionLocation location) {

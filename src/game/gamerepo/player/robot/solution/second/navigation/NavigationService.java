@@ -8,15 +8,6 @@ import game.location.DirectionLocation;
 import game.location.direction.LastLocation;
 
 public class NavigationService {
-   /* Game game;
-    Robot robot;
-    public Navigation navigation;
-
-    public NavigationService(Game game, Navigation navigation) {
-        this.game = game;
-        this.navigation = navigation;
-        robot = getRobot(game);
-    }*/
 
     public void setCompulsoryLocationToNavigation(Game game, Navigation navigation, DirectionLocation lastLocation) {
         Robot robot = getRobot(game);

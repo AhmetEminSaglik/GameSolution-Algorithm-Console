@@ -12,17 +12,19 @@ import game.rule.BaseGameRule;
 
 public class Person extends Player {
 
-
-    public Person(/*Game game*/) {
-//        super(game);
+    public Person() {
         printAbleEveryStep = true;
-
     }
 
 
     @Override
     public Compass getCompass() {
         return new KeyboardCompass();
+    }
+
+    @Override
+    public String getSolutionName() {
+        return getClass().getSimpleName();
     }
 
     @Override
@@ -33,14 +35,8 @@ public class Person extends Player {
 
     @Override
     public void setPlayerMove() {
-        playerMove = new PlayerMove(/*new PersonMove(game),*/new MoveForward(game), new MoveBack(game));
+        playerMove = new PlayerMove(new MoveForward(game), new MoveBack(game));
     }
-
-//    @Override
-//    public int getInput(Game game) {
-////        return new PersonInput(game).getInput();
-//        return iPlayerInput.getInput();
-//    }
 
     @Override
     public BaseGameRule getGameRule() {

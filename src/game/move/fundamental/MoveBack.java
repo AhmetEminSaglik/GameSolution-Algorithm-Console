@@ -19,7 +19,7 @@ public class MoveBack extends Move {
 
     @Override
     public void updateVisitedDirection() {
-        if (game.getPlayer().getStep() == Math.pow(game.getModel().getGameSquares().length,2)) {
+        if (game.getPlayer().getStep() == game.getModel().getTotalSquareCount()) {
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();
 //            System.out.println("geri adim atma kilidi acildi");
         }
@@ -34,9 +34,6 @@ public class MoveBack extends Move {
         /* Ozel RoundCounter : geri adim atmaya baslandiktan sonra, eger ileri adim atilirsa  ve oyun bitmeden tekrardan geri adim atilmaya baslanirsa o zaman bu deger
         artmaya baslayacak. Amac Cozum bulamadan atilan geri adim sayisini hesaplayip verim oranini bulmak
         * */
-    /*    if (game.getPlayer().getScore().getCounterOfMovingBackLose() > 0)
-            ShowPanel.show(getClass(), "Geri adim atilacak tikanmayi incele step : " + game.getPlayer().getStep());
-        printGamelastStuation(game);*/
         clearAllDirectionBeforeGoBack();
     }
 

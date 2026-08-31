@@ -16,18 +16,11 @@ import print.FileWriteProcess;
 public class Robot extends Player {
     DirectionCompass compass = new DirectionCompass();
     private RobotMemory robotMemory;
-    //    RoadMemory roadMemory = new RoadMemory();
     private BaseSolution solution;
     int recordValueForEachSquare;
 
-    public Robot(/*Game game, BaseSolution solution*/) {
-//        super(game);
-//        this.game = game;
+    public Robot() {
         robotMemory = new RobotMemory(game);
-//        this.solution = solution;
-//        solution.buildRobotMove();
-//        playerMove = new PlayerMove(/*new RobotMove(game),*/ solution.getMoveForward(), solution.getMoveBack());
-//       setName(solution.getClass().getSimpleName() + "_" + game.getModel().getGameSquares());
         printAbleEveryStep = false;
     }
 
@@ -37,10 +30,10 @@ public class Robot extends Player {
         return compass;
     }
 
-//    @Override
-//    public int getInput(Game game) {
-//        return new RobotInput(solution, game).getInput();//getRobotMemory()
-//    }
+    @Override
+    public String getSolutionName() {
+        return getSolution().getClass().getSimpleName();
+    }
 
     public BaseSolution getSolution() {
         return solution;
@@ -72,15 +65,12 @@ public class Robot extends Player {
     public void updateVisitedDirection(boolean sealOrUnseal, int step, DirectionLocation location) {
         assert (getStep() > 1) : getClass().getName() + " >>> ADIM SAYUISI " + getStep() + " GELDI";
         location.setCompass(getGame().getPlayer().getCompass());
-//        ShowPanel.show(getClass(),"???  gelen direction : "+location.getId());
         getVisitedDirections()[step][location.getId()] = sealOrUnseal;
     }
 
     @Override
     public void setPlayerMove() {
-        /* setplayer move da  freamesiz olan second soluyion donuyor bak bakayim fxml ne donyor */
-        playerMove = new PlayerMove(/*new RobotMove(game),*/ solution.getMoveForward(), solution.getMoveBack());
-//        ShowPanel.show(getClass()," player move : "+playerMove.toString()+ " solution.getMoveForward() : "+solution.getMoveForward());
+        playerMove = new PlayerMove(solution.getMoveForward(), solution.getMoveBack());
     }
 
     public int getRecordValueForEachSquare() {
@@ -107,7 +97,4 @@ public class Robot extends Player {
     public boolean isPrintableStepSituation() {
         return printAbleEveryStep;
     }
-//    public RoadMemory getRoadMemory() {
-//        return roadMemory;
-//    }
 }

@@ -39,10 +39,7 @@ public class CopyModel {
                         System.out.println("Same solution is in this  index : " + i);
                         new PrintArray().printMultipleArray(modelList.get(i));
                     }
-/*                    new PrintArray().printMultipleArray(values);
-                    System.out.println("============================================================ AYNI GELDI GALIBA");
-                    System.out.println("INDEX : " + index);
-                    System.out.println("size : " + modelList.size());*/
+
                     return;
                 }
             }

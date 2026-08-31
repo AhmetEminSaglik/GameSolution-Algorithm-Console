@@ -192,20 +192,8 @@ public class MathFunctionWithSpecialFeaturesForThirdSolution {
     }
 
     int calculateDeadlyPoint() {
-//        CalculationDeadlyPoint calculationDeadlyPoint = new CalculationDeadlyPoint(game);
         return new CalculationDeadlyPoint(game).calculateDeadlyPoint(oneWayNumbersValue);
-//        return calculationDeadlyPoint.calculateDeadlyPoint(oneWayNumbersValue);
-        /*ExitSituation exitSituation = robot.getRobotMemory().getRoadMemory().getExitSituation();
-        double calculation = 1 - (double) (exitSituation.getSituation() + oneWayNumbersValue) / 2;
-        return decideDeadlyPointCalculation(calculation);*/
     }
-
-    /*int decideDeadlyPointCalculation(double calculation) {
-        if (calculation >= 0) {
-            return IS_FREE_SO_MOVE_FORWARD;
-        }
-        return IS_DEAD_SO_MOVE_BACK;
-    }*/
 
     void addNavigationToRoadMemoryList() {
 

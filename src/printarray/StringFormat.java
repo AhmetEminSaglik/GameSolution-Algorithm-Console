@@ -73,20 +73,7 @@ public class StringFormat {
             counter++;
         }
 
-       /* if (numberText.length() % 3 == 0) {
-            numberTextLength--;
-        }
-
-        for (int i = numberText.length() - 1; i > 0; i--) {
-            if (i % 3 == 2) {
-                numberText = "_" + numberText;
-
-            }
-
-        }*/
-
         return numberText;
-
 
     }
 }

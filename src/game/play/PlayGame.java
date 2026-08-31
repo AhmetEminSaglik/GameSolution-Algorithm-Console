@@ -4,7 +4,6 @@ import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.Player;
 import game.gamerepo.player.person.Person;
-import game.gamerepo.player.robot.Robot;
 import game.location.DirectionLocation;
 import game.move.Move;
 import print.EasylyReadNumber;
@@ -107,7 +106,7 @@ public class PlayGame {
     }
 
     void calculatePlayerTotalWinScore() {
-        if (player.getStep() == Math.pow(game.getModel().getGameSquares().length, 2)) {
+        if (player.getStep() == game.getModel().getTotalSquareCount()) {
             player.getScore().increaseTotalGameFinishedScore();
 //            System.out.println("Total Solved : " + player.getScore().getTotalGameFinishedScore());
 //            printGamelastStuation(game);
@@ -133,10 +132,9 @@ public class PlayGame {
 
         long totalFinishedScore = player.getScore().getTotalGameFinishedScore();
         String scoreValue = getEasyReadyNumber(totalFinishedScore);
-        calculatePlayerTotalWinScore();
 
-        String text = "--------------";/*= ">>>>>>>>>>>>>>  "+ ((Robot) player).getSolution().getClass().getSimpleName()+"\n";*/
-        text += "\nSolution :" + ((Robot) player).getSolution().getClass().getSimpleName();
+        String text = "--------------";
+        text += "\nSolution :" + player.getSolutionName();
         text += "\nTotal played time :" + timeCalcuation.getTotalPassedTime(player);
         text += "\ntotal Solved : " + scoreValue;
         if (game.getPlayer().getScore().getOverLongTotalGameFinishedScore() > 0) {

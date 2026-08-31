@@ -19,15 +19,4 @@ public class RobotInput extends BaseControlInput {
         return solution.getLocationInput(game);
     }
 
-   /* @Override
-    public boolean isInputSuitableToMoveForward(Game game, int choose) {
-        ErrorMessage.appearFatalError(getClass(), "BURAYA GELDIIII /  burasi kullanilmiyor");
-        return false;
-    }
-
-    @Override
-    public boolean isInputSuitableToMoveBack(Game game, int choose) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }*/
-
 }

@@ -23,13 +23,6 @@ public class ThirdtSolution_GoldenSquare extends BaseSolution {
         MathFunctionWithSpecialFeaturesForThirdSolution mathFunctionWithSpecialFeaturesForThirdSolution
                 = new MathFunctionWithSpecialFeaturesForThirdSolution(game, playerLocation);
 
-/*
-        GraphMemory graphMemory=((Robot)game.getPlayer()).getRobotMemory().getGraphMemory();
-        graphMemory.createGraphAccordingToGame();
-*/
-
-
-//        ShowPanel.show(getClass(),"DURRRR");
         return mathFunctionWithSpecialFeaturesForThirdSolution.calculateFunctionResult();
     }
 

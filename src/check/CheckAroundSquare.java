@@ -10,7 +10,6 @@ import game.location.LocationsList;
 
 public class CheckAroundSquare extends BaseCheck {
 
-    //    Compass compass /*= new DirectionCompass()*/;
     Game game;
     CheckSquare checkSquare = new CheckSquare();
     ArrayList<DirectionLocation> locationList;
@@ -51,10 +50,4 @@ public class CheckAroundSquare extends BaseCheck {
         return checkSquare.isSquareFreeFromVisitedArea(game, locationWillBeCheck, directionIndex);
     }
 
- /*   Location createLocationToCheck(Game game) {
-        Location locationWillBeCheck = new Location();
-        locationWillBeCheck.setX(game.getPlayer().getLocation().getX());
-        locationWillBeCheck.setY(game.getPlayer().getLocation().getY());
-        return locationWillBeCheck;
-    }*/
 }
