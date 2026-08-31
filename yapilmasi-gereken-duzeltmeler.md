@@ -270,88 +270,146 @@ alıp batch-insert eder (producer/consumer). O zaman çözücü I/O için hiç d
 `git` geçmişi her şeyi tutuyor; bunlar okunabilirliği düşürüyor ve "acaba lazım mı"
 sorusu sorduruyor.
 
-- [ ] **`[D1]` Tamamen yorumlanmış sınıfları sil:**
-  - `src/game/move/PersonMove.java` (dosyanın tamamı `/* ... */`)
-  - `src/game/move/RobotMove.java` (dosyanın tamamı `/* ... */`)
-  - (3. çözüm kapsamı dışı olduğu için `memory/GraphMemory.java`'ya **dokunma**.)
-- [ ] **`[D2]` Kullanılmayan arayüz/sınıfları sil:**
-  - `src/game/gamerepo/IDetermineEdgeValue.java` — yalnızca `BuildGame`'de yorum içinde.
-  - `src/game/play/ChangeAbleStartLocation.java` — hiç implemente edilmemiş.
-  - `src/game/location/direction/DirectionCompassValues.java` — hiçbir yerde
-    kullanılmıyor (aynı bilgi `DirectionCompass`/`KeyboardCompass`'ta zaten var).
-- [ ] **`[D3]` `MathFunctionForSecondSolution` içindeki ölü bloklar** (~18 satır):
-    `buildNavigation()` altındaki yorumlu eski gövde (`:92-104`),
-    `calculateDeadlyPoint()` içindeki yorumlu eski hesap (`:196-201`),
-    `decideDeadlyPointCalculation` yorumlu metodu (`:204-209`),
-    `addNavigationToRoadMemoryList` içindeki yorumlu satır (`:214`).
-- [ ] **`[D4]` `PlayGame` içindeki ölü/yorum kod** (~15 satır): `startLocationX/Y`
-    yorumları (`:24, :45-46`), `playGame()` içindeki yorum blokları (`:59-73`),
-    `calculatePlayerTotalWinScore` yorumları (`:112-113`),
-    `saveGameResultToScore` yorumlu `System.out`'lar (`:124, :126`).
-- [ ] **`[D5]` `Robot.java` içindeki ölü kod**: constructor'daki yorum bloğu
-    (`:23-32`), yorumlu `getInput` (`:40-43`), yorumlu `RoadMemory` alanı (`:19`),
-    yorumlu `getRoadMemory` (`:110-112`).
-- [ ] **`[D6]` Kullanılmayan `import`'lar** — özellikle 22 dosyadaki
-    `import errormessage.joptionpanel.ShowPanel;` (kullanımı `[L4]` ile kalkınca).
-    IntelliJ: `Code → Optimize Imports` proje geneli.
-- [ ] **`[D7]` `Main.java` içindeki büyük yorum blokları**: `openWebpage` yorumlu
-    metotları (`:100-120`), `main` içindeki yorumlu `SecondSolution` karşılaştırma
-    bloğu (`:47-56`), yorumlu `Player` importları/dönüşleri.
-- [ ] **`[D8]` `RobotGameOver` temizliği**:
-  - `isRobotFinishedFirstSquare()` (`:32-40`) ölü — sil (sadece `isGameOver`
-    içindeki yorumda geçiyor).
-  - `isGameOver` içindeki yorumlu satırları (`:23, :27`) sil.
-- [ ] **`[D9]` `SwitchDirection.choseDirection()` içindeki yorumlu ikinci
-    implementasyon** (`:73-98`) — sil.
-- [ ] **`[D10]` `Validation.isInputValidForArray()` içindeki yorumlu
-    `switchDirection` satırları** (`:69-70`) ve `//System.out.println("AACACA")`
-    (`:60`) — sil.
-- [ ] **`[D11]` `Player.java` içindeki yorumlu constructor'lar** (`:40-58`) ve
-    `CheckAroundSquare.java` içindeki yorumlu `getNumberOfHowManySquaresAreAvailable`
-    + `createLocationToCheck` — sil.
-- [ ] **`[D12]` `PrepareGame.switchDirection` alanı** kullanılmıyor (`:11, :29`) — sil.
-- [ ] **`[D13]` `MoveForward` constructor'daki `MoveForward t = this;`** (`MoveForward.java:11`)
-    ölü satır — sil.
-- [ ] **`[D14]` `StringFormat.converNumberToReadableNumbers` içindeki yorumlu
-    alternatif algoritma** (`:66-77`) — sil.
-- [ ] **`[D15]` `NavigationService` içindeki yorumlu constructor + alanlar**
-    (`:4-12`) ve `getCompulsoryLocation` içindeki yorum yığını (`:35-47`) — sil.
-- [ ] **`[D16]` `ComparisonOfSolutions` / `CopyModel` karar**: yalnızca `Main`'in
-    yorumlu bloğunda kullanılıyor (fiilen ölü). Ya "iki çözümü karşılaştır"
-    özelliği tekrar bağlanacak (ayrı iş), ya da bu iki sınıf + `PlayGame`'deki
-    `public ComparisonOfSolutions comparisonOfSolutions` alanı silinecek. Şimdilik:
-    en azından `PlayGame`'deki kullanılmayan `public` alanı kaldır.
+> **DURUM: Bölüm 3 tamamlandı (2026-08-31).** Tümü davranış-nötr (yorum/ölü kod
+> silme, kullanılmayan `import`, atanıp okunmayan alan). `javac 22` ile temiz
+> derlendi; 2. çözüm 5x5 tekrar çalıştırıldı:
+> `total Solved : 12_400`, `Total Back Step : 511_816`, `Total Step : 1_023_656`,
+> `Total Dummy Back Step : 83_076` — **hepsi değişmeden aynı**.
+> `printGamelastStuation` içeren yorumlu bloklara (`PlayGame`, `MoveBack`) ve
+> algoritma/niyet açıklayan düz yazı yorumlara **dokunulmadı**.
+
+- [x] **`[D1]` Tamamen yorumlanmış sınıfları sil:** ✅ (önceki commit'te yapılmış)
+  - `src/game/move/PersonMove.java` — zaten silinmiş.
+  - `src/game/move/RobotMove.java` — zaten silinmiş.
+  - `memory/GraphMemory.java` de silinmiş (3. çözüm kapsamı dışıydı ama gitti).
+- [x] **`[D2]` Kullanılmayan arayüz/sınıfları sil:** ✅
+  - `src/game/gamerepo/IDetermineEdgeValue.java` — zaten silinmişti.
+  - `src/game/play/ChangeAbleStartLocation.java` — **silindi** (hiç implemente
+    edilmemişti; `Move.changeStartLocationSpecialMovement()` `IMove`'dan geliyor,
+    bu arayüzle ilgisi yok).
+  - `src/game/location/direction/DirectionCompassValues.java` — **silindi**
+    (yalnızca kendine referans; aynı bilgi `DirectionCompass`/`KeyboardCompass`'ta).
+- [x] **`[D3]` `MathFunctionForSecondSolution` içindeki ölü bloklar** ✅
+  - Silinen: `lastLocation` yanındaki `// locationsList.get(...)` kalıntısı,
+    `//    PrintAble printAble;`, `//        calculationDeadlyPoint = new ...`,
+    `buildNavigation()` altındaki yorumlu eski gövde (~14 satır, içinde
+    `System.out.println("AAAA...")` vardı).
+  - `calculateDeadlyPoint()` / `decideDeadlyPointCalculation` yorumlu blokları
+    zaten önceki commit'te gitmişti.
+- [x] **`[D4]` `PlayGame` içindeki ölü/yorum kod** ✅
+  - Silinen: `//    int startLocationX, startLocationY;`, `playGame()` içindeki
+    `//        startLocationX/Y = ...`, döngü içindeki `//System.out.println(getX/Y)`,
+    `saveGameResultToScore` içindeki yorumlu `//System.out "Total Dummy Back Step"`
+    (aktif satırın kopyasıydı) + dangling `//        printable`.
+  - **Kasıtlı bırakıldı (kullanıcı notu "kod var, elleme"):** `playGame()` ve
+    `calculatePlayerTotalWinScore` içindeki `printGamelastStuation` geçen yorumlu
+    bloklar, `printGamelastStuation` metodunun kendi gövdesindeki yorumlar,
+    `[0][0] != 1` break kalıntısı (aynı kümede).
+- [x] **`[D5]` `Robot.java` içindeki ölü kod** ✅ (önceki commit'te yapılmış —
+  constructor yorum bloğu, yorumlu `getInput`, `RoadMemory` alanı, `getRoadMemory`
+  hepsi gitmiş; dosya temiz).
+- [x] **`[D6]` Kullanılmayan `import`'lar** ✅
+  - `ShowPanel` import'ları `[L4]` ile zaten kalkmış (derleme temiz).
+  - **Silinen 7 kullanılmayan import:** `CreateLocationOfLastStep`←`LastLocation`,
+    `Player`←`FileWriteProcess`, `MathFunctionForSecondSolution`←`DirectionCompass`,
+    `NavigationService`←`LastLocation`, `DirectionLocation`←`KeyboardCompass`,
+    `RobotInput`←`ErrorMessage`, `FileWriteProcess`←`StringFormat`.
+  - Kalan: 3. çözüm dosyalarında (`ThirdtSolution_GoldenSquare`, `Vertex`) da
+    kullanılmayan import var — **kapsam dışı, dokunulmadı**.
+- [x] **`[D7]` `Main.java` içindeki büyük yorum blokları** ✅ (önceki commit'te
+  yapılmış — `openWebpage`, `SecondSolution` karşılaştırma bloğu, yorumlu `Player`
+  importları hepsi gitmiş; dosya temiz).
+- [x] **`[D8]` `RobotGameOver` temizliği** ✅
+  - `isRobotFinishedFirstSquare()` metodu **silindi** (yalnızca yorumda geçiyordu).
+  - `isGameOver` içindeki `//  !isRobotFinishedFirstSquare()&&` ve yorumlu
+    `//System.out.println("... For First Square ...")` **silindi**.
+- [x] **`[D9]` `SwitchDirection.choseDirection()` yorumlu ikinci implementasyon** ✅
+  (zaten `[R6]` ile silinmişti; dosyada temiz javadoc + null sözleşmesi var).
+- [x] **`[D10]` `Validation.isInputValidForArray()`** ✅
+  - `// ??? HATA CIKARSA BUNU AKTIFLESTIR switchDirection = ...` + `// switchDirection.choseDirection(input);` **silindi**.
+  - `//System.out.println("AACACA")` zaten yoktu.
+  - **Bırakıldı:** "kuzeyden baslayip saat yonunde..." düz yazı yorumu (niyet
+    açıklıyor → kural gereği korunur).
+- [x] **`[D11]` Yorumlu constructor / metot gövdeleri** ✅
+  - `Player.java`: `Player()` içindeki `//this.game = game; //game.setPlayer(this;`
+    ve fazladan boş satırlar **silindi** → `public Player() {}`.
+  - `CheckAroundSquare.java`: yorumlu `/* getNumberOfHowManySquaresAreAvailable ... */`
+    bloğu (~14 satır) **silindi**. `createLocationToCheck` dosyada yoktu.
+- [x] **`[D12]` `PrepareGame.switchDirection` alanı** ✅ — alan (`:11`), atama
+  (`prepareToPlay` içinde) ve artık kullanılmayan `import game.location.SwitchDirection;`
+  **silindi**. (Atanıyordu ama hiçbir yerde okunmuyordu.)
+- [x] **`[D13]` `MoveForward` constructor'daki `MoveForward t = this;`** ✅ silindi
+  (ayrıca `updateVisitedDirection` içindeki `//System.out "...kilidi kapatildi"` de).
+- [x] **`[D14]` `StringFormat` yorumlu alternatif algoritma** ✅ (zaten önceki
+  commit'te silinmiş; `converNumberToReadableNumbers` temiz).
+- [x] **`[D15]` `NavigationService`** ✅
+  - `getCompulsoryLocation` içindeki yorumlu `//if (... != null) {` / `//selectedDirection = ...`
+    / `//}` / `//throw new NullPointerException("Navigation ...")` yığını **silindi**.
+  - Yorumlu constructor + alanlar zaten yoktu.
+  - **Metodun aktif davranışı (null ise `throw`) değiştirilmedi** — 3. çözüm hâlâ
+    kullanıyor; bu `[X5]` ile birlikte ele alınacak.
+- [x] **`[D16]` `ComparisonOfSolutions` / `CopyModel` karar** ✅ (doküman "şimdilik"
+  kapsamında)
+  - `PlayGame`'deki `public ComparisonOfSolutions comparisonOfSolutions;` alanı **ve**
+    onu kullanan `compareSolutions()` metodu **silindi** (`compareSolutions()` hiç
+    çağrılmıyordu; `Main`'in yorumlu bloğu zaten silinmiş).
+  - `ComparisonOfSolutions.java` + `CopyModel.java` **dosyaları duruyor** —
+    "iki çözümü karşılaştır" özelliği tekrar bağlanır mı kararı ayrı iş.
 
 ---
 
 ## 4. Öncelik 3 — Boolean anti-pattern ve gereksiz `== true` / `== false`
 
-- [ ] **`[B1]` `if (X) return true; return false;` → `return X;`** — proje genelinde
-  ~20+ metot. Tespit edilen yerler (tam liste değil):
+> **DURUM: Bölüm 4 tamamlandı (2026-08-31).** Tümü davranış-birebir (mantıksal
+> olarak aynı ifade). `javac 22` temiz; **2. çözüm 5x5** ve **1. çözüm 5x5** ayrı
+> ayrı çalıştırıldı:
+> - 2. çözüm: `12_400 / 511_816 / 1_023_656 / 83_076` — değişmedi.
+> - 1. çözüm: `total Solved 12_400`, `Round Counter 4_809_736`,
+>   `Total Dummy Step 603_928` — commit'li `Solution-1-5x5_Completed.txt` ile aynı.
+
+- [x] **`[B1]` `if (X) return true; return false;` → `return X;`** ✅
   - `Validation.java`: `validateSquareNumbers`, `needToCalculateBySum`,
-    `calculateValidOrNot`, `isInputValidForArray`, `isStepValueAvailable`
-  - `SquareProcess.java`: `isSquareAvailableToMoveOnIt`
-  - `CheckSquare.java`: `isSquareFreeFromVisitedArea`, `isSquareFreeFromVisitedDirection`,
-    `isAnySquareAvailableInVisitedDirection`
+    `calculateValidOrNot`, `isInputValidForArray` — sadeleştirildi.
+    (`isStepValueAvailable` zaten `[R2]` ile `return step < ...` olmuştu.)
+    Bonus: `isInputValidForArray` içindeki kullanılmayan `Player player` local'i +
+    `import game.gamerepo.player.Player;` de kalktı.
+  - `SquareProcess.java`: `isSquareAvailableToMoveOnIt` → `return A && B;`
+    (+ yorumlu `//System.out "locatino getCompass"` silindi).
+  - `CheckSquare.java`: `isSquareFreeFromVisitedArea`
+    (`if(indexOk){ if(loc!=null && !visited) return true;} return false;` →
+    `if(indexOk) return loc!=null && !visited; return false;`),
+    `isSquareFreeFromVisitedDirection` (`== false` → `!`, iç `if` düzleştirildi).
+    NPE guard'ını ve açıklayan yorumu koruyarak.
   - `MathFunctionForSecondSolution.java`: `isNavigationInRoadMemoryAvailableForThisStep`,
     `isExitSituationLocated`, `isAvailableWayEqualsToZero`,
-    `isNextStepWillBeEqualsToTotalSquareValue`, `isOneWayNumberTooMuchToRunHealtyTheAlgorithm`
-  - `MoveForwardSecondSolution.java` / `MoveBackSecondSolution.java`: `isNavigationNull`,
-    `isDirectionSame`
+    `isNextStepWillBeEqualsToTotalSquareValue`,
+    `isOneWayNumberTooMuchToRunHealtyTheAlgorithm` — hepsi tek satır `return`.
+  - `MoveForwardSecondSolution.java`: `isNavigationNull`, `isDirectionSame`
+    (+ yorumlu `//DirectionLocation lastLocation = ...` satırı silindi).
+  - `MoveBackSecondSolution.java`: `isNavigationNull`, `isRequiredToChangeStartLocation`.
   - `Move.java`: `isRequiredToChangeStartLocation`
-  - `MoveBackSecondSolution.java`: `isRequiredToChangeStartLocation`
-  - `RobotGameOver.java`: `isRobotFinishedAllLocations`, `allDirectionsAreVisitedAtStep1`
-  - `PersonGameOver.java`: `isGameOver`
-  - `PersonInput.java`: `checkInputForForward`, `checkInputForBack`, `isMoveableDirectionInput`
-  - `SafeScannerInput.java`: `isNumberProper`
-  - `Navigation.java`: `getCompulsoryLocation` (`if (x != null) return x; return null;` → `return x;`)
-  - IntelliJ: *Analyze → Inspect Code → "Simplify boolean expression"* ile toplu.
-- [ ] **`[B2]` Gereksiz `== true` / `== false`:**
-  - `MoveBack.java:27` — `isLockedCounterOfMovingBackLose() == true` → çıplak çağrı
-  - `CheckSquare.java` — `getVisitedDirections()[...][...] == false` → `!...`
-  - `CheckSquare.isAnySquareAvailableInVisitedDirection` — `... == true`
-  - `PrintArray.java` — `array[i][j] == true`
-  - `StringFormat.java` — `array[squareIndex][directionIndex] == true`
+    (+ `move()` içindeki yorumlu `//changeStartLocationSpecialMovement()` /
+    `//System.out "AAAA"` / yorumlu `StringFormat` bloğu + kullanılmayan
+    `import printarray.StringFormat;` silindi. `//todo: db'ye kaydedilecek` niyet
+    notu korundu.)
+  - `RobotGameOver.java`: `isRobotFinishedAllLocations`, `allDirectionsAreVisitedAtStep1`.
+  - `PersonGameOver.java`: `isGameOver` → `return !new CheckAroundSquare(game).isThereAnyAvailableSquare();`
+  - `PersonInput.java`: `checkInputForForward`, `checkInputForBack`,
+    `isMoveableDirectionInput` (+ yorumlu alanlar/`//System.out "AAA"` silindi).
+  - `Navigation.java`: `getCompulsoryLocation` → `return compulsoryLocation;`
+  - **`SafeScannerInput.isNumberProper` — KASITLI ES GEÇİLDİ.** Bu metot
+    `if (aralikta) return true; else throw` yapısında — `return true/false`
+    anti-pattern'i değil, bir *guard*. Ayrıca dönüş değeri hiç kullanılmıyor
+    (çağıran sadece `throw` yan etkisi için çağırıyor) → ileride `void`'e
+    çevrilmeli, o ayrı refactor.
+- [x] **`[B2]` Gereksiz `== true` / `== false`:** ✅
+  - `MoveBack.java` — `isLockedCounterOfMovingBackLose() == true` → çıplak çağrı.
+    (Bu satır `printGamelastStuation` yorumuyla **aynı metotta**; sadece bu tek
+    ifade düzeltildi, çevredeki yorumlara dokunulmadı.)
+  - `CheckSquare.java` — `getVisitedDirections()[...][...] == false` → `!...`;
+    `isAnySquareAvailableInVisitedDirection` içindeki `... == true` kaldırıldı.
+  - `PrintArray.java` — `array[i][j] == true` → `array[i][j]`.
+  - `StringFormat.java` — `array[squareIndex][directionIndex] == true` → çıplak.
 
 ---
 
@@ -597,12 +655,11 @@ ayırma (allocation) maliyetini düşürür.
 
 Risk düşük + etki yüksek → risk yüksek:
 
-1. **Bölüm 1 (`[R1]`–`[R7]`)** — bug'lar; önce bunlar (özellikle `[R1]` ClassCastException).
-2. **Bölüm 2 (`[L1]`–`[L7]`)** — `Trace` altyapısı + `System.out`/`ShowPanel` taşıma.
-   Bundan sonra test modunda loglama açıp adımların doğruluğu izlenebilir.
-3. **Bölüm 3 (`[D1]`–`[D16]`)** — ölü kod temizliği (risk ~0).
-4. **Bölüm 4 (`[B1]`–`[B2]`)** — boolean sadeleştirme (IntelliJ inspection, mekanik).
-5. **Bölüm 5 (`[N1]`–`[N6]`)** — rename (IDE güvenli).
+1. ✅ **Bölüm 1 (`[R1]`–`[R7]`)** — bug'lar; önce bunlar (özellikle `[R1]` ClassCastException). **(bitti 2026-08-31)**
+2. ✅ **Bölüm 2 (`[L1]`–`[L7]`)** — `Trace` altyapısı + `System.out`/`ShowPanel` taşıma (temel kısım). **(bitti 2026-08-31; `[L5]`/`[L6]`/`[L8]` sonraki tur)**
+3. ✅ **Bölüm 3 (`[D1]`–`[D16]`)** — ölü kod temizliği (risk ~0). **(bitti 2026-08-31)**
+4. ✅ **Bölüm 4 (`[B1]`–`[B2]`)** — boolean sadeleştirme. **(bitti 2026-08-31)**
+5. **Bölüm 5 (`[N1]`–`[N6]`)** — rename (IDE güvenli). **← SIRADAKİ**
 6. **Bölüm 6 (`[E1]`–`[E7]`)** — encapsulation.
 7. **Bölüm 7 (`[M2]`–`[M8]`)** — magic number sabitleri (`[M1]` hariç, o `[A1]` ile).
 8. **Bölüm 8 (`[H1]`–`[H6]`)** — hot-path allocation temizliği (hız kazancı).

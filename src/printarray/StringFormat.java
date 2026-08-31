@@ -23,7 +23,7 @@ public class StringFormat {
         for (int squareIndex = 0; squareIndex < array.length; squareIndex++) {
             text += squareIndex + "-) ";
             for (int directionIndex = 0; directionIndex < array[squareIndex].length; directionIndex++) {
-                if (array[squareIndex][directionIndex] == true)
+                if (array[squareIndex][directionIndex])
                     text += "(" + directionIndex + ")" + (array[squareIndex][directionIndex]) + " , ";
             }
             text += getNextLine();

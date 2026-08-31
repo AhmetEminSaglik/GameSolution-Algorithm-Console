@@ -15,10 +15,8 @@ public class CheckSquare extends BaseCheck {
             Location location = new DirectionLocation().getLocationFromCompass(getCompass(), directionIndex);
             // location, gecersiz bir yon degeri gelirse null olabilir (bkz. SwitchDirection.choseDirection).
             // Normal akista bu deger her zaman gecerli bir pusula yonu; guard sadece gizli NPE'yi engeller.
-            if (location != null && !game.getModel().getVisitedAreas()[currentProcessLocation.getX()
-                    + location.getX()][currentProcessLocation.getY() + location.getY()]) {
-                return true;
-            }
+            return location != null && !game.getModel().getVisitedAreas()[currentProcessLocation.getX()
+                    + location.getX()][currentProcessLocation.getY() + location.getY()];
         }
         return false;
 
@@ -27,9 +25,7 @@ public class CheckSquare extends BaseCheck {
     public boolean isSquareFreeFromVisitedDirection(Game game, Location currentProcessLocation, int directionIndex) {
 
         if (isIndexsSuitableForArray(game, currentProcessLocation, directionIndex)) {
-            if (game.getPlayer().getVisitedDirections()[game.getPlayer().getStep()][directionIndex] == false) {
-                return true;
-            }
+            return !game.getPlayer().getVisitedDirections()[game.getPlayer().getStep()][directionIndex];
         }
         return false;
     }
@@ -45,7 +41,7 @@ public class CheckSquare extends BaseCheck {
 
         for (int i = 0; i < locationList.size() - 1; i++) {
 
-            if (isSquareFreeFromVisitedDirection(game, currentProcessLocation, locationList.get(i).getId()) == true) {
+            if (isSquareFreeFromVisitedDirection(game, currentProcessLocation, locationList.get(i).getId())) {
                 return true;
             }
 

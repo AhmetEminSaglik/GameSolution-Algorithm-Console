@@ -23,7 +23,7 @@ public class MoveBack extends Move {
 //            System.out.println("geri adim atma kilidi acildi");
         }
 
-       if (game.getPlayer().getScore().isLockedCounterOfMovingBackLose() == true) {
+       if (game.getPlayer().getScore().isLockedCounterOfMovingBackLose()) {
 //            printGamelastStuation(game);
             game.getPlayer().getScore().increaseCounterOfDummyBackMove();
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();

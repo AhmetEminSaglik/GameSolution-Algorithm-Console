@@ -10,17 +10,12 @@ public class SquareProcess {
 
     public boolean isSquareAvailableToMoveOnIt(Game game, Location currentProcessLocation, DirectionLocation directionLocation) {
 
-        if (isAreaAvailableToVisit(game, currentProcessLocation, directionLocation)
-                && isDirectionAvailableToVisit(game, currentProcessLocation, directionLocation)) {
-            return true;
-        }
-        return false;
+        return isAreaAvailableToVisit(game, currentProcessLocation, directionLocation)
+                && isDirectionAvailableToVisit(game, currentProcessLocation, directionLocation);
     }
 
     public boolean isAreaAvailableToVisit(Game game, Location playerLocation, DirectionLocation location) {
         location.setCompass(game.getPlayer().getCompass());
-//        System.out.println("locatino getCompass : "+location.getCompass());
-
         return checkSquare.isSquareFreeFromVisitedArea(game, playerLocation, location.getId());
     }
 

@@ -24,9 +24,7 @@ public class Navigation {
     }
 
     public DirectionLocation getCompulsoryLocation() {
-        if (compulsoryLocation != null)
-            return compulsoryLocation;
-        return null;
+        return compulsoryLocation;
     }
 
     public void setCompulsoryLocation(DirectionLocation compulsoryLocation) {

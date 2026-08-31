@@ -9,7 +9,6 @@ import game.location.DirectionLocation;
 import game.move.fundamental.MoveBack;
 import game.play.SelectFirstSqaureToStart;
 import print.EasylyReadNumber;
-import printarray.StringFormat;
 import validation.Validation;
 
 
@@ -33,22 +32,14 @@ public abstract class Move implements IMove { // ICalculateMove
 
     @Override
     public boolean isRequiredToChangeStartLocation() {
-        if (game.getPlayer().getStep() == 1 && getClass().equals(MoveBack.class)) {
-
-            return true;
-        }
-        return false;
+        return game.getPlayer().getStep() == 1 && getClass().equals(MoveBack.class);
     }
 
     public final void move(DirectionLocation directionLocation) {
         prepareAllStuff();
 
         if (isRequiredToChangeStartLocation()) {
-
-//            game.getPlayer().getPlayerMove().
             changeStartLocationSpecialMovement();
-//            System.out.println("AAAAAAAAAAAAAAA");
-//            changeStartLocationSpecialMovement();
         } else {
             setLocation(directionLocation);
             updateBeforeStep();
@@ -60,10 +51,6 @@ public abstract class Move implements IMove { // ICalculateMove
         if (game.getPlayer().getGameRule().isGameOver(game)) {
             appendFileSquareTotalSolvedValue();
         }
-
-//        StringFormat stringFormat = new StringFormat();
-//        String text = stringFormat.getStringFormatArray(game.getPlayer().getVisitedDirections());
-//        System.out.println(text);
     }
 
     @Override

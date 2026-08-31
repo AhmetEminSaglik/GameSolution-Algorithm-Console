@@ -1,7 +1,6 @@
     package game.gamerepo.player.robot.solution.second;
 
 import check.forwardlocation.InpectingForwardLocation;
-import compass.DirectionCompass;
 import game.Game;
 import game.gamerepo.player.robot.Robot;
 import game.gamerepo.player.robot.solution.second.exitsituation.ExitSituation;
@@ -19,7 +18,7 @@ public class MathFunctionForSecondSolution {
     Game game;
     Location playerLocation;
     ArrayList<DirectionLocation> locationsList;
-    final DirectionLocation lastLocation;// locationsList.get(locationsList.size() - 1);
+    final DirectionLocation lastLocation;
     DirectionLocation selectedDirection;
     SquareProcess squareProcess = new SquareProcess();
     WeightOfAvailableWay weightOfAvailableWay = new WeightOfAvailableWay();
@@ -27,7 +26,6 @@ public class MathFunctionForSecondSolution {
     final int edgeValue;
     DirectionLocation compulsoryLocation = null;
     Navigation navigation = new Navigation();
-    //    PrintAble printAble;
     int oneWayNumbersValue;
     boolean killRequestByAvailableProcessFunction = false;
     NavigationService navigationService = new NavigationService();
@@ -39,7 +37,6 @@ public class MathFunctionForSecondSolution {
         robot = (Robot) game.getPlayer();
         edgeValue = game.getModel().getGameSquares().length;
         locationsList = new LocationsList().getListOfLocationsAccordingToPlayerCompass(game.getPlayer().getCompass());
-//        calculationDeadlyPoint = new CalculationDeadlyPoint(game);
         lastLocation = new LocationsList().getLastLocation(game.getPlayer().getCompass());
         selectedDirection = lastLocation;
     }
@@ -73,10 +70,7 @@ public class MathFunctionForSecondSolution {
 
     boolean isNavigationInRoadMemoryAvailableForThisStep() {
         navigation = getLastNavigationFromRoadMemory();
-        if (navigation != null && navigation.getStep() == robot.getStep()) {
-            return true;
-        }
-        return false;
+        return navigation != null && navigation.getStep() == robot.getStep();
     }
 
     Navigation getLastNavigationFromRoadMemory() {
@@ -89,19 +83,6 @@ public class MathFunctionForSecondSolution {
 
     Navigation buildNavigation() {
         return navigationService.buildNavigation(game, oneWayNumbersValue, compulsoryLocation);
-//        Navigation navigation = new Navigation();
-//
-//        navigation.setStep(robot.getStep());
-//
-//        navigation.setOneWayNumbersValue(oneWayNumbersValue);
-//
-//        if (compulsoryLocation != null) {
-//            System.out.println("AAAAAAAAAAAAAAAAAAA step : " + robot.getStep());
-//            navigation.setCompulsoryLocation(compulsoryLocation);
-//        }
-//
-//
-//        return navigation;
     }
 
 
@@ -139,9 +120,7 @@ public class MathFunctionForSecondSolution {
     }
 
     boolean isExitSituationLocated() {
-        if (robot.getRobotMemory().getRoadMemory().getExitSituation().getSituation() == ExitSituation.EXIT_LOCATED)
-            return true;
-        return false;
+        return robot.getRobotMemory().getRoadMemory().getExitSituation().getSituation() == ExitSituation.EXIT_LOCATED;
     }
 
     void processAccordingToOneWayNumber(DirectionLocation location) {
@@ -168,17 +147,11 @@ public class MathFunctionForSecondSolution {
     }
 
     boolean isAvailableWayEqualsToZero(int availableWayNumber) {
-        if (availableWayNumber == 0) {
-            return true;
-        }
-        return false;
+        return availableWayNumber == 0;
     }
 
     boolean isNextStepWillBeEqualsToTotalSquareValue() {
-        if (robot.getStep() == (edgeValue * edgeValue) - 1) {
-            return true;
-        }
-        return false;
+        return robot.getStep() == (edgeValue * edgeValue) - 1;
     }
 
 
@@ -187,9 +160,7 @@ public class MathFunctionForSecondSolution {
     }
 
     boolean isOneWayNumberTooMuchToRunHealtyTheAlgorithm() {
-        if (oneWayNumbersValue >= 3)
-            return true;
-        return false;
+        return oneWayNumbersValue >= 3;
     }
 
     int calculateDeadlyPoint() {

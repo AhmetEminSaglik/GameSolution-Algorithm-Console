@@ -12,8 +12,6 @@ import validation.Validation;
 
 public class PersonInput extends BaseControlInput {
 
-    //    CheckSquare checkSquare = new CheckSquare();
-//    Compass compass = new KeyboardCompass();
     CheckSquare checkSquare = new CheckSquare();
     private SafeScannerInput scannerInput = new SafeScannerInput();
 
@@ -25,7 +23,6 @@ public class PersonInput extends BaseControlInput {
     @Override
     public int getInput() {
         while (true) {
-//            System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
             int choose = scannerInput.getInput();
             if (isMoveableDirectionInput(choose)) {
                 return choose;
@@ -51,11 +48,8 @@ public class PersonInput extends BaseControlInput {
 
         checkSquare.setCompass(compass);
 
-        if (validation.isInputValidForArray(game,game.getPlayer().getLocation(), choose)
-                && checkSquare.isSquareFreeFromVisitedArea(game, getLocationToCheck(game), choose)) {
-            return true;
-        }
-        return false;
+        return validation.isInputValidForArray(game, game.getPlayer().getLocation(), choose)
+                && checkSquare.isSquareFreeFromVisitedArea(game, getLocationToCheck(game), choose);
     }
 
     Location getLocationToCheck(Game game) {
@@ -68,16 +62,10 @@ public class PersonInput extends BaseControlInput {
     }
 
     boolean checkInputForBack(Game game, int choose) {
-        if (choose == new KeyboardCompass().getLastLocation() && game.getPlayer().getStep() > 1) {
-            return true;
-        }
-        return false;
+        return choose == new KeyboardCompass().getLastLocation() && game.getPlayer().getStep() > 1;
     }
 
     public boolean isMoveableDirectionInput(int choose) {
-        if (isInputSuitableToMoveForward(game, choose) || isInputSuitableToMoveBack(game, choose)) {
-            return true;
-        }
-        return false;
+        return isInputSuitableToMoveForward(game, choose) || isInputSuitableToMoveBack(game, choose);
     }
 }

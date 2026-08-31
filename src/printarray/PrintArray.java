@@ -19,7 +19,7 @@ public class PrintArray {
 
         for (int i = array.length - 1; i >= 0; i--) {
             for (int j = 0; j < array[i].length; j++) {
-                if (array[i][j] == true) {
+                if (array[i][j]) {
 
                     System.out.print("[" + i + " ][" + j + "]  : ");
                     System.out.print(array[i][j]);

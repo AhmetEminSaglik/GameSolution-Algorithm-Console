@@ -16,8 +16,6 @@ public class MoveForwardSecondSolution extends MoveForward {
     Robot robot = (Robot) game.getPlayer();
     Navigation navigation;
 
-//    DirectionLocation lastLocation = new LocationsList().getLastLocation(robot.getCompass());
-
     @Override
     public void prepareAllStuff() {
         navigation = robot.getRobotMemory().getRoadMemory().getOneWayListLastItem();
@@ -43,12 +41,7 @@ public class MoveForwardSecondSolution extends MoveForward {
 
 
     boolean isDirectionSame(DirectionLocation d1, DirectionLocation d2) {
-
-        if (d1.getX() == d2.getX() && d1.getY() == d2.getY()) {
-            return true;
-        }
-        return false;
-
+        return d1.getX() == d2.getX() && d1.getY() == d2.getY();
     }
 
     void processAccordingToOneWayNumber() {
@@ -75,9 +68,7 @@ public class MoveForwardSecondSolution extends MoveForward {
     }
 
     boolean isNavigationNull() {
-        if (navigation == null)
-            return true;
-        return false;
+        return navigation == null;
     }
 
     @Override

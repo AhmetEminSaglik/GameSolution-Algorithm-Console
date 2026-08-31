@@ -9,9 +9,7 @@ import game.move.fundamental.MoveBack;
 public class MoveBackSecondSolution extends MoveBack {
     @Override
     public boolean isRequiredToChangeStartLocation() {
-        if (game.getPlayer().getStep() == 1 && getClass().equals(MoveBackSecondSolution.class))
-            return true;
-        return false;
+        return game.getPlayer().getStep() == 1 && getClass().equals(MoveBackSecondSolution.class);
     }
 
     Robot robot = (Robot) game.getPlayer();
@@ -64,9 +62,7 @@ public class MoveBackSecondSolution extends MoveBack {
     }
 
     boolean isNavigationNull() {
-        if (navigation == null)
-            return true;
-        return false;
+        return navigation == null;
     }
 
     @Override
