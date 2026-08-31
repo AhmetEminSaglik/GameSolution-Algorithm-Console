@@ -8,12 +8,14 @@ import game.location.Location;
 public class RobotGameOver implements IGameOver {
 
     Game game;
-    int squareEdge;
+    int rowCount;
+    int colCount;
     CheckSquare checkSquare= new CheckSquare();
 
     public RobotGameOver(Game game) {
         this.game = game;
-        squareEdge = game.getModel().getGameSquares().length;
+        rowCount = game.getModel().getRowCount();
+        colCount = game.getModel().getColCount();
     }
 
     @Override
@@ -30,8 +32,8 @@ public class RobotGameOver implements IGameOver {
 
     boolean isRobotFinishedAllLocations() {
         Location robotLocation = game.getPlayer().getLocation();
-        return robotLocation.getX() == squareEdge - 1 &&
-                robotLocation.getY() == squareEdge - 1;
+        return robotLocation.getX() == rowCount - 1 &&
+                robotLocation.getY() == colCount - 1;
     }
 
     boolean allDirectionsAreVisitedAtStep1() {

@@ -5,18 +5,20 @@ import game.gamerepo.BuildGame;
 import game.gamerepo.player.Player;
 
 public class ResetAllDataForGameAndPlayer {
-    int squareEdge;
+    int rowCount;
+    int colCount;
     BuildGame buildGame;
 
     public ResetAllDataForGameAndPlayer(Game game) throws InterruptedException {
-        squareEdge = game.getModel().getGameSquares().length;
-        buildGame = new BuildGame(squareEdge);
+        rowCount = game.getModel().getRowCount();
+        colCount = game.getModel().getColCount();
+        buildGame = new BuildGame(rowCount, colCount);
     }
 
 
     public void clearGameData(Game game) throws InterruptedException {
-        game.getModel().setGameSquares(new int[squareEdge][squareEdge]);
-        game.getModel().setVisitedAreas(new boolean[squareEdge][squareEdge]);
+        game.getModel().setGameSquares(new int[rowCount][colCount]);
+        game.getModel().setVisitedAreas(new boolean[rowCount][colCount]);
     }
 
     public void clearPlayerData(Player player) {

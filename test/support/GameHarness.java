@@ -42,10 +42,14 @@ public final class GameHarness {
     }
 
     public static Result runRobot(int edge, int solutionOrder) {
+        return runRobot(edge, edge, solutionOrder);
+    }
+
+    public static Result runRobot(int rows, int cols, int solutionOrder) {
         PrintStream originalOut = System.out;
         System.setOut(new PrintStream(OutputStream.nullOutputStream()));
         try {
-            BuildGame build = new BuildGame(edge);
+            BuildGame build = new BuildGame(rows, cols);
             Game game = build.createGame();
 
             Robot robot = new Robot();
@@ -71,9 +75,13 @@ public final class GameHarness {
         }
     }
 
-    /** Test kosusunun urettigi Solution-*-{edge}x{edge}-*.txt dosyalarini siler. */
     public static void cleanGeneratedFiles(int edge) {
-        String tag = edge + "x" + edge;
+        cleanGeneratedFiles(edge, edge);
+    }
+
+    /** Test kosusunun urettigi Solution-*-{rows}x{cols}-*.txt dosyalarini siler. */
+    public static void cleanGeneratedFiles(int rows, int cols) {
+        String tag = rows + "x" + cols;
         try (Stream<Path> files = Files.list(Path.of("."))) {
             files.filter(p -> {
                 String n = p.getFileName().toString();

@@ -32,7 +32,7 @@ public class MathFunctionForSecondSolution {
     SquareProcess squareProcess = new SquareProcess();
     WeightOfAvailableWay weightOfAvailableWay = new WeightOfAvailableWay();
     Robot robot;
-    final int edgeValue;
+    final int totalSquareCount;
     DirectionLocation compulsoryLocation = null;
     Navigation navigation = new Navigation();
     int oneWayNumbersValue;
@@ -44,7 +44,7 @@ public class MathFunctionForSecondSolution {
         this.game = game;
         this.playerLocation = playerLocation;
         robot = (Robot) game.getPlayer();
-        edgeValue = game.getModel().getGameSquares().length;
+        totalSquareCount = game.getModel().getTotalSquareCount();
         locationsList = new LocationsList().getListOfLocationsAccordingToPlayerCompass(game.getPlayer().getCompass());
         lastLocation = new LocationsList().getLastLocation(game.getPlayer().getCompass());
         selectedDirection = lastLocation;
@@ -164,7 +164,7 @@ public class MathFunctionForSecondSolution {
     }
 
     boolean isNextStepWillBeEqualsToTotalSquareValue() {
-        return robot.getStep() == (edgeValue * edgeValue) - 1;
+        return robot.getStep() == totalSquareCount - 1;
     }
 
 

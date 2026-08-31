@@ -26,8 +26,18 @@ public class Model {
         return gameSquares.length + "x" + gameSquares[0].length;
     }
 
-    /** Toplam kare sayisi (kenar * kenar). Oyunun bitis adimi bu degere esittir. */
+    /** Satir (dikey) sayisi. gameSquares[x][y] icin x'in ust siniri. */
+    public int getRowCount() {
+        return gameSquares.length;
+    }
+
+    /** Sutun (yatay) sayisi. gameSquares[x][y] icin y'nin ust siniri. */
+    public int getColCount() {
+        return gameSquares[0].length;
+    }
+
+    /** Toplam kare sayisi (satir * sutun). Oyunun bitis adimi bu degere esittir. */
     public int getTotalSquareCount() {
-        return gameSquares.length * gameSquares.length;
+        return getRowCount() * getColCount();
     }
 }

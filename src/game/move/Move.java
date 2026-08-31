@@ -21,13 +21,15 @@ public abstract class Move implements IMove { // ICalculateMove
     private FillGameSquare fillGameSquare;
 
     DirectionLocation directionLocation;
-    int squareEdge;
+    int rowCount;
+    int colCount;
 
     public Move(Game game) {
         this.game = game;
         compass = game.getPlayer().getCompass();
         fillGameSquare = new FillGameSquare(game);
-        squareEdge = game.getModel().getGameSquares().length;
+        rowCount = game.getModel().getRowCount();
+        colCount = game.getModel().getColCount();
     }
 
     @Override
@@ -65,14 +67,14 @@ public abstract class Move implements IMove { // ICalculateMove
         int locationY = game.getPlayer().getLocation().getY();
 
         locationX++;
-        if (locationX >= game.getModel().getGameSquares().length) {
+        if (locationX >= rowCount) {
             locationX = 0;
             locationY++;
 
         }
 
 
-        if (locationY < game.getModel().getGameSquares().length) {
+        if (locationY < colCount) {
 
             try {
 
@@ -105,7 +107,7 @@ public abstract class Move implements IMove { // ICalculateMove
 
 
         String text = "[" + locationX + "]" + "[" + locationY + "] = " + scoreValue + "\n";
-        if (locationX == squareEdge - 1) {
+        if (locationX == rowCount - 1) {
             text += "\n";
         }
 

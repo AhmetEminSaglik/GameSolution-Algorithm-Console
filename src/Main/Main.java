@@ -36,7 +36,7 @@ public class Main {
         System.out.println();
         if (main.baseSolution != null)
             System.out.println(main.baseSolution.getClass().getSimpleName());
-        System.out.println("Game Dimension : " + game.getModel().getGameSquares().length + "-" + game.getModel().getGameSquares().length);
+        System.out.println("Game Dimension : " + game.getModel().getRowCount() + "-" + game.getModel().getColCount());
 
         System.out.println("----------------");
 

@@ -8,36 +8,41 @@ import java.util.Scanner;
 
 public class BuildGame {
 
-    // horizontalSquare and verticalSquare are unnecessary. But later I may need them if I want to play as a rectangle instead of square
-    private int edgeValue;
-    //    private int verticalSquare;
+    private int rowCount;
+    private int colCount;
     private Game game;
 
+    /** Konsoldan satir x sutun sorar. */
     public BuildGame() {
-        buildGame(determineEdgeValue());
+        int[] size = determineGridSize();
+        buildGame(size[0], size[1]);
     }
 
-    public BuildGame(int edgeValue) {
-        buildGame(edgeValue);
+    /** Kare kisayol: rowCount = colCount = edge. */
+    public BuildGame(int edge) {
+        buildGame(edge, edge);
     }
 
-    private void buildGame(int edgeValue) {
+    public BuildGame(int rowCount, int colCount) {
+        buildGame(rowCount, colCount);
+    }
+
+    private void buildGame(int rowCount, int colCount) {
         try {
-            new SquareValidationGame(edgeValue, edgeValue);
-            this.edgeValue = edgeValue;
+            new SquareValidationGame(rowCount, colCount);
+            this.rowCount = rowCount;
+            this.colCount = colCount;
             game = new Game();
         } catch (InvalidGameConfigException e) {
             System.out.println(e.getMessage());
-            buildGame(determineEdgeValue());
+            int[] size = determineGridSize();
+            buildGame(size[0], size[1]);
         }
     }
 
     public Game createGame() {
-
         game.setModel(new Model());
-
-        game.getModel().setGameSquares(createMultipleArrayFromIntegers(edgeValue, edgeValue));
-
+        game.getModel().setGameSquares(createMultipleArrayFromIntegers(rowCount, colCount));
         return game;
     }
 
@@ -45,7 +50,6 @@ public class BuildGame {
         game.getModel().setVisitedAreas(buildVisitedArea(game));
         clearVisitedAreas(game);
         return game;
-
     }
 
     public int[][] createMultipleArrayFromIntegers(int verticalSquare, int horizontalSquare) {
@@ -53,13 +57,14 @@ public class BuildGame {
     }
 
     boolean[][] buildVisitedArea(Game game) {
-        return new boolean[edgeValue][edgeValue];
+        return new boolean[rowCount][colCount];
     }
 
     void clearVisitedAreas(Game game) {
-        for (int i = 0; i < game.getModel().getVisitedAreas().length; i++) {
-            for (int j = 0; j < game.getModel().getVisitedAreas().length; j++) {
-                game.getModel().getVisitedAreas()[i][j] = false;
+        boolean[][] visited = game.getModel().getVisitedAreas();
+        for (int i = 0; i < visited.length; i++) {
+            for (int j = 0; j < visited[i].length; j++) {
+                visited[i][j] = false;
             }
         }
     }
@@ -72,8 +77,18 @@ public class BuildGame {
         this.game = game;
     }
 
-    public int determineEdgeValue() {
-        System.out.print("Determine Edge value of Square :  ");
-        return new Scanner(System.in).nextInt();
+    /**
+     * Konsoldan grid boyutu okur. Kabul edilen bicimler:
+     *   "5"      -> 5x5 (kare)
+     *   "5 6"    -> 5 satir 6 sutun
+     *   "5x6"    -> 5 satir 6 sutun
+     */
+    public int[] determineGridSize() {
+        System.out.print("Grid boyutu (kare icin tek sayi, dikdortgen icin \"satir sutun\" ya da \"5x6\"): ");
+        String line = new Scanner(System.in).nextLine().trim().toLowerCase();
+        String[] parts = line.split("[\\sx]+");
+        int rows = Integer.parseInt(parts[0]);
+        int cols = (parts.length > 1) ? Integer.parseInt(parts[1]) : rows;
+        return new int[]{rows, cols};
     }
 }

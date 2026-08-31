@@ -68,29 +68,31 @@ lokal ve remote'ta aynı.
 
 ---
 
-## FAZ 1 — Dikdörtgen grid desteği  (safety net: 5x5 regresyon + yeni 5x6 oracle)
+## FAZ 1 — Dikdörtgen grid desteği  ✅ (2026-08-31)
 
-- [ ] `Model`: `getRowCount()` = `gameSquares.length`, `getColCount()` = `gameSquares[0].length`;
-      `getTotalSquareCount()` → `rows * cols` (idi `length*length`).
-- [ ] `Validation.isInputValidForArray`: X sınırı = `rowCount`, Y sınırı = `colCount`
-      (şu an ikisi de `gameSquares.length` — dikdörtgende BUG).
-- [ ] `RobotGameOver`: `squareEdge` → `rows`/`cols`; bitiş `(rows-1, cols-1)`.
-- [ ] `MathFunctionForSecondSolution:167`: `(edgeValue*edgeValue)-1` → `getTotalSquareCount()-1`.
-- [ ] `BuildGame`: `edgeValue` → `rowCount`/`colCount`; `BuildGame(int rows, int cols)`
-      constructor; `BuildGame(int edge)` kare kısayolu kalsın; `buildVisitedArea` →
-      `[rows][cols]`; `clearVisitedAreas` iç döngü `[i].length`.
-- [ ] `Move.changeStartLocationSpecialMovement` (`:68`,`:75`): `locationX` sınırı rows,
-      `locationY` sınırı cols. `:108` formatting `squareEdge-1` → rows-1.
-- [ ] `ResetAllDataForGameAndPlayer`: rows/cols; `new BuildGame(rows, cols)`.
-- [ ] `SelectFirstSqaureToStart:21`: random X ∈ rows, random Y ∈ cols (kontrol et).
-- [ ] `Main`: girişte satır ve sütün ayrı ayrı sorulsun ("5 6" veya "5x6").
-      Tek sayı girilirse kare kabul (geri uyum).
-- [ ] `CopyModel` (ölü kod) kare varsayıyor — dokunma, not düş.
-- [ ] 3. çözüm dosyaları KAPSAM DIŞI — dokunma (kendi `edgeValue`'su var, kare için bozulmaz).
-- [ ] `IndependentSolutionCountTest`: `bruteForceCount(rows, cols)` genelleştir;
-      **yeni test: 5x6 (veya 5x7) için production algo == brute-force.**
-- [ ] `mvn test` yeşil (5x5 sayıları birebir aynı + yeni rect testi geçer).
-- [ ] Commit: "Faz 1: dikdortgen grid destegi".
+- [x] `Model`: `getRowCount()`, `getColCount()` eklendi; `getTotalSquareCount()` → `rows * cols`.
+- [x] `Validation.isInputValidForArray`: X sınırı = `getRowCount()`, Y sınırı = `getColCount()`.
+- [x] `RobotGameOver`: `squareEdge` → `rowCount`/`colCount`; bitiş `(rows-1, cols-1)`.
+- [x] `MathFunctionForSecondSolution`: `edgeValue` alanı → `totalSquareCount`;
+      `(edgeValue*edgeValue)-1` → `totalSquareCount-1`.
+- [x] `BuildGame`: `rowCount`/`colCount`; `BuildGame(int rows, int cols)` + `BuildGame(int edge)`
+      kare kısayolu; `buildVisitedArea` → `[rows][cols]`; `clearVisitedAreas` iç döngü `[i].length`;
+      `determineGridSize()` "5" / "5 6" / "5x6" kabul ediyor.
+- [x] `Move`: `squareEdge` → `rowCount`/`colCount`; `changeStartLocationSpecialMovement`
+      X sınırı rows, **Y sınırı cols (idi rows — dikdörtgende BUG'du)**; format `rowCount-1`.
+- [x] `ResetAllDataForGameAndPlayer`: rows/cols; `new BuildGame(rows, cols)`.
+- [x] `SelectFirstSqaureToStart` / `GameModelProcess`: zaten `[0].length` / `[i].length`
+      kullanıyordu — dokunulmadı (dikdörtgen-güvenli).
+- [x] `Main`: dimension çıktısı `getRowCount()`-`getColCount()`; no-arg `BuildGame()`
+      artık satır/sütun soruyor.
+- [x] `CopyModel` (ölü kod) — dokunulmadı.
+- [x] 3. çözüm dosyaları — dokunulmadı (kapsam dışı, kare için bozulmadı).
+- [x] `IndependentSolutionCountTest`: `bruteForceCount(rows, cols)` genelleştirildi;
+      **5x6 testi eklendi (`@Tag("slow")`, ~2 dk).**
+- [x] **DOĞRULAMA:** `mvn test` 16/16 yeşil (5x5 = 12_400 birebir aynı).
+      `mvn test -Dgroups=slow`: **5x6 brute-force = 113_456 = 1. algo = 2. algo** →
+      dikdörtgen destek bağımsız yöntemle doğrulandı.
+- [x] Commit.
 
 ## FAZ 2 — Path codec (saf, DB yok)
 
@@ -180,11 +182,11 @@ lokal ve remote'ta aynı.
 
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31, Faz 0 (tasarım + checklist) bitti.
+**Son güncelleme:** 2026-08-31, Faz 1 bitti.
 
-**Tamamlanan:** Faz 0.
+**Tamamlanan:** Faz 0 (tasarım), Faz 1 (dikdörtgen grid — 5x6 = 113_456 bağımsız doğrulandı).
 
-**Sıradaki:** Faz 1 — dikdörtgen grid desteği.
+**Sıradaki:** Faz 2 — Path codec (yön-kodlaması, 3 bit/adım).
 
 **Yeni session için notlar:**
 - Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.

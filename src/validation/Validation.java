@@ -47,8 +47,8 @@ public class Validation {
         O yuzden bu sekilde gonderdik
          */
         try {
-            return calculateValidOrNot(game.getModel().getGameSquares().length, currentProcessLocation.getX(), location.getX())
-                    && calculateValidOrNot(game.getModel().getGameSquares().length, currentProcessLocation.getY(), location.getY());
+            return calculateValidOrNot(game.getModel().getRowCount(), currentProcessLocation.getX(), location.getX())
+                    && calculateValidOrNot(game.getModel().getColCount(), currentProcessLocation.getY(), location.getY());
         } catch (Exception ex) {
             ErrorMessage.appearClassicError(getClass(), ex.getMessage());
         }

@@ -41,33 +41,37 @@ class IndependentSolutionCountTest {
         GameHarness.cleanGeneratedFiles(5);
     }
 
-    /** Tüm başlangıç karelerinden, tüm kareleri gezen (basit) yol sayısının toplamı. */
     private static long bruteForceCount(int edge) {
+        return bruteForceCount(edge, edge);
+    }
+
+    /** Tüm başlangıç karelerinden, tüm kareleri gezen (basit) yol sayısının toplamı. */
+    private static long bruteForceCount(int rows, int cols) {
         long total = 0;
-        boolean[][] visited = new boolean[edge][edge];
-        for (int sx = 0; sx < edge; sx++) {
-            for (int sy = 0; sy < edge; sy++) {
+        boolean[][] visited = new boolean[rows][cols];
+        for (int sx = 0; sx < rows; sx++) {
+            for (int sy = 0; sy < cols; sy++) {
                 visited[sx][sy] = true;
-                total += dfs(sx, sy, 1, edge, visited);
+                total += dfs(sx, sy, 1, rows, cols, visited);
                 visited[sx][sy] = false;
             }
         }
         return total;
     }
 
-    private static long dfs(int x, int y, int depth, int edge, boolean[][] visited) {
-        if (depth == edge * edge) {
+    private static long dfs(int x, int y, int depth, int rows, int cols, boolean[][] visited) {
+        if (depth == rows * cols) {
             return 1;
         }
         long count = 0;
         for (int[] m : MOVES) {
             int nx = x + m[0];
             int ny = y + m[1];
-            if (nx < 0 || ny < 0 || nx >= edge || ny >= edge || visited[nx][ny]) {
+            if (nx < 0 || ny < 0 || nx >= rows || ny >= cols || visited[nx][ny]) {
                 continue;
             }
             visited[nx][ny] = true;
-            count += dfs(nx, ny, depth + 1, edge, visited);
+            count += dfs(nx, ny, depth + 1, rows, cols, visited);
             visited[nx][ny] = false;
         }
         return count;
@@ -83,6 +87,26 @@ class IndependentSolutionCountTest {
 
         assertEquals(brute, first, "1. algoritma bagimsiz brute-force ile ayni sonucu vermeli");
         assertEquals(brute, second, "2. algoritma bagimsiz brute-force ile ayni sonucu vermeli");
+    }
+
+    /**
+     * Dikdortgen grid (5x6) — dikdortgen desteginin dogrulugunu bagimsiz brute-force
+     * ile kontrol eder. YAVAS (~2 dk, iki algoritma 5x6 kosuyor) → @Tag("slow").
+     * Calistirmak: mvn test -Dgroups=slow
+     * Dogrulanan deger: 5x6 = 113_456 (brute-force == 1. algo == 2. algo, 2026-08-31).
+     */
+    @Test
+    @Tag("slow")
+    void bruteForce_matches_bothProductionAlgorithms_on5x6_rectangular() {
+        long brute = bruteForceCount(5, 6);
+        System.out.println("[oracle] 5x6 brute-force toplam yol sayisi = " + brute);
+
+        long first = GameHarness.runRobot(5, 6, GameHarness.FIRST_SOLUTION).totalSolved();
+        long second = GameHarness.runRobot(5, 6, GameHarness.SECOND_SOLUTION).totalSolved();
+
+        assertEquals(brute, first, "5x6: 1. algoritma brute-force ile ayni olmali");
+        assertEquals(brute, second, "5x6: 2. algoritma brute-force ile ayni olmali");
+        GameHarness.cleanGeneratedFiles(5, 6);
     }
 
     @Test
