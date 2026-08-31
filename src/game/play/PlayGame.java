@@ -5,6 +5,9 @@ import game.gamerepo.player.Player;
 import game.gamerepo.player.person.Person;
 import game.location.DirectionLocation;
 import game.move.Move;
+import persistence.GridPath;
+import persistence.NoOpSolutionSink;
+import persistence.SolutionSink;
 import print.EasylyReadNumber;
 import print.FileWriteProcess;
 import print.PrintAble;
@@ -19,8 +22,18 @@ public class PlayGame {
     TimeCalcuation timeCalcuation;
     private PrintAble printable;
 
+    private final SolutionSink solutionSink;
+    private final boolean recordSolutions;
+    private long solutionIndex = 0;
+
     public PlayGame(Game game) {
+        this(game, new NoOpSolutionSink());
+    }
+
+    public PlayGame(Game game, SolutionSink solutionSink) {
         this.game = game;
+        this.solutionSink = solutionSink;
+        this.recordSolutions = solutionSink.isEnabled();
         player = game.getPlayer();
         printable = new FileWriteProcess(game.getPlayer().getName());
     }
@@ -28,6 +41,8 @@ public class PlayGame {
 
     public void playGame() {
         player.startTimeKeeper();
+        solutionSink.beginRun(new SolutionSink.RunInfo(
+                game.getModel().getRowCount(), game.getModel().getColCount(), player.getSolutionName()));
 
         prepareGame = new PrepareGame(game);
         Move moveForwardOrBack;
@@ -59,6 +74,12 @@ public class PlayGame {
 //            }
 
         }
+
+        solutionSink.endRun(new SolutionSink.RunResult(
+                player.getScore().getTotalGameFinishedScore(),
+                game.getRoundCounter(),
+                player.getScore().getCounterTotalBackStep(),
+                player.getScore().getCounterOfDummyBackMove()));
 
         System.out.println("Total Number Solved: " + getEasyReadyNumber(player.getScore().getTotalGameFinishedScore()));
         saveGameResultToScore();
@@ -97,7 +118,30 @@ public class PlayGame {
 //            System.out.println("Total Solved : " + player.getScore().getTotalGameFinishedScore());
 //            printGamelastStuation(game);
             player.increaseSquareTotalSolvedValue();
+            solutionIndex++;
+            if (recordSolutions) {
+                solutionSink.accept(new SolutionSink.FoundSolution(solutionIndex, extractCurrentPath()));
+            }
         }
+    }
+
+    /**
+     * Tahtadaki adim numaralarindan ({@code gameSquares[x][y] = k}) o anki tam
+     * cozum yolunu cikarir. Tahta bu noktada tamamen dolu (1..N).
+     */
+    private GridPath extractCurrentPath() {
+        int rows = game.getModel().getRowCount();
+        int cols = game.getModel().getColCount();
+        int[][] board = game.getModel().getGameSquares();
+        int[][] cells = new int[rows * cols][2];
+        for (int x = 0; x < rows; x++) {
+            for (int y = 0; y < cols; y++) {
+                int step = board[x][y];
+                cells[step - 1][0] = x;
+                cells[step - 1][1] = y;
+            }
+        }
+        return new GridPath(rows, cols, cells[0][0], cells[0][1], cells);
     }
 
 

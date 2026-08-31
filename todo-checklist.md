@@ -107,19 +107,22 @@ lokal ve remote'ta aynı.
 - [x] `mvn test` yeşil (20 test).
 - [x] Commit.
 
-## FAZ 3 — Çözüm toplama (solver içinde, DB yok)
+## FAZ 3 — Çözüm toplama (solver içinde, DB yok)  ✅ (2026-08-31)
 
-- [ ] `src/persistence/SolutionSink.java` arayüz: `beginRun(RunInfo)`,
-      `accept(FoundSolution)`, `endRun(RunResult)`, `close()` (AutoCloseable).
-- [ ] `src/persistence/NoOpSolutionSink.java` — hiçbir şey yapmaz (varsayılan;
-      mevcut davranış, regresyon testleri etkilenmez).
-- [ ] `PlayGame`: constructor'a `SolutionSink` (default NoOp). `playGame()` başında
-      `beginRun`, `calculatePlayerTotalWinScore` içinde çözüm bulununca
-      `extractPathFromBoard(game)` → `sink.accept(...)`, sonunda `endRun`.
-- [ ] `extractPathFromBoard`: `gameSquares[x][y] = adım no` → `cells[k-1] = {x,y}`.
-- [ ] `solutionIndex` sayacı `PlayGame` içinde (bulunan çözüm sırası).
-- [ ] `mvn test` yeşil (NoOp sink ile sayılar değişmez).
-- [ ] Commit: "Faz 3: SolutionSink + PlayGame kancasi (NoOp default)".
+- [x] `src/persistence/SolutionSink.java` — `isEnabled()` (NoOp:false → path çıkarma
+      maliyeti bile yok), `beginRun/accept/endRun/close`; iç record'lar `RunInfo`,
+      `FoundSolution`, `RunResult`.
+- [x] `src/persistence/NoOpSolutionSink.java` — hepsi boş, `isEnabled()=false`.
+- [x] `PlayGame`: `PlayGame(Game, SolutionSink)` constructor (eski `PlayGame(Game)`
+      → NoOp'a delege). `playGame()` başında `beginRun`, sonunda `endRun`;
+      `calculatePlayerTotalWinScore` içinde çözüm bulununca `solutionIndex++` +
+      (recordSolutions ise) `extractCurrentPath()` → `sink.accept(...)`.
+- [x] `extractCurrentPath()`: `gameSquares[x][y] = k` → `cells[k-1] = {x,y}` → `GridPath`.
+- [x] `test/persistence/SolutionSinkHookTest.java`: 5x5 2. çözüm gerçek koşusunda
+      **12_400 çözüm yakalanıyor**, her yol 25 hücre + geçerli sıçramalar + doğru
+      başlangıç + PathCodec round-trip. (~1.3 sn)
+- [x] `mvn test` yeşil (21 test; NoOp default → regresyon sayıları değişmedi).
+- [x] Commit.
 
 ## FAZ 4 — Docker Compose + Postgres + şema
 
@@ -183,11 +186,11 @@ lokal ve remote'ta aynı.
 
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31, Faz 1 bitti.
+**Son güncelleme:** 2026-08-31, Faz 3 bitti.
 
-**Tamamlanan:** Faz 0 (tasarım), Faz 1 (dikdörtgen grid — 5x6 = 113_456 bağımsız doğrulandı).
+**Tamamlanan:** Faz 0-3. Faz 1: 5x6=113_456 dogrulandi. Faz 2: PathCodec 3bit/adim. Faz 3: SolutionSink kancasi (5x5 12_400 cozum yakalandi).
 
-**Sıradaki:** Faz 2 — Path codec (yön-kodlaması, 3 bit/adım).
+**Sıradaki:** Faz 4 — docker-compose + Postgres sema.
 
 **Yeni session için notlar:**
 - Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.
