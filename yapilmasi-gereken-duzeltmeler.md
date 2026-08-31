@@ -616,10 +616,13 @@ ayırma (allocation) maliyetini düşürür.
   `WeightOfAvailableWay`, `StringFormat.converNumberToReadableNumbers`,
   `ConvertNanoTimeToTime`, `BaseSolution.getSolutionFileName`.
   - Bunlar `[A1]`/`[A3]` refactor'ünü güvene alır.
-- [ ] **`[A6]` Build sistemi (Maven/Gradle).** Şu an ne `pom.xml` ne `build.gradle`
-  var (NetBeans `build.xml` + `nbproject/`). JUnit eklemek, "tek komutla test"
-  ve CI için gerekli. `javac.source/target = 1.8` korunabilir (ama `enum`/`switch`
-  zaten 1.8'de var, sorun yok).
+- [~] **`[A6]` Build sistemi (Maven/Gradle).** **Kısmi (2026-08-31):** minimal
+  `pom.xml` eklendi — `sourceDirectory=src`, `release 22`, UTF-8,
+  `maven-jar-plugin` mainClass=`Main.Main`. Artık `mvn clean package` /
+  `mvn exec:java` çalışıyor; `clean` tüm `target/`'ı sildiği için Trace
+  constant-inlining tuzağı da kalkar.
+  - **Kalan:** JUnit bağımlılığı + `src/test` (`[A5]`), CI, `build.xml`/`nbproject/`
+    kaldırma kararı (`[C5]`).
 - [ ] **`[A7]` `Game(Model, Player)` kullanılmayan constructor** — `BuildGame`
   parametresiz `new Game()` kullanıyor. Kullanılmayanı sil ya da tek constructor'a indir.
 - [ ] **`[A8]` `TimeKeeper` paketi `game.gamerepo.player.robot` ama `Person` da
