@@ -2,7 +2,6 @@ package game.location;
 
 import compass.Compass;
 import compass.DirectionCompass;
-import compass.KeyboardCompass;
 import game.Game;
 import game.gamerepo.CreateLocationOfLastStep;
 

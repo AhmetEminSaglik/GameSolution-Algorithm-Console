@@ -9,7 +9,6 @@ import game.location.LocationsList;
 import game.play.PlayerMove;
 import game.play.input.person.IPlayerInput;
 import game.rule.BaseGameRule;
-import print.FileWriteProcess;
 import print.PrintAble;
 
 public abstract class Player implements UpdateableVistedDirection, PrintableEveryStepToSee {
@@ -27,12 +26,8 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
     Score score;
 
     public Player() {
-//        this.game = game;
-//        game.setPlayer(this);
-
-
-
     }
+
     public  void startTimeKeeper(){
         timeKeeper = new TimeKeeper();
 

@@ -3,7 +3,6 @@ package game.gamerepo;
 import game.Game;
 import game.location.CreateLocation;
 import game.location.DirectionLocation;
-import game.location.direction.LastLocation;
 
 public class CreateLocationOfLastStep {
 

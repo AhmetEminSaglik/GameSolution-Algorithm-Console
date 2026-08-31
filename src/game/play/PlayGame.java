@@ -15,11 +15,9 @@ public class PlayGame {
     Game game;
     Player player;
     PrepareGame prepareGame;
-    public ComparisonOfSolutions comparisonOfSolutions;
     StringFormat stringFormat = new StringFormat();
     TimeCalcuation timeCalcuation;
     private PrintAble printable;
-//    int startLocationX, startLocationY;
 
     public PlayGame(Game game) {
         this.game = game;
@@ -27,10 +25,6 @@ public class PlayGame {
         printable = new FileWriteProcess(game.getPlayer().getName());
     }
 
-
-    void compareSolutions() {
-        comparisonOfSolutions.compareSolution();
-    }
 
     public void playGame() {
         player.startTimeKeeper();
@@ -40,8 +34,6 @@ public class PlayGame {
 
         printTableIfPersonPlays();
         appendFileSolutionName();
-//        startLocationX = game.getPlayer().getLocation().getX();
-//        startLocationY = game.getPlayer().getLocation().getY();
 
         while (!player.getGameRule().isGameOver(game)) {
 
@@ -53,9 +45,6 @@ public class PlayGame {
                             getLocationValueAccordingToEnteredValue(game, choose));
 
             calculatePlayerTotalWinScore();
-
-//            System.out.println(game.getPlayer().getLocation().getX());
-//            System.out.println(game.getPlayer().getLocation().getY());
 
 //            if (game.getModel().getGameSquares()[0][0] != 1)
 //                break;
@@ -117,11 +106,9 @@ public class PlayGame {
         player.getScore().updatePlayedTime();
         System.out.println("Elapsed time : " + timeCalcuation.getTotalPassedTime(player));
         System.out.println("Total Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterTotalBackStep()));
-//        System.out.println("Total Dummy Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
         System.out.println("Total Step : " + getEasyReadyNumber(game.getRoundCounter()));
         System.out.println("Total Dummy Back Step)  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
         appendFileTotalSolvedValue();
-//        printable
     }
 
     void appendFileTotalSolvedValue() {

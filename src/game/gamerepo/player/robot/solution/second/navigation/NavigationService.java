@@ -4,7 +4,6 @@ import game.Game;
 import game.gamerepo.player.robot.Robot;
 import game.gamerepo.player.robot.solution.second.exitsituation.ExitSituation;
 import game.location.DirectionLocation;
-import game.location.direction.LastLocation;
 
 public class NavigationService {
 
@@ -21,17 +20,11 @@ public class NavigationService {
     }
 
     public DirectionLocation getCompulsoryLocation(Navigation navigation) {
-//        if (navigation.getCompulsoryLocation() != null) {
-//            selectedDirection = navigation.getCompulsoryLocation();
-
         DirectionLocation selectedDirection = navigation.getCompulsoryLocation();
         if (selectedDirection == null)
             throw new NullPointerException("Compulsory Location Is Null");
 
         return navigation.getCompulsoryLocation();
-
-//        }
-//        throw new NullPointerException("Navigation Compulsory Location is  NULL ");
     }
 
     public Navigation buildNavigation(Game game, int oneWayNumbersValue, DirectionLocation compulsoryLocation) {

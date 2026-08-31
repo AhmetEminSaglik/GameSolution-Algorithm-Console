@@ -2,13 +2,11 @@ package game.play;
 
 import compass.Compass;
 import game.Game;
-import game.location.SwitchDirection;
 
 public class PrepareGame {
 
     Game game;
     Compass compass;
-    SwitchDirection switchDirection;
     SelectFirstSqaureToStart selectFirstSqaureToStart;
 
     public PrepareGame(Game game) {
@@ -26,7 +24,6 @@ public class PrepareGame {
     }
 
     void prepareToPlay() {
-        switchDirection = new SwitchDirection(compass);
         selectFirstSqaureToStart.selectSquareStart(0, 0);
         selectFirstSqaureToStart.locateThePlayer();
     }

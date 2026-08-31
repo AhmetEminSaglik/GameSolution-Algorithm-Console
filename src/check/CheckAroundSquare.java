@@ -18,20 +18,6 @@ public class CheckAroundSquare extends BaseCheck {
         this.game = game;
         locationList = new LocationsList().getListOfLocationsAccordingToPlayerCompass(game.getPlayer().getCompass());
     }
-/*
-    public int getNumberOfHowManySquaresAreAvailable(Game game) {
-
-        int availableDirectionCounter = 0;
-
-        for (int i = 0; i < locationList.size(); i++) {
-            if (isLocationAvailable(game, locationList.get(i).getId())) {
-
-                availableDirectionCounter++;
-            }
-        }
-        return availableDirectionCounter;
-    }
-*/
 
     public boolean isThereAnyAvailableSquare() {
         setCompass(game.getPlayer().getCompass());
