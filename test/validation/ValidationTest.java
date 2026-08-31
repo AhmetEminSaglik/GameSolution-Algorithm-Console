@@ -15,10 +15,10 @@ class ValidationTest {
     private final Validation validation = new Validation();
 
     @Test
-    void validateSquareNumbers_requiresEdgeStrictlyGreaterThan4() {
+    void validateSquareNumbers_mapMustBeAtLeast5x5() {
         assertFalse(validation.validateSquareNumbers(3));
-        assertFalse(validation.validateSquareNumbers(4), "4 gecersiz (kenar > 4 olmali)");
-        assertTrue(validation.validateSquareNumbers(5));
+        assertFalse(validation.validateSquareNumbers(4), "4x4 gecersiz (en kucuk harita 5x5)");
+        assertTrue(validation.validateSquareNumbers(5), "5x5 en kucuk gecerli harita");
         assertTrue(validation.validateSquareNumbers(100));
     }
 

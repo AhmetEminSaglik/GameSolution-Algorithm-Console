@@ -14,8 +14,8 @@ public class SquareValidationGame {
             this.horizontalSquares = horizontalSquares;
         } else {
             throw new InvalidGameConfigException(
-                    "Kenar sayisi " + Validation.MIN_SQUARE_EDGE + "'ten buyuk olmali (girilen: "
-                            + verticalSquares + " x " + horizontalSquares + ")");
+                    "Harita en az " + Validation.MIN_MAP_SIZE + "x" + Validation.MIN_MAP_SIZE
+                            + " olmali (girilen: " + verticalSquares + " x " + horizontalSquares + ")");
         }
 
     }
