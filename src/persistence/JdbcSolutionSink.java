@@ -63,8 +63,8 @@ public final class JdbcSolutionSink implements SolutionSink {
     @Override
     public void beginRun(RunInfo info) {
         String sql = """
-                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status)
-                VALUES (?,?,?,?, 'RUNNING')
+                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, save_mode)
+                VALUES (?,?,?,?, 'RUNNING', 'flat')
                 """;
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
