@@ -10,6 +10,7 @@ import game.location.DirectionLocation;
 import game.location.Location;
 import game.location.LocationsList;
 import squareprocess.SquareProcess;
+import trace.Trace;
 import weights.WeightOfAvailableWay;
 
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public class MathFunctionForSecondSolution {
             DirectionLocation compulsoryDirection = navigation.getCompulsoryLocation();
             if (compulsoryDirection != null) {
                 selectedDirection = compulsoryDirection;
+                if (Trace.ENABLED) Trace.log("2ndSolution", "step=" + robot.getStep()
+                        + " selectedDir=" + selectedDirection.getId() + " (compulsory)");
                 return selectedDirection.getId();
             }
         }
@@ -62,6 +65,8 @@ public class MathFunctionForSecondSolution {
             addNavigationToRoadMemoryList();
         }
 
+        if (Trace.ENABLED) Trace.log("2ndSolution", "step=" + robot.getStep()
+                + " selectedDir=" + selectedDirection.getId() + " oneWay=" + oneWayNumbersValue);
         return selectedDirection.getId();
 
 

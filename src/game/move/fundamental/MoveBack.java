@@ -6,6 +6,7 @@ import game.gamerepo.updategamemodel.UpdateForMovedBack;
 import game.location.DirectionLocation;
 import game.location.LocationsList;
 import game.move.Move;
+import trace.Trace;
 
 import java.util.ArrayList;
 
@@ -18,6 +19,8 @@ public class MoveBack extends Move {
 
     @Override
     public void updateVisitedDirection() {
+        if (Trace.ENABLED) Trace.log("back", "step=" + game.getPlayer().getStep()
+                + " dummy=" + game.getPlayer().getScore().getCounterOfDummyBackMove());
         if (game.getPlayer().getStep() == game.getModel().getTotalSquareCount()) {
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();
 //            System.out.println("geri adim atma kilidi acildi");

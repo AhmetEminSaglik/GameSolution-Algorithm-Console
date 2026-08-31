@@ -3,6 +3,7 @@ package game.move.fundamental;
 import game.Game;
 import game.gamerepo.updategamemodel.UpdateForMovedForward;
 import game.move.Move;
+import trace.Trace;
 
 public class MoveForward extends Move {
 
@@ -13,6 +14,8 @@ public class MoveForward extends Move {
 
     @Override
     public void updateVisitedDirection() {
+        if (Trace.ENABLED) Trace.log("forward", "step=" + game.getPlayer().getStep()
+                + " dir=" + getDirectionLocation().getId());
         game.getPlayer().getScore().lockCounterOfMovingBackLose();
         updateValuesInGameModel.updateValueVisitedDirection(getDirectionLocation());
     }

@@ -197,9 +197,17 @@ logger'ı **asla guard'sız çağırma**. Ya derleme-zamanı ele (Trace deyimi) 
   - **`printGamelastStuation` içindeki yorumlu bloğa DOKUNMA** (kullanıcı notu:
     "kod var, elleme"). Aynısı `MoveBack.java`'daki yorumlu `printGamelastStuation`
     kopyası için de geçerli.
-- [ ] **`[L8]` Kalan debug `System.out`'ları da `Trace`'e taşı** (isteğe bağlı):
-  `Location.printLocation()`, `PrintArray.*` (bunlar zaten "yazdır" amaçlı util;
-  çağıran karar versin — düşük öncelik).
+- [~] **`[L8]` Sıcak yola `Trace.log` çağrıları eklendi (başlangıç seti, 2026-08-31).**
+  Robot / 2. çözüm yolunda artık izlenebilir 4 nokta:
+  - `MoveForward.updateVisitedDirection` → `[forward] step=.. dir=..`
+  - `MoveBack.updateVisitedDirection` → `[back] step=.. dummy=..`
+  - `MathFunctionForSecondSolution.calculateFunctionResult` → `[2ndSolution] step=.. selectedDir=.. oneWay=..`
+  - `SwitchDirection.choseDirection` → `[choseDirection] value=..` (çok sık — gerekmezse çıkar)
+  - Hepsi çağrı yerinde `if (Trace.ENABLED)` guard'lı → `ENABLED=false` iken
+    bytecode'dan tamamen elenir. `mvn clean compile` (veya IntelliJ Rebuild) sonrası
+    Robot yolunda çıktı doğrulandı.
+  - **Kalan (düşük öncelik):** `Location.printLocation()`, `PrintArray.*` gibi
+    "yazdır" amaçlı util'ler — çağıran karar versin.
 
 ### 2.5 DB'ye kaydetme — test / prod / persistence tasarımı (ileriye dönük not)
 

@@ -2,6 +2,7 @@ package game.location;
 
 import compass.Compass;
 import errormessage.ErrorMessage;
+import trace.Trace;
 import game.location.direction.South;
 import game.location.direction.East;
 import game.location.direction.LastLocation;
@@ -26,6 +27,7 @@ public class SwitchDirection {
      * TODO: yonler bir enum'a alininca bu 9'lu if zinciri ve null sozlesmesi kalkacak.
      */
     public DirectionLocation choseDirection(int value) {
+        if (Trace.ENABLED) Trace.log("choseDirection", "value=" + value);
 
         if (compass.getNorth() == value) {
             North north = new North();
