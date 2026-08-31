@@ -193,38 +193,67 @@ lokal ve remote'ta aynı.
 - [x] `mvn test` 21/21.
 - [x] Commit.
 
-## FAZ 7 — "Açılıştan kaç çözüm" analitiği
+## FAZ 7 — "Açılıştan kaç çözüm" analitiği  ✅ (2026-08-31)
 
-- [ ] `src/persistence/OpeningStatsQuery.java`: `SELECT opening, COUNT(*) ... GROUP BY`
-      + ilk 2-3 adımı okunur formata çeviren yardımcı.
-- [ ] `test` veya küçük bir `main` ile 5x5'te örnek çıktı.
-- [ ] Commit: "Faz 7: acilis istatistigi sorgusu".
+- [x] `src/persistence/OpeningStats.java` — `main(rows, cols, [topN])`:
+      `SELECT open1, open2, open3, COUNT(*) ... GROUP BY ... ORDER BY cnt DESC`.
+      `xy(cellIndex, cols)` → "(x,y)" okunur format.
+- [x] Çalıştır: `java -cp target/game-solution-algorithm.jar persistence.OpeningStats 5 5`
+      → 5x5'te en yoğun açılışlar 162'şer çözüm, simetri görünüyor.
+- [x] Commit.
 
-## FAZ 8 — Testler + dokümantasyon + rapor
+## FAZ 8 — Testler + dokümantasyon + rapor  ✅ (2026-08-31)
 
-- [ ] `PathCodecTest` genişlet (kenar durumlar).
-- [ ] (Opsiyonel, docker gerekiyorsa `@Tag("db")`) `JdbcSolutionSinkIT` — çalışan
-      Postgres'e 5x5 yaz, oku, doğrula.
-- [ ] `proje-degerlendirme.md` / `gereken-duzenlemeler-2.md` puanları güncelle
-      (Test + Mimari + "persistence" artışı).
-- [ ] Bu dosyanın en altına **DURUM / DEVAM RAPORU** yaz.
-- [ ] Commit: "Faz 8: testler + dokuman + rapor".
+- [x] `PathCodecTest` (4), `SolutionSinkHookTest` (1), `JdbcSolutionSinkDbTest` (1, `@Tag("db")`),
+      dikdörtgen 5x6 oracle (`@Tag("slow")`) — Faz 1-5'te eklendi.
+- [x] `PERSISTENCE.md` — uçtan uca kullanım kılavuzu (docker → jar → sorgu), ayarlar,
+      ölçek uyarısı, thread notu.
+- [x] `docker/README.md` — komutlar + örnek sorgular.
+- [x] `proje-degerlendirme.md` §1 + §7.4 — **Yeni-3** sütunu (~6.7 → ~7.1);
+      Test 5.5→6.5, Mimari 7.0→7.5, Kodlama Kalitesi 6.5→7.0.
+- [x] Aşağıya DURUM / DEVAM RAPORU.
+- [x] Commit.
 
 ---
 
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31, Faz 6 bitti.
+**Son güncelleme:** 2026-08-31. **TÜM FAZLAR (0-8) TAMAMLANDI.**
 
-**Tamamlanan:** Faz 0-3. Faz 1: 5x6=113_456 dogrulandi. Faz 2: PathCodec 3bit/adim. Faz 3: SolutionSink kancasi (5x5 12_400 cozum yakalandi).
+### Ne teslim edildi
 
-**Sıradaki:** Faz 7 — acilis istatistigi sorgusu (+ Faz 8 dokuman/rapor).
+| # | Faz | Sonuç |
+|---|---|---|
+| 1 | Dikdörtgen grid | `5` / `5 6` / `5x6` girişi. `Model` boyut için tek kaynak. **5x6 = 113_456** (brute-force = 1.algo = 2.algo). `Move` Y-sınırı bug'ı düzeldi. |
+| 2 | `PathCodec` | Yol → adım başına 3 bit yön, bit-packed. 5x5=9B, 10x10=38B, 100x100≈3.7KB. `GridPath` record. 4 test. |
+| 3 | `SolutionSink` | Arayüz + `NoOpSolutionSink` (default). `PlayGame(Game, SolutionSink)`. `extractCurrentPath()` tahtadan yol çıkarır. Hook testi: 5x5'te 12_400 çözüm yakalanıp doğrulandı. |
+| 4 | Docker + Postgres | `docker compose up -d` → `pathexplorer-db` (port **5442**), `01_schema.sql` otomatik. `solver_run` + `path_explorer_solution` (LIST partition, `path BYTEA`, `open1/2/3`). |
+| 5 | `JdbcSolutionSink` | Hikari + JDBC batch (1000). `beginRun`→solver_run, `flush`→addBatch/executeBatch/commit, `endRun`→COMPLETED, shutdown hook→ABORTED, son eksik grup flush. `DbConfig` (env > db.properties > default). DB entegrasyon testi (`@Tag("db")`). |
+| 6 | Main | `--save-db` / `PATHEXPLORER_DB_ENABLED=1` → `JdbcSolutionSink`, yoksa NoOp. **maven-shade-plugin** → tek çalışır jar. Uçtan uca: 5x5 → DB'de COMPLETED + 12_400 satır. |
+| 7 | `OpeningStats` | `java -cp ...jar persistence.OpeningStats 5 5` → "adım1=(x,y) adım2=(x,y) → kaç çözüm". |
+| 8 | Dokümantasyon | `PERSISTENCE.md`, `docker/README.md`, `proje-degerlendirme.md` §7.4 (Yeni-3, ~7.1). |
 
-**Yeni session için notlar:**
-- Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.
-- Regresyon ağı: `test/GameRegressionTest.java` (5x5 golden), `IndependentSolutionCountTest`
-  (bağımsız brute-force oracle). Her kod değişikliğinden sonra `mvn test`.
-- `Trace.ENABLED` = false olmalı (true olursa testler milyonlarca satır basar).
-- DB işleri OPT-IN: DB olmadan `mvn test` ve normal çalıştırma bozulmamalı.
-- Docker mevcut (27.5.1, compose v2.32).
-- Branch: `refactor-yorum-satirlari`.
+### Durum
+- `mvn test` → **21 fast test yeşil** (+ `-Dgroups=slow`: 5x6/6x6 oracle, `-Dtest.excludedGroups=slow -Dgroups=db`: Postgres IT).
+- 5x5/6x6 **regresyon değerleri değişmedi** (12_400 / 1_023_656 / 511_816 / 83_076).
+- DB **opsiyonel** — kapalıyken proje ve testler aynen çalışır.
+- Container şu an ayakta olabilir; `docker compose down` ile durdurulur.
+
+### Yapılmadı / ileriye (bilinçli)
+- **~7x7 üstü yalnız-aggregate mod** — `(rows,cols,open1,open2,open3)→count` tablosu.
+  Şema buna eklemeli geçişe hazır (`01_schema.sql` sonundaki yorum). 7x7 ~2 milyar,
+  10x10 trilyon satır → her çözümü saklamak o ölçekte pratik değil.
+- `elapsed_ms` şu an solver_run'da null bırakılıyor (sink wall-clock ölçmüyor) —
+  eklenebilir: `beginRun`'da `System.nanoTime()`, `endRun`'da fark.
+- CI (GitHub Actions), JaCoCo coverage eşiği.
+- `public_id` ile satır okuma / decode API'si (şu an sadece yazma + SQL sorgu).
+- 3. çözüm (`solution/third/*`) hâlâ kapsam dışı — kare varsayabilir, dokunulmadı.
+
+### Yeni session için notlar
+- Düz Java + Maven (Spring YOK). Branch: `refactor-yorum-satirlari`.
+- Regresyon ağı: `test/GameRegressionTest.java` + `IndependentSolutionCountTest`.
+  **Her kod değişikliğinden sonra `mvn test`.**
+- `Trace.ENABLED` = false olmalı (true → testler milyonlarca satır basar).
+- Persistence kodu: `src/persistence/*`. DB ayarı: `db.properties` / `PATHEXPLORER_DB_*` env.
+- Port 5442 (5432 lokalde native PostgreSQL ile çakışıyordu).
+- Fat jar: `mvn -q package -DskipTests` → `target/game-solution-algorithm.jar`.

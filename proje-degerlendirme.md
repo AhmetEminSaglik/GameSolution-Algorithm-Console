@@ -6,32 +6,35 @@ hata yönetimi, interface kullanımı vb. sistematik olarak tarandı, en
 kritik dosyalar tek tek okundu). Amaç: nerede sıkıntı var, neden sıkıntı,
 ve nasıl düzeltilir — somut kod örnekleriyle.
 
-> **Yeniden değerlendirme — 2026-08-31.** İki temizlik turu yapıldı:
+> **Yeniden değerlendirme — 2026-08-31.** Üç tur yapıldı:
 > - **Yeni-1:** Bölüm 1 `[R*]`, Bölüm 2 `[L*]` (Trace + JOptionPane kaldırma),
 >   Bölüm 3 `[D*]` (ölü kod), Bölüm 4 `[B*]` (boolean) + `pom.xml` / Maven.
 > - **Yeni-2:** JUnit 5 + **regresyon ağı** + **bağımsız brute-force oracle**
 >   (5x5 = 12_400, iki algoritmayla birebir) + 16 test; `[X1]`/`[X2]` custom
 >   exception, `[M2]`/`[M3]` magic number, `[E1]`/`[E5]` encapsulation,
 >   `[A7]`/`[A9]` küçük mimari, `.editorconfig`/`.gitattributes`.
+> - **Yeni-3:** dikdörtgen grid (5x6 = 113_456 doğrulandı) + `PathCodec` +
+>   docker-compose/Postgres 16 + `JdbcSolutionSink` (1000'lik batch) +
+>   `OpeningStats`; 24 test. Ayrıntı `todo-checklist.md` / `PERSISTENCE.md`.
 >
-> §1'de **Eski / Yeni-1 / Yeni-2** sütunları; kriter bazında ne değişti §7'de.
-> Son tarama: 106 dosya (`+test`), `(Robot)` cast 12, `JOptionPane` **0** (eski 27),
+> §1'de **Eski / Yeni-1 / Yeni-2 / Yeni-3** sütunları; kriter bazında ne değişti §7'de.
+> Son tarama: `(Robot)` cast 12, `JOptionPane` **0** (eski 27),
 > `printStackTrace` 2 (eski 6), identifier yazım hatası ~72 (hâlâ dokunulmadı),
-> **otomatik test 16 (eski 0)**. Davranış her turda 5x5 metrikleriyle sabit
+> **otomatik test 24 (eski 0)**. Davranış her turda 5x5 metrikleriyle sabit
 > tutuldu (`total Solved = 12_400` vs.) — puan artışı algoritmayı bozmadan geldi.
 
 ---
 
 ## 1. Genel Puanlama
 
-| Kriter | Eski | Yeni-1 | Yeni-2 | Kısa gerekçe (Yeni-2 durumu) |
-|---|---|---|---|---|
-| **Mimari / Tasarım** | 6 | 6.5 | **7.0** | Yeni-2: `[X1]` custom exception → çağıran artık `catch (Exception)`'a mecbur değil (soyutlama sözleşmesi düzeldi); `[A7]` ölü constructor silindi; `[A9]` `Player` kendi `getCompass()`'ını çağırıyor; `[E1]`/`[E5]` public alanlar kapatıldı. Çekirdek borç duruyor: 12 `(Robot)` cast (`[A2]`), `MathFunctionForSecondSolution` ~185 satır / 5 iş (`[A3]`), 8 yön sınıfı enum olmadı (`[A1]`). **Ama artık regresyon ağı var → bu refactor'ler güvenli.** |
-| **Çözüm Yöntemi (algoritma)** | 7.5 | 7.5 | **7.5** | Değişmedi — algoritmalara bilerek dokunulmadı. Yeni-2'de brute-force oracle 5x5'te doğruladı (12_400). +1.0 için `[H*]` hız + benchmark + karmaşıklık dökümü bekliyor. |
-| **Kodlama Kalitesi** | 4 | 6 | **6.5** | Yeni-2: `[X1]`/`[X2]` genel `Exception` → `InvalidGameConfigException`, `catch` daraltıldı, çift atama temizlendi; `[M2]` `MIN_MAP_SIZE`, `[M3]` 3 sabit; `[N3]` "Unknow"→"Unknown". Açık: ~72 identifier yazım hatası (`[N1]`/`[N2]`), kalan magic number (`[M4]`–`[M8]`), sıcak yolda `assert` (`[X8]`), `-1` sentinel (`[X7]`), 3 `catch (Exception)`. |
-| **Clean Code Uygunluğu** | 3.5 | 6.5 | **7.0** | Yeni-1'de ölü kod + boolean + Trace ile büyük sıçrama olmuştu. Yeni-2: `.editorconfig` + `.gitattributes` (satır sonu tutarlılığı — `[C1]`/`[C2]`), 2 encapsulation. Açık: TR/EN yorum karışık (`[N6]`), bir kerelik LF normalizasyonu, `nbproject/`+`build.xml` hâlâ duruyor (`[C5]`). |
-| **Test Edilebilirlik / Güvenilirlik** | 2 | 3.5 | **5.5** | Yeni-2'de gerçek sıçrama. `test/` altında **16 test, `mvn test` yeşil**: (a) `GameRegressionTest` — 5x5 golden-master, iki algoritmanın solved/round/dummyBack/totalBack değerlerini kilitler + çapraz kontrol; (b) `IndependentSolutionCountTest` — oyunun kurallarını sıfırdan uygulayan bağımsız DFS, 5x5 = 12_400, iki algoritmayla birebir (**bilinmeyen sayıyı ikinci yöntemle doğrulama**); (c) `Validation`/`StringFormat`/`Model`/`WeightOfAvailableWay`/`SwitchDirection` birim testleri; `GameHarness` oyunu menüsüz koşturur. Kalan: CI yok, JaCoCo/coverage eşiği yok (kapsam ~%20), `Main.runSolvedGame(...)` çıkarımı yok, `CalculationDeadlyPoint`/`Score`/`Compass` testleri yok. |
-| **Genel Ortalama** | **~4.6** | **~6.0** | **~6.7** | (7.0+7.5+6.5+7.0+5.5)/5. Yeni-2'nin asıl kazancı **regresyon ağı** — puanı en çok Test'i (+2) yükseltti, ayrıca büyük mimari refactor'lerin önünü açtı. |
+| Kriter | Eski | Yeni-1 | Yeni-2 | Yeni-3 | Kısa gerekçe (Yeni-3 durumu) |
+|---|---|---|---|---|---|
+| **Mimari / Tasarım** | 6 | 6.5 | 7.0 | **7.5** | Yeni-3: temiz `persistence` paketi (`SolutionSink` arayüzü, NoOp default, opt-in) — cözücüyü kirletmeden veri katmanı eklendi; dikdörtgen destek `Model`'i boyutlar için tek doğruluk kaynağı yaptı (dağınık `.length` varsayımları + `Move` Y-sınırı bug'ı gitti). Çekirdek borç aynı: 12 `(Robot)` cast (`[A2]`), SRP (`[A3]`), 8 yön → enum (`[A1]`). |
+| **Çözüm Yöntemi (algoritma)** | 7.5 | 7.5 | 7.5 | **7.5** | Algoritmalara dokunulmadı. Dikdörtgen 5x6 = 113_456 bağımsız brute-force ile doğrulandı. +1.0 için `[H*]` hız + benchmark + karmaşıklık dökümü bekliyor. |
+| **Kodlama Kalitesi** | 4 | 6 | 6.5 | **7.0** | Yeni-3: yeni kod temiz (record'lar, try-with-resources, PreparedStatement, savunmacı null); dikdörtgen fix gerçek bir bug'ı (`Move` Y-sınırı) kapattı. Eski borç (~72 yazım hatası, magic number, `[X7]`/`[X8]`) aynı. |
+| **Clean Code Uygunluğu** | 3.5 | 6.5 | 7.0 | **7.0** | Yeni-3'te yeni kod düzenli + dokümantasyon (`PERSISTENCE.md`, `docker/README.md`, `todo-checklist.md`). Eski borçta hareket yok → sabit. |
+| **Test Edilebilirlik / Güvenilirlik** | 2 | 3.5 | 5.5 | **6.5** | Yeni-3: **24 test** (21 fast + 1 db + 2 slow). Eklenen: `PathCodecTest` (round-trip 4 boyut), `SolutionSinkHookTest` (gerçek 5x5 koşusunda 12_400 çözüm yakalanıp yol doğrulanıyor), `JdbcSolutionSinkDbTest` (gerçek Postgres'e uçtan uca yazma + geri okuma), dikdörtgen 5x6 oracle. Kalan: CI yok, JaCoCo eşiği yok (kapsam ~%25), `Main.runSolvedGame(...)` çıkarımı yok. |
+| **Genel Ortalama** | **~4.6** | **~6.0** | **~6.7** | **~7.1** | (7.5+7.5+7.0+7.0+6.5)/5. Yeni-3'ün kazancı: veri katmanı + dikdörtgen genellik + test kapsamı. |
 
 Kısaca: **fikir + algoritma iyi; işçilik eskiden dağınıktı, artık toparlandı
 ve bir güvenlik ağı (test) var.** Kalan en büyük borç: enum/cast/SRP mimari
@@ -432,10 +435,34 @@ Referanslar `yapilmasi-gereken-duzeltmeler.md` madde kodlarına.
 | Clean Code | +0.5 | `.editorconfig` + `.gitattributes` (`[C1]`/`[C2]`); 2 encapsulation. | `[N6]`, LF normalizasyonu, `nbproject/` (`[C5]`). |
 | Çözüm Yöntemi | 0 | — (bilerek dokunulmadı; oracle 5x5'te doğruladı). | `[H*]` hız + benchmark + karmaşıklık dökümü. |
 
-**Net:** 4.6 → 6.0 → 6.7. Yeni-2'nin asıl değeri **regresyon ağı**: hem Test
-puanını yükseltti hem de en pahalı işi (enum/cast/SRP refactor) güvenli hale
-getirdi. Sıradaki en yüksek getiri: **`[A1]` enum refactor** (ağ artık hazır)
-ve **`[N*]` yazım hataları** (IntelliJ `Shift+F6`, mekanik).
+### 7.4 Yeni-3'te ne yapıldı (persistence + dikdörtgen grid)
+
+`todo-checklist.md`'deki 8 fazlık iş. Regresyon ağı her fazda yeşil, DB opsiyonel.
+
+| Kriter | Δ | Yapılanlar |
+|---|---|---|
+| Test | +1.0 | 24 test. `PathCodecTest` (yön-kodlaması round-trip), `SolutionSinkHookTest` (gerçek 5x5 koşusunda 12_400 çözüm + yol doğrulama), `JdbcSolutionSinkDbTest` (gerçek Postgres uçtan uca), 5x6 dikdörtgen oracle (= 113_456). |
+| Mimari | +0.5 | `persistence` paketi: `SolutionSink` (NoOp default, opt-in `JdbcSolutionSink`), `PathCodec`, `GridPath`, `DbConfig`. `PlayGame`'e tek kanca. Dikdörtgen: `Model` boyutlar için tek kaynak; `Move` Y-sınırı bug'ı düzeldi. |
+| Kodlama Kalitesi | +0.5 | Yeni kod: record, try-with-resources, PreparedStatement batch, shutdown hook, savunmacı null. |
+| Clean Code | 0 | Yeni kod düzenli + `PERSISTENCE.md` / `docker/README.md`. Eski borç sabit. |
+
+**Ne teslim edildi:**
+- **Dikdörtgen grid:** `5`, `5 6`, `5x6` girişi. 5x6 = 113_456 (brute-force = 1. algo = 2. algo).
+- **`PathCodec`:** yol → adım başına 3 bit yön, bit-packed. 5x5 = 9 byte, 10x10 = 38 byte,
+  100x100 ≈ 3.7 KB (portfolyodaki `(x<<4)|y` 16x16'da tavan yapıyordu).
+- **Docker + Postgres 16:** `docker compose up -d` → şema otomatik. `solver_run`
+  (run metrikleri, status RUNNING/COMPLETED/ABORTED) + `path_explorer_solution`
+  (LIST partition, `path BYTEA`, `open1/2/3` indexli).
+- **`JdbcSolutionSink`:** 1000'lik batch, son eksik grup oyun bitince flush,
+  Ctrl+C → flush + ABORTED. `java -jar ...jar --save-db`.
+- **`OpeningStats`:** "adım1=(0,0), adım2=(0,3) → kaç çözüm" sorgusu.
+- **Uçtan uca doğrulandı:** 5x5 → DB'de `solver_run` COMPLETED + 12_400 satır +
+  `GROUP BY open1` = 552'şer + `path` ort. 9 byte.
+
+**Kalan (ileriye):** ~7x7 üstü için yalnız-aggregate mod (şema hazır), CI,
+elapsed_ms ölçümü, `public_id` bazlı okuma API'si.
+
+**Net:** 4.6 → 6.0 → 6.7 → **~7.1**.
 
 ---
 
@@ -444,9 +471,10 @@ ve **`[N*]` yazım hataları** (IntelliJ `Shift+F6`, mekanik).
 Proje, 2020 seviyesi için **iddialı bir algoritma denemesi** — asıl değer
 orada. İlk değerlendirmede en çok puan kaybettiren noktalar (ölü kod,
 boolean anti-pattern'i, `JOptionPane` yan etkileri, dağınık debug loglama,
-sıfır test) **iki turda büyük ölçüde kapatıldı**: Clean Code 3.5→7.0,
-Kodlama Kalitesi 4→6.5, Test 2→5.5. Artık `mvn test` ile geçen bir
-**regresyon ağı + bağımsız doğrulama** var — bu, kalan en büyük borcun
-(enum/cast/SRP mimari refactor'leri) önündeki risk engelini de kaldırdı.
-Geriye kalan: o mimari refactor'ler, ~72 identifier yazım hatası, test
-kapsamı + CI.
+sıfır test) **üç turda büyük ölçüde kapatıldı**: Clean Code 3.5→7.0,
+Kodlama Kalitesi 4→7.0, Test 2→6.5. Artık `mvn test` ile geçen bir
+**regresyon ağı + bağımsız doğrulama**, dikdörtgen grid desteği ve
+**PostgreSQL'e batch çözüm kaydı** (opsiyonel, docker-compose) var.
+Geriye kalan: enum/cast/SRP mimari refactor'leri (regresyon ağı bunları
+artık güvenli kılıyor), ~72 identifier yazım hatası, test kapsamı + CI,
+ve ~7x7 üstü için yalnız-aggregate persistence modu.
