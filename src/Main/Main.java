@@ -73,7 +73,7 @@ public class Main {
             return robot;
 
         } else {
-            System.out.println("Unknow choice ");
+            System.out.println("Unknown choice");
             return selectPlayer(game);
         }
 

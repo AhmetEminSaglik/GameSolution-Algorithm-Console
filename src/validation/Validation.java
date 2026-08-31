@@ -8,11 +8,13 @@ import game.location.Location;
 
 public class Validation {
 
+    /** Gecerli en kucuk kenar 5'tir: kenar bu degerden (kesinlikle) buyuk olmali. */
+    public static final int MIN_SQUARE_EDGE = 4;
+
     private Compass compass;
 
     public boolean validateSquareNumbers(int number) {
-        final int minimum = 4;
-        return number > minimum;
+        return number > MIN_SQUARE_EDGE;
     }
 
     /**

@@ -16,6 +16,14 @@ import weights.WeightOfAvailableWay;
 import java.util.ArrayList;
 
 public class MathFunctionForSecondSolution {
+
+    /** 2. tek-yollu kare goruldugunde o yon zorunlu ("exit") kabul edilir. */
+    private static final int ONE_WAY_COUNT_MEANS_EXIT = 2;
+    /** Bu kadar tek-yollu kare ustuste gorulurse algoritma cikmaza girmis sayilir, tur iptal. */
+    private static final int MAX_ONE_WAY_BEFORE_ABORT = 3;
+    /** En az bir tek-yollu kare goruldiyse navigasyon RoadMemory'ye yazilir. */
+    private static final int MIN_ONE_WAY_TO_RECORD = 1;
+
     Game game;
     Location playerLocation;
     ArrayList<DirectionLocation> locationsList;
@@ -136,7 +144,7 @@ public class MathFunctionForSecondSolution {
         if (isExitSituationLocated()) {
             compulsoryLocation = lastLocation;
         }
-        if (oneWayNumbersValue == 2) {
+        if (oneWayNumbersValue == ONE_WAY_COUNT_MEANS_EXIT) {
             compulsoryLocation = location;
         }
         if (isOneWayNumberTooMuchToRunHealtyTheAlgorithm()) {
@@ -165,7 +173,7 @@ public class MathFunctionForSecondSolution {
     }
 
     boolean isOneWayNumberTooMuchToRunHealtyTheAlgorithm() {
-        return oneWayNumbersValue >= 3;
+        return oneWayNumbersValue >= MAX_ONE_WAY_BEFORE_ABORT;
     }
 
     int calculateDeadlyPoint() {
@@ -174,7 +182,7 @@ public class MathFunctionForSecondSolution {
 
     void addNavigationToRoadMemoryList() {
 
-        if (oneWayNumbersValue >= 1) {
+        if (oneWayNumbersValue >= MIN_ONE_WAY_TO_RECORD) {
             navigationService.addNavigationToRoadMemoryList(navigation, (Robot) game.getPlayer());
         }
     }

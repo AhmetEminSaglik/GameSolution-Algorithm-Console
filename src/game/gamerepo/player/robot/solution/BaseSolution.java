@@ -9,7 +9,7 @@ import squareprocess.SquareProcess;
 
 public abstract class BaseSolution {
     private Game game;
-    public Location playerLocation;
+    protected Location playerLocation;
 
     public BaseSolution(Game game) {
         this.game = game;

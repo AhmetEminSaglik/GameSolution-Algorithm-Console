@@ -1,5 +1,6 @@
 package game.gamerepo;
 
+import errormessage.InvalidGameConfigException;
 import game.Game;
 import validation.SquareValidationGame;
 
@@ -22,14 +23,12 @@ public class BuildGame {
 
     private void buildGame(int edgeValue) {
         try {
-            this.edgeValue = edgeValue;
             new SquareValidationGame(edgeValue, edgeValue);
             this.edgeValue = edgeValue;
             game = new Game();
-        } catch (Exception e) {
+        } catch (InvalidGameConfigException e) {
             System.out.println(e.getMessage());
             buildGame(determineEdgeValue());
-
         }
     }
 

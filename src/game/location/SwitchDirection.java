@@ -75,7 +75,7 @@ public class SwitchDirection {
             return lastLocation;
         }
 
-        ErrorMessage.appearClassicError(getClass(), " compass  : " + compass.getClass().getSimpleName() + " -> Unknow Option  : " + value);
+        ErrorMessage.appearClassicError(getClass(), " compass  : " + compass.getClass().getSimpleName() + " -> Unknown Option  : " + value);
 
         return null;
     }

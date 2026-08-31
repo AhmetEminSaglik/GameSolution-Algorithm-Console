@@ -42,7 +42,7 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
 
     public void clearVisitedDirections() {
         visitedDirections = new boolean[game.getModel().getTotalSquareCount()]
-                [new LocationsList().getListOfLocationsAccordingToPlayerCompass(game.getPlayer().getCompass()).size()];
+                [new LocationsList().getListOfLocationsAccordingToPlayerCompass(getCompass()).size()];
     }
 
     public void clearStepValue() {
