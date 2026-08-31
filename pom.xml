@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.ahmeteminsaglik</groupId>
+    <artifactId>game-solution-algorithm</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>22</maven.compiler.release>
+        <!-- mvn exec:java icin -->
+        <exec.mainClass>Main.Main</exec.mainClass>
+    </properties>
+
+    <build>
+        <finalName>game-solution-algorithm</finalName>
+
+        <!-- Kaynaklar standart src/main/java'da degil, dogrudan src/ altinda -->
+        <sourceDirectory>src</sourceDirectory>
+
+        <plugins>
+            <!-- java -jar target\game-solution-algorithm.jar calissin diye main-class manifest'e yazilir -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>Main.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
