@@ -34,6 +34,26 @@ kalite" demek; 9-10 aşırı yatırım.
 `SafeScannerInput` `Scanner(System.in)`'e gömülü, sonuç `System.out`'a
 gidiyor → programı kod içinden çalıştırmak zor.
 
+> **DURUM: başlangıç seti yapıldı (2026-08-31).** `pom.xml` + JUnit 5,
+> `test/` altında 16 test, hepsi yeşil (`mvn test`).
+>
+> **"Bilmediğim sayının testini nasıl yazarım?" — cevap:**
+> `IndependentSolutionCountTest`, oyunun hareket kurallarını (8 sıçrama
+> vektörü) **sıfırdan** uygulayan ~15 satırlık bağımsız bir DFS. 5x5 için
+> **12_400** hesapladı — iki üretim algoritmasının bulduğuyla **bire bir aynı**.
+> Yani "doğru cevabı" bilmesen de aynı sayıyı ikinci bağımsız yöntemle
+> hesaplayıp karşılaştırırsın: aynıysa güçlü kanıt, farklıysa kesin bug.
+> 6x6 aynı brute-force ile doğrulanabilir ama saatler sürer → `@Tag("slow")`.
+>
+> `GameRegressionTest` golden-master: 5x5 için her iki algoritmanın
+> solved/round/dummyBack/totalBack değerlerini sabitler + iki algoritmanın
+> aynı çözüm sayısını bulduğunu çapraz kontrol eder. Bu ağ sayesinde §4'teki
+> mimari refactor'ler (enum, cast, SRP) artık güvenli.
+>
+> **Kalan:** `CalculationDeadlyPoint` / `Score` / `Compass` birim testleri,
+> `Main`'in gerçek `runSolvedGame(...)` metoduna ayrılması (şu an test
+> harness'i wiring'i kopyalıyor), JaCoCo %70 eşiği, GitHub Actions CI.
+
 ### 1.1 Altyapı (yarım gün)
 - `pom.xml`'e JUnit 5 (`junit-jupiter`) + AssertJ ekle.
 - Test kaynağı: `pom.xml`'e `<testSourceDirectory>test</testSourceDirectory>`
@@ -221,6 +241,27 @@ en sona.
 ---
 
 ## 5. Çözüm Yöntemi (algoritma): 7.5 → 8.5
+
+> **"Bu 1.0'ı nasıl artıracaksın?" — açıklama.**
+> Algoritmaların **mantığına dokunmuyoruz.** 1. ve 2. algoritmanın *doğru*
+> olup olmadığı (yani gerçekten TÜM çözümleri bulup bulmadığı) ayrı bir
+> mesele — ve bunu ancak bağımsız bir üçüncü yöntemle (brute-force,
+> matematiksel ispat) doğrulayabilirsin. §1'deki `IndependentSolutionCountTest`
+> tam olarak bunu yapıyor: 5x5 için brute-force = 12_400 = iki algoritma →
+> **5x5'te üçü de aynı**, yani 5x5'te doğrular. 6x6/7x7 için de aynı
+> brute-force koşulabilir (yavaş).
+>
+> Bu bölümdeki +1.0 **algoritma mühendisliği kalitesinden** geliyor, daha
+> iyi bir algoritma bulmaktan değil:
+> 1. **Hız** (§5.1) — tur başına allocation'ı sıfırlamak. Sonuç değişmez
+>    (regresyon ağı garanti eder), sadece daha hızlı çalışır. Senin açık hedefin.
+> 2. **Ölçülebilirlik** (§5.2) — `NullResultSink` + pause/resume kronometre
+>    ile "saf algoritma süresi"ni dürüstçe ölçmek; `BENCHMARKS.md`.
+> 3. **Belgelenmişlik** (§5.3) — her algoritmanın zaman/yer karmaşıklığı,
+>    2.'nin 1.'yi neden 6.5 saat → 19 dk'ya indirdiğinin analizi, problemin
+>    net tanımı.
+> Şu an "iyi bir fikir ama ölçülmemiş/belgelenmemiş/optimize edilmemiş" →
+> "iyi bir fikir, ölçülü, belgelenmiş, sıcak yolu temiz".
 
 **Neden 7.5:** algoritmik ilerleme gerçek ama (a) karmaşıklık analizi yok,
 (b) benchmark harness yok, (c) sıcak yolda tur başına gereksiz allocation var

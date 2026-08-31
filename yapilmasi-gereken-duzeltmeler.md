@@ -443,8 +443,10 @@ IntelliJ `Shift+F6` (Rename) ile tüm referanslar otomatik güncellenir.
     `ms = 1000` sabiti "saniyedeki ms" anlamında; `hour:minute:second:nanoTime`
     çıktısındaki son alan artık-ms. Alan/sabit adları yanıltıcı → `millis`,
     `MILLIS_PER_SECOND`, çıktı alanı `millisRemainder`.
-- [ ] **`[N3]` Kullanıcıya görünen / yorum yazım hataları:**
-  - `Main.java:94` — `"Unknow choice "` → `"Unknown choice"`
+- [~] **`[N3]` Kullanıcıya görünen yazım hataları** — kısmi (2026-08-31):
+  `Main` `"Unknown choice"`, `SwitchDirection` `"Unknown Option"` düzeltildi.
+  Kalan: `"occured"`, `"Stuation"` vb. + tüm identifier yazım hataları (`[N1]`/`[N2]`).
+  - `Main.java:94` — `"Unknow choice "` → `"Unknown choice"` ✅
   - `Player.java:48` (yorumlu) — `"Unknow ..."` (blokla birlikte zaten silinecek)
   - `ShowPanel`/`ErrorMessage` mesajlarındaki `"Unknow Option"`, `"occured"`,
     `"Stuation"`, `"Sealation"` — düzelt (bu mesajların çoğu `[L4]` ile zaten kalkacak).
@@ -462,15 +464,15 @@ IntelliJ `Shift+F6` (Rename) ile tüm referanslar otomatik güncellenir.
 
 ## 6. Öncelik 5 — Encapsulation (public mutable alanlar)
 
-- [ ] **`[E1]` `BaseSolution.playerLocation` (public)** → `private` + `getPlayerLocation()`.
-  Kullanım: alt sınıflar `prepareation()` sonrası okuyor; getter yeterli.
+- [x] **`[E1]` `BaseSolution.playerLocation`** → **`protected`** yapıldı (2026-08-31).
+  Sadece alt sınıflar okuyor; getter'a gerek kalmadan `protected` yeterli.
 - [ ] **`[E2]` `Move.game` (public)`, `Move.updateValuesInGameModel` (public)** →
   `protected` + gerekiyorsa getter. Alt sınıflar aynı pakette/çocuk.
 - [ ] **`[E3]` `PlayGame.comparisonOfSolutions` (public)** → `[D16]` ile birlikte
   ya kaldır ya `private`.
 - [ ] **`[E4]` `BaseControlInput.game` (public)** → `protected`.
-- [ ] **`[E5]` `Score.lockedCounterOfMovingBackLose` (public)** → `private`
-  (zaten `isLockedCounterOfMovingBackLose()` / `lock...` / `unlock...` metotları var).
+- [x] **`[E5]` `Score.lockedCounterOfMovingBackLose`** → **`private`** yapıldı (2026-08-31).
+  Sadece `Score` içinden erişiliyordu; `is/lock/unlock` metotları zaten vardı.
 - [ ] **`[E6]` `Main.baseSolution` (paket-private alan, static bağlamda kullanılıyor)**
   — `selectPlayer` içinde set edilip `main`'de okunuyor. `selectPlayer`'ın dönüş
   tipini kullanıp alanı kaldır, ya da çözüm adını `Player`'dan al (`[R1]` ile aynı çözüm).
@@ -488,12 +490,11 @@ IntelliJ `Shift+F6` (Rename) ile tüm referanslar otomatik güncellenir.
   - Çözüm: yön `enum`'una (`[A1]`) geçerken `ORTHOGONAL_STEP = 3`,
     `DIAGONAL_STEP = 2` isimli sabitler + 1-2 satır "neden bu değerler" yorumu.
   - **Bu turda tek başına değiştirme** — `[A1]` ile birlikte gelsin ki dağılmasın.
-- [ ] **`[M2]` `Validation.validateSquareNumbers` içindeki `minimum = 4`** →
-  `MIN_SQUARE_EDGE = 4` sınıf sabiti + "kenar > 4 olmalı" yorumu.
-  Ayrıca `SquareValidationGame` mesajı `"must be bigger than 4"` bu sabite bağlansın.
-- [ ] **`[M3]` `MathFunctionForSecondSolution`: `oneWayNumbersValue == 2`,
-    `>= 3`** → `SECOND_ONE_WAY_MEANS_EXIT = 2`,
-    `MAX_ONE_WAY_BEFORE_ABORT = 3` + kısa gerekçe (bkz. `sozde-kod.md` §6.2).
+- [x] **`[M2]` `Validation.MIN_SQUARE_EDGE = 4`** sabiti eklendi (2026-08-31);
+  `SquareValidationGame` mesajı da bu sabite bağlandı.
+- [x] **`[M3]` `MathFunctionForSecondSolution`** sabitleri eklendi (2026-08-31):
+  `ONE_WAY_COUNT_MEANS_EXIT = 2`, `MAX_ONE_WAY_BEFORE_ABORT = 3`,
+  `MIN_ONE_WAY_TO_RECORD = 1` + gerekçe yorumları.
 - [ ] **`[M4]` `WeightOfAvailableWay`: `weightOfDirection.length - i` (yani `8 - n`)**
   → yorum: "ileri açıklığı az olan yön daha yüksek ağırlık alır" (`sozde-kod.md` §2).
 - [ ] **`[M5]` `edge * edge` / `Math.pow(edge, 2)` (toplam kare sayısı)** →
@@ -558,13 +559,12 @@ ayırma (allocation) maliyetini düşürür.
 
 ## 9. Öncelik 8 — Hata yönetimi
 
-- [ ] **`[X1]` `ErrorMessage.throwError` genel `Exception` fırlatıyor**
-  (`ErrorMessage.java:18`). Çağıran (`SquareValidationGame`) `catch (Exception)`'a
-  mecbur. Kendi tipini tanımla: `class InvalidGameConfigException extends Exception`.
-- [ ] **`[X2]` `BuildGame.buildGame` `catch (Exception e)` + `System.out` + özyineleme**
-  (`BuildGame.java:20-27`). Sadece `InvalidGameConfigException` yakala; mesajı
-  `Trace`/`System.out` yerine düzgün bir kullanıcı mesajı olarak ver; `this.edgeValue = edgeValue;`
-  **iki kez** yazılmış (`:19` ve `:21`) — birini sil.
+- [x] **`[X1]`** `errormessage.InvalidGameConfigException extends Exception` eklendi
+  (2026-08-31). `ErrorMessage.throwError` (genel `Exception`) **silindi**;
+  `SquareValidationGame` artık `InvalidGameConfigException` fırlatıyor.
+- [x] **`[X2]`** `BuildGame.buildGame`: `catch (Exception)` → `catch (InvalidGameConfigException)`;
+  çift `this.edgeValue = edgeValue` temizlendi (2026-08-31). (Mesaj hâlâ
+  `System.out` — kullanıcı promptu bağlamında kalması OK.)
 - [ ] **`[X3]` `Validation.isInputValidForArray` `catch (Exception ex)`** (`:75`) —
   aslında sadece `NullPointerException` bekleniyor (compass'tan `null` yön).
   Spesifik yakala; `ErrorMessage.appearClassicError` (Toolkit.beep + print) yerine
@@ -618,37 +618,40 @@ ayırma (allocation) maliyetini düşürür.
 - [ ] **`[A4]` `SelectFirstSqaureToStart extends DirectionLocation`** — kalıtım
   istismarı (bir "yön" değil). `Location`'ı kompozisyonla kullansın, ya da sadece
   `int x, y` tutsun.
-- [ ] **`[A5]` İlk birim testleri.** Yan etkisiz saf sınıflardan başla:
-  `Validation` (`validateSquareNumbers`, `calculateValidOrNot`, `isStepValueAvailable`),
-  `CalculationDeadlyPoint.calculateDeadlyPoint` (tablo `sozde-kod.md` §7'de hazır),
-  `WeightOfAvailableWay`, `StringFormat.converNumberToReadableNumbers`,
-  `ConvertNanoTimeToTime`, `BaseSolution.getSolutionFileName`.
-  - Bunlar `[A1]`/`[A3]` refactor'ünü güvene alır.
+- [~] **`[A5]` İlk birim testleri.** **Başlangıç seti yapıldı (2026-08-31):**
+  `test/` altında 16 test — `Validation`, `StringFormat`, `Model`,
+  `WeightOfAvailableWay`, `SwitchDirection` birim testleri + **`GameRegressionTest`**
+  (5x5 golden-master, iki algoritma çapraz kontrol) + **`IndependentSolutionCountTest`**
+  (bağımsız brute-force DFS; 5x5 = 12_400, iki algoritmayla birebir).
+  `test/support/GameHarness` oyunu menüsüz koşturuyor.
+  - **Kalan:** `CalculationDeadlyPoint`, `Score`, `Compass`, `ConvertNanoTimeToTime`
+    testleri; `Main.runSolvedGame(...)` çıkarımı; JaCoCo %70; CI.
+  - Bu ağ `[A1]`/`[A3]` refactor'ünü artık **güvene alıyor.**
 - [~] **`[A6]` Build sistemi (Maven/Gradle).** **Kısmi (2026-08-31):** minimal
   `pom.xml` eklendi — `sourceDirectory=src`, `release 22`, UTF-8,
   `maven-jar-plugin` mainClass=`Main.Main`. Artık `mvn clean package` /
   `mvn exec:java` çalışıyor; `clean` tüm `target/`'ı sildiği için Trace
   constant-inlining tuzağı da kalkar.
-  - **Kalan:** JUnit bağımlılığı + `src/test` (`[A5]`), CI, `build.xml`/`nbproject/`
-    kaldırma kararı (`[C5]`).
-- [ ] **`[A7]` `Game(Model, Player)` kullanılmayan constructor** — `BuildGame`
-  parametresiz `new Game()` kullanıyor. Kullanılmayanı sil ya da tek constructor'a indir.
+  - **Güncelleme (2026-08-31):** JUnit 5 + `testSourceDirectory=test` + surefire
+    (`slow` etiketi hariç) eklendi; `mvn test` çalışıyor (`[A5]`).
+  - **Kalan:** CI, `build.xml`/`nbproject/` kaldırma kararı (`[C5]`).
+- [x] **`[A7]`** `Game(Model, Player)` kullanılmayan constructor **silindi** (2026-08-31).
 - [ ] **`[A8]` `TimeKeeper` paketi `game.gamerepo.player.robot` ama `Person` da
   kullanıyor** (`Score.updatePlayedTime` → `player.getTimeKeeper()`). `game.time`
   gibi nötr bir pakete taşı.
-- [ ] **`[A9]` `Player.clearVisitedDirections()` `game.getPlayer().getCompass()`
-  çağırıyor** — `this` yerine `game`'den kendini alıyor (dolambaçlı, `setGame`
-  sırasında `game.setPlayer(this)` yeni yapıldığı için çalışıyor). `getCompass()`
-  doğrudan çağrılsın.
+- [x] **`[A9]`** `Player.clearVisitedDirections()` artık `getCompass()` (this)
+  çağırıyor, `game.getPlayer().getCompass()` değil (2026-08-31). Davranış birebir
+  (o noktada `game.getPlayer() == this`); regresyon testi doğruladı.
 
 ---
 
 ## 11. Öncelik 10 — Proje/dosya tutarlılığı
 
-- [ ] **`[C1]` Satır sonu tutarsızlığı.** Bazı dosyalar CRLF, bazıları LF.
-  `.gitattributes` ekle (`*.java text eol=lf`) + bir kerelik normalizasyon.
-- [ ] **`[C2]` `.editorconfig` ekle** (indent, charset=utf-8, eol=lf,
-  trim_trailing_whitespace). IDE ayarından bağımsız tutarlılık.
+- [~] **`[C1]` `.gitattributes` eklendi** (2026-08-31; `*.java text eol=lf` vb.).
+  **Kalan:** bir kerelik `git add --renormalize .` + o commit (henüz yapılmadı;
+  ayrı/gürültülü bir commit olmalı).
+- [x] **`[C2]` `.editorconfig` eklendi** (2026-08-31; utf-8, lf, 4 space,
+  trim trailing, final newline).
 - [ ] **`[C3]` `.gitignore` gözden geçir.** İçinde `portfolio-parent/`,
   `frontend/.scratch/` gibi **başka bir projeye ait** kurallar var (yanlış kopya).
   Bu projeye uymayan satırları temizle; `build/`, `dist/`, `*.class`, `*_Completed.txt`,
