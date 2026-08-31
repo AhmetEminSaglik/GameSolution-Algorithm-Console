@@ -6,35 +6,38 @@ hata yönetimi, interface kullanımı vb. sistematik olarak tarandı, en
 kritik dosyalar tek tek okundu). Amaç: nerede sıkıntı var, neden sıkıntı,
 ve nasıl düzeltilir — somut kod örnekleriyle.
 
-> **Yeniden değerlendirme — 2026-08-31.** İlk sürümden bu yana yapılan
-> temizlik turları (`yapilmasi-gereken-duzeltmeler.md`: Bölüm 1 `[R*]`,
-> Bölüm 2 `[L*]` Trace + JOptionPane kaldırma, Bölüm 3 `[D*]` ölü kod,
-> Bölüm 4 `[B*]` boolean; ayrıca `pom.xml` / Maven build) sonrası proje
-> baştan tarandı. §1'de artık **Eski / Yeni** puan sütunları var; kriter
-> bazında ne değişti §7'de. Kod tekrar tarandı: 103 dosya / ~4500 satır,
-> `(Robot)` cast 12, `JOptionPane`/`ShowPanel` **0** (eskiden 27),
-> `printStackTrace` 2 (eskiden 6), `System.out` 37 (eskiden 48), yazım
-> hatası ~72 eşleşme (henüz hiç dokunulmadı), otomatik test **hâlâ 0**.
-> Davranış her turda 5x5/6x6 metrikleriyle sabit tutuldu
-> (`total Solved = 12_400` vs.), yani puan artışı algoritmayı bozmadan geldi.
+> **Yeniden değerlendirme — 2026-08-31.** İki temizlik turu yapıldı:
+> - **Yeni-1:** Bölüm 1 `[R*]`, Bölüm 2 `[L*]` (Trace + JOptionPane kaldırma),
+>   Bölüm 3 `[D*]` (ölü kod), Bölüm 4 `[B*]` (boolean) + `pom.xml` / Maven.
+> - **Yeni-2:** JUnit 5 + **regresyon ağı** + **bağımsız brute-force oracle**
+>   (5x5 = 12_400, iki algoritmayla birebir) + 16 test; `[X1]`/`[X2]` custom
+>   exception, `[M2]`/`[M3]` magic number, `[E1]`/`[E5]` encapsulation,
+>   `[A7]`/`[A9]` küçük mimari, `.editorconfig`/`.gitattributes`.
+>
+> §1'de **Eski / Yeni-1 / Yeni-2** sütunları; kriter bazında ne değişti §7'de.
+> Son tarama: 106 dosya (`+test`), `(Robot)` cast 12, `JOptionPane` **0** (eski 27),
+> `printStackTrace` 2 (eski 6), identifier yazım hatası ~72 (hâlâ dokunulmadı),
+> **otomatik test 16 (eski 0)**. Davranış her turda 5x5 metrikleriyle sabit
+> tutuldu (`total Solved = 12_400` vs.) — puan artışı algoritmayı bozmadan geldi.
 
 ---
 
 ## 1. Genel Puanlama
 
-| Kriter | Eski | Yeni | Kısa gerekçe (yeni durum) |
-|---|---|---|---|
-| **Mimari / Tasarım** | 6/10 | **6.5/10** | `DirectionCompassValues` çift tanımı silindi, Person yolundaki `ClassCastException` riski `getSolutionName()` ile kapandı, `Model.getTotalSquareCount()` edge² tekrarını topladı, Maven modülü geldi. Ama çekirdek sorunlar duruyor: 12 `(Robot)` cast (`[A2]`), `MathFunctionForSecondSolution` hâlâ 5 iş / ~182 satır (`[A3]`), 8 yön sınıfı enum olmadı (`[A1]`), `SelectFirstSqaureToStart extends DirectionLocation` (`[A4]`). |
-| **Çözüm Yöntemi (algoritma)** | 7.5/10 | **7.5/10** | Değişmedi — algoritmalara bilerek dokunulmadı, davranış birebir korundu. Hâlâ projenin en güçlü yönü. |
-| **Kodlama Kalitesi** | 4/10 | **6/10** | Sistematik boolean anti-pattern (~22 metot) düzeltildi; 2. çözümdeki sessiz boş `catch` kalktı (`[R7]`); `JOptionPane`/`ShowPanel` (27→0) ve `sleep` paketi silindi; sıcak yoldaki `Math.pow`/`edge*edge` isimli metoda döndü; `[R1]`–`[R6]` gerçek bug'lar kapandı; `WeightOfAvailableWay` dizi taşması güvene alındı. Açık: ~72 yazım hatası (`[N*]`), çoğu magic number (`[M*]`), `ErrorMessage.throwError` genel `Exception` (`[X1]`), sıcak yolda `assert` (`[X8]`). |
-| **Clean Code Uygunluğu** | 3.5/10 | **6.5/10** | En büyük hareket burada. Ölü/yorumlu kod: `PlayGame` 27→~0, `MathFunctionForSecondSolution` 18→0, `Robot` 16→0; 2 ölü dosya + öncekilerle 6 dosya silindi; ~9 kullanılmayan import, atanıp okunmayan alanlar kalktı. Boolean sadeleştirmesi diff'leri küçülttü. `Trace` (derleme-zamanı DCE'li, iyi belgelenmiş) dağınık debug'ın yerini aldı. `yapilmasi-gereken-duzeltmeler.md` izlenebilir bir remediation planı olarak eklendi. Açık: yazım hataları okunabilirliği hâlâ tırmalıyor, TR/EN yorum karışık (`[N6]`). |
-| **Test Edilebilirlik / Güvenilirlik** | 2/10 | **3.5/10** | **Hâlâ tek bir otomatik test yok.** Ama altyapı açıldı: `pom.xml` ile JUnit tek bağımlılık uzakta (`[A6]` kısmi); bloklayan `JOptionPane` modalları gitti (eskiden test "fiilen imkânsız"dı); `Trace` derleme-zamanı toggle → testler debug çıktısına boğulmaz; `getSolutionName()` Person + `PlayGame` testini engelleyen cast'i kaldırdı; davranış tekrarlanabilir metrik koşularıyla (12_400 / 511_816 / …) sabitlendi — fakir adamın regresyon kontrolü. `Scanner(System.in)` hâlâ `Main`/`BuildGame`/`SafeScannerInput`'a gömülü. |
-| **Genel Ortalama** | **~4.6/10** | **~6.0/10** | (6.5+7.5+6+6.5+3.5)/5. Temizlik turları okunabilirliği ve kodlama kalitesini belirgin yükseltti; mimari borç ve sıfır test hâlâ tavanı bastırıyor. |
+| Kriter | Eski | Yeni-1 | Yeni-2 | Kısa gerekçe (Yeni-2 durumu) |
+|---|---|---|---|---|
+| **Mimari / Tasarım** | 6 | 6.5 | **7.0** | Yeni-2: `[X1]` custom exception → çağıran artık `catch (Exception)`'a mecbur değil (soyutlama sözleşmesi düzeldi); `[A7]` ölü constructor silindi; `[A9]` `Player` kendi `getCompass()`'ını çağırıyor; `[E1]`/`[E5]` public alanlar kapatıldı. Çekirdek borç duruyor: 12 `(Robot)` cast (`[A2]`), `MathFunctionForSecondSolution` ~185 satır / 5 iş (`[A3]`), 8 yön sınıfı enum olmadı (`[A1]`). **Ama artık regresyon ağı var → bu refactor'ler güvenli.** |
+| **Çözüm Yöntemi (algoritma)** | 7.5 | 7.5 | **7.5** | Değişmedi — algoritmalara bilerek dokunulmadı. Yeni-2'de brute-force oracle 5x5'te doğruladı (12_400). +1.0 için `[H*]` hız + benchmark + karmaşıklık dökümü bekliyor. |
+| **Kodlama Kalitesi** | 4 | 6 | **6.5** | Yeni-2: `[X1]`/`[X2]` genel `Exception` → `InvalidGameConfigException`, `catch` daraltıldı, çift atama temizlendi; `[M2]` `MIN_MAP_SIZE`, `[M3]` 3 sabit; `[N3]` "Unknow"→"Unknown". Açık: ~72 identifier yazım hatası (`[N1]`/`[N2]`), kalan magic number (`[M4]`–`[M8]`), sıcak yolda `assert` (`[X8]`), `-1` sentinel (`[X7]`), 3 `catch (Exception)`. |
+| **Clean Code Uygunluğu** | 3.5 | 6.5 | **7.0** | Yeni-1'de ölü kod + boolean + Trace ile büyük sıçrama olmuştu. Yeni-2: `.editorconfig` + `.gitattributes` (satır sonu tutarlılığı — `[C1]`/`[C2]`), 2 encapsulation. Açık: TR/EN yorum karışık (`[N6]`), bir kerelik LF normalizasyonu, `nbproject/`+`build.xml` hâlâ duruyor (`[C5]`). |
+| **Test Edilebilirlik / Güvenilirlik** | 2 | 3.5 | **5.5** | Yeni-2'de gerçek sıçrama. `test/` altında **16 test, `mvn test` yeşil**: (a) `GameRegressionTest` — 5x5 golden-master, iki algoritmanın solved/round/dummyBack/totalBack değerlerini kilitler + çapraz kontrol; (b) `IndependentSolutionCountTest` — oyunun kurallarını sıfırdan uygulayan bağımsız DFS, 5x5 = 12_400, iki algoritmayla birebir (**bilinmeyen sayıyı ikinci yöntemle doğrulama**); (c) `Validation`/`StringFormat`/`Model`/`WeightOfAvailableWay`/`SwitchDirection` birim testleri; `GameHarness` oyunu menüsüz koşturur. Kalan: CI yok, JaCoCo/coverage eşiği yok (kapsam ~%20), `Main.runSolvedGame(...)` çıkarımı yok, `CalculationDeadlyPoint`/`Score`/`Compass` testleri yok. |
+| **Genel Ortalama** | **~4.6** | **~6.0** | **~6.7** | (7.0+7.5+6.5+7.0+5.5)/5. Yeni-2'nin asıl kazancı **regresyon ağı** — puanı en çok Test'i (+2) yükseltti, ayrıca büyük mimari refactor'lerin önünü açtı. |
 
-Kısaca: **fikir ve algoritma tarafı iyi, işçilik tarafı — eskiden dağınıktı,
-artık büyük ölçüde toparlandı; kalan borç mimari + test + isimlendirme.**
-Aşağıdaki maddeler önem sırasına göre değil, kategori bazlı sıralandı;
-§5'te öncelik sıralı bir eylem planı, §7'de kriter bazında ne değiştiği var.
+Kısaca: **fikir + algoritma iyi; işçilik eskiden dağınıktı, artık toparlandı
+ve bir güvenlik ağı (test) var.** Kalan en büyük borç: enum/cast/SRP mimari
+refactor'leri (artık güvenli), ~72 yazım hatası, test kapsamı + CI.
+Aşağıdaki maddeler kategori bazlı; §5'te öncelik sıralı plan, §7'de kriter
+bazında ne değiştiği.
 
 ---
 
@@ -397,23 +400,42 @@ Kolay/etkisi yüksekten zor/etkisi düşüğe doğru:
 
 ## 7. Yeniden Değerlendirme — Kriter Bazında Ne Değişti (2026-08-31)
 
-Aşağıdaki tablo §1'deki puanların **neden** oynadığını (ya da oynamadığını)
-madde madde açıyor. Referanslar `yapilmasi-gereken-duzeltmeler.md` madde
-kodlarına.
+Referanslar `yapilmasi-gereken-duzeltmeler.md` madde kodlarına.
 
-| Kriter | Δ | Yapılanlar (puanı yukarı çeken) | Hâlâ açık (tavanı bastıran) |
+### 7.1 Puan seyri
+
+| Kriter | Eski | Yeni-1 | Yeni-2 |
 |---|---|---|---|
-| Mimari / Tasarım | +0.5 | `DirectionCompassValues` çift-tanımı silindi; Person `ClassCastException` yolu `Player.getSolutionName()` ile kapandı (`[R1]`); `Model.getTotalSquareCount()` edge² dağınıklığını topladı (`[R2]`); `pom.xml` ile gerçek modül. | 12 `(Robot)` cast (`[A2]`); `MathFunctionForSecondSolution` SRP (`[A3]`); 8 yön sınıfı → enum (`[A1]`); kalıtım istismarı (`[A4]`); `Game`'in kullanılmayan constructor'ı (`[A7]`). |
-| Çözüm Yöntemi | 0 | — (bilerek dokunulmadı; her tur 5x5/6x6 metrikleri sabit). | — |
-| Kodlama Kalitesi | +2 | Boolean anti-pattern ~22 metotta düzeldi (`[B1]`/`[B2]`); boş `catch` (`[R7]`); `JOptionPane`/`ShowPanel` 27→0, `sleep` paketi silindi (`[L4]`/`[L7]`); `Math.pow` sıcak yoldan çıktı (`[R2]`); `WeightOfAvailableWay` taşma guard'ı (`[R5]`); `[R3]`/`[R4]`/`[R6]`. | ~72 yazım hatası eşleşmesi, 26 dosya (`[N1]`–`[N6]`); magic number'lar (`[M2]`–`[M8]`); genel `Exception` (`[X1]`); `assert` (`[X8]`); `-1` sentinel dönüş (`[X7]`); 4 adet `catch (Exception)`. |
-| Clean Code | +3 | Ölü/yorumlu kod büyük ölçüde gitti (`[D1]`–`[D16]`): `PlayGame`/`MathFunctionForSecondSolution`/`Robot` yorum blokları, 2 ölü dosya, ~9 kullanılmayan import, atanıp okunmayan alanlar. `Trace` derleme-zamanı loglama (`[L1]`, javadoc'lu). İzlenebilir remediation planı (`yapilmasi-gereken-duzeltmeler.md`). | Yazım hataları + TR/EN yorum karışıklığı (`[N6]`); bilerek bırakılan `printGamelastStuation` yorumlu blokları; `.editorconfig`/`.gitattributes` yok (`[C1]`/`[C2]`). |
-| Test Edilebilirlik | +1.5 | `pom.xml` → JUnit tek bağımlılık uzakta (`[A6]` kısmi); bloklayan modal'lar gitti; `Trace` toggle testleri sessizleştirir; cast kaldırma `PlayGame`'i Person'la test edilebilir yaptı; tekrarlanabilir metrik koşuları (12_400 / 511_816 / 1_023_656 / 83_076) bir regresyon ağı. | **0 test** hâlâ gerçek; `src/test` yok, JUnit eklenmedi (`[A5]`); `Scanner(System.in)` gömülü; sonuç çıktısı statik `System.out`. |
+| Mimari / Tasarım | 6 | 6.5 | 7.0 |
+| Çözüm Yöntemi (algoritma) | 7.5 | 7.5 | 7.5 |
+| Kodlama Kalitesi | 4 | 6 | 6.5 |
+| Clean Code | 3.5 | 6.5 | 7.0 |
+| Test Edilebilirlik | 2 | 3.5 | 5.5 |
+| **Ortalama** | **4.6** | **6.0** | **6.7** |
 
-**Net etki:** ~4.6 → ~6.0. Ucuz ve risksiz olan (ölü kod, boolean,
-JOptionPane, Trace) yapıldı; pahalı olan (enum refactor, cast temizliği,
-SRP bölme, ilk testler) duruyor. Bir sonraki en yüksek getirili adım:
-**Bölüm 5 (`[N*]` isimlendirme — IntelliJ `Shift+F6`)** + **`[A5]` ilk
-birim testleri** (Maven artık hazır).
+### 7.2 Yeni-1'de ne yapıldı (Bölüm 1–4 + Maven)
+
+| Kriter | Δ | Yapılanlar | Kalan |
+|---|---|---|---|
+| Mimari | +0.5 | `DirectionCompassValues` çift-tanımı silindi; Person `ClassCastException` yolu `getSolutionName()` ile kapandı (`[R1]`); `Model.getTotalSquareCount()` (`[R2]`); `pom.xml`. | `[A1]`/`[A2]`/`[A3]`/`[A4]`. |
+| Kodlama Kalitesi | +2 | Boolean anti-pattern ~22 metot (`[B1]`/`[B2]`); boş `catch` (`[R7]`); `JOptionPane` 27→0, `sleep` paketi (`[L4]`/`[L7]`); `Math.pow` sıcak yoldan (`[R2]`); `[R3]`–`[R6]`. | yazım hataları, magic number, `[X*]`. |
+| Clean Code | +3 | Ölü/yorumlu kod (`[D1]`–`[D16]`), ~9 kullanılmayan import; `Trace` derleme-zamanı loglama (`[L1]`); remediation planı. | `[N6]`, `.editorconfig`. |
+| Test | +1.5 | `pom.xml` → JUnit yakın; bloklayan modal'lar gitti; tekrarlanabilir metrik koşuları. | **0 test.** |
+
+### 7.3 Yeni-2'de ne yapıldı (test + kodlama kalitesi + küçük mimari)
+
+| Kriter | Δ | Yapılanlar | Kalan |
+|---|---|---|---|
+| Test Edilebilirlik | +2.0 | **16 test, `mvn test` yeşil.** `GameRegressionTest` (5x5 golden-master + iki algoritma çapraz kontrol); `IndependentSolutionCountTest` (bağımsız DFS oracle, 5x5 = 12_400 = iki algoritma → "bilinmeyen sayıyı ikinci yöntemle doğrula"); `Validation`/`StringFormat`/`Model`/`WeightOfAvailableWay`/`SwitchDirection` birim testleri; `GameHarness` menüsüz koşturucu. | CI, JaCoCo eşiği (kapsam ~%20), `Main.runSolvedGame(...)`, `CalculationDeadlyPoint`/`Score`/`Compass` testleri. |
+| Mimari | +0.5 | `[X1]` custom exception → çağıran `catch (Exception)`'a mecbur değil; `[A7]` ölü constructor; `[A9]` `getCompass()` (this); `[E1]`/`[E5]`. **+ regresyon ağı → `[A1]`/`[A2]`/`[A3]` artık güvenli.** | `[A1]`/`[A2]`/`[A3]`/`[A4]`/`[A8]`. |
+| Kodlama Kalitesi | +0.5 | `[X1]`/`[X2]` (genel `Exception` → `InvalidGameConfigException`, `catch` daraldı, çift atama); `[M2]` `MIN_MAP_SIZE`, `[M3]` 3 sabit; `[N3]` "Unknow"→"Unknown". | ~72 identifier yazım hatası, `[M4]`–`[M8]`, `[X7]`/`[X8]`, 3 `catch (Exception)`. |
+| Clean Code | +0.5 | `.editorconfig` + `.gitattributes` (`[C1]`/`[C2]`); 2 encapsulation. | `[N6]`, LF normalizasyonu, `nbproject/` (`[C5]`). |
+| Çözüm Yöntemi | 0 | — (bilerek dokunulmadı; oracle 5x5'te doğruladı). | `[H*]` hız + benchmark + karmaşıklık dökümü. |
+
+**Net:** 4.6 → 6.0 → 6.7. Yeni-2'nin asıl değeri **regresyon ağı**: hem Test
+puanını yükseltti hem de en pahalı işi (enum/cast/SRP refactor) güvenli hale
+getirdi. Sıradaki en yüksek getiri: **`[A1]` enum refactor** (ağ artık hazır)
+ve **`[N*]` yazım hataları** (IntelliJ `Shift+F6`, mekanik).
 
 ---
 
@@ -421,10 +443,10 @@ birim testleri** (Maven artık hazır).
 
 Proje, 2020 seviyesi için **iddialı bir algoritma denemesi** — asıl değer
 orada. İlk değerlendirmede en çok puan kaybettiren noktalar (ölü kod,
-sistematik boolean anti-pattern'i, `JOptionPane` yan etkileri, dağınık
-debug loglama) **bu turlarda büyük ölçüde kapatıldı** — Clean Code ve
-Kodlama Kalitesi belirgin yükseldi (§7). Kalan borç daha zor kısımda
-yoğunlaşıyor: **mimari** (concrete cast'ler, şişkin sınıflar, 8 yön
-sınıfı), **sıfır otomatik test** ve **yaygın yazım hataları**. Maven
-geçişi yapıldığı için artık JUnit eklemek ve §5'in kalan maddelerini
-işlemek önündeki teknik engel de kalktı.
+boolean anti-pattern'i, `JOptionPane` yan etkileri, dağınık debug loglama,
+sıfır test) **iki turda büyük ölçüde kapatıldı**: Clean Code 3.5→7.0,
+Kodlama Kalitesi 4→6.5, Test 2→5.5. Artık `mvn test` ile geçen bir
+**regresyon ağı + bağımsız doğrulama** var — bu, kalan en büyük borcun
+(enum/cast/SRP mimari refactor'leri) önündeki risk engelini de kaldırdı.
+Geriye kalan: o mimari refactor'ler, ~72 identifier yazım hatası, test
+kapsamı + CI.
