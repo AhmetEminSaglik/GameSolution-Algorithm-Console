@@ -11,10 +11,12 @@ import game.gamerepo.player.robot.solution.second.SecondSolution_CalculateForwar
 import game.play.PlayGame;
 import game.play.input.person.PersonInput;
 import game.play.input.robot.RobotInput;
+import persistence.CompositeSolutionSink;
 import persistence.DbConfig;
 import persistence.JdbcSolutionSink;
 import persistence.NoOpSolutionSink;
 import persistence.SolutionSink;
+import persistence.TrieSolutionSink;
 import trace.Trace;
 
 import java.util.Arrays;
@@ -53,20 +55,56 @@ public class Main {
     }
 
     /**
-     * DB kaydi acik.sa JdbcSolutionSink, degilse NoOpSolutionSink.
-     * Acmak icin:  ortam degiskeni PATHEXPLORER_DB_ENABLED=1  ya da  program argumani --save-db
-     * (once "docker compose up -d" ile Postgres ayakta olmali.)
+     * DB kayit modunu belirler.
+     *  - Argüman verilmişse sessiz: {@code --save=none|flat|trie|both}
+     *    ({@code --save-db} = {@code --save=flat} kısayolu; {@code PATHEXPLORER_DB_ENABLED=1} = flat).
+     *  - Argüman yoksa konsoldan menü ile sorulur (lokal geliştirme).
+     *
+     *  flat  : her çözüm 1 satır (küçük haritalar).
+     *  trie  : parent-child ağaç, ortak önek 1 kez (her boyut, özellikle büyük).
+     *  both  : ikisi birden.
      */
     static SolutionSink createSolutionSink(String[] args) {
-        boolean enabled = DbConfig.isDbEnabled()
-                || Arrays.asList(args == null ? new String[0] : args).contains("--save-db");
-        if (!enabled) {
-            System.out.println("DB kaydi: kapali (acmak icin PATHEXPLORER_DB_ENABLED=1 veya --save-db)");
-            return new NoOpSolutionSink();
-        }
+        String mode = readSaveMode(args);
         DbConfig cfg = DbConfig.load();
-        System.out.println("DB kaydi: ACIK  -> " + cfg.url());
-        return new JdbcSolutionSink(cfg);
+        switch (mode) {
+            case "flat":
+                System.out.println("DB kaydi: FLAT  -> " + cfg.url());
+                return new JdbcSolutionSink(cfg);
+            case "trie":
+                System.out.println("DB kaydi: TRIE  -> " + cfg.url());
+                return new TrieSolutionSink(cfg);
+            case "both":
+                System.out.println("DB kaydi: FLAT + TRIE  -> " + cfg.url());
+                return new CompositeSolutionSink(java.util.List.of(
+                        new JdbcSolutionSink(cfg), new TrieSolutionSink(cfg)));
+            default:
+                System.out.println("DB kaydi: kapali");
+                return new NoOpSolutionSink();
+        }
+    }
+
+    private static String readSaveMode(String[] args) {
+        for (String a : (args == null ? new String[0] : args)) {
+            if (a.equals("--save-db")) {
+                return "flat";
+            }
+            if (a.startsWith("--save=")) {
+                return a.substring("--save=".length()).toLowerCase();
+            }
+        }
+        if (DbConfig.isDbEnabled()) {
+            return "flat";
+        }
+        // argüman yok → sor
+        System.out.println("DB kayit modu sec:  0) yok   1) flat   2) trie   3) both");
+        String in = new Scanner(System.in).nextLine().trim();
+        return switch (in) {
+            case "1" -> "flat";
+            case "2" -> "trie";
+            case "3" -> "both";
+            default -> "none";
+        };
     }
 
     Player selectPlayer(Game game) {

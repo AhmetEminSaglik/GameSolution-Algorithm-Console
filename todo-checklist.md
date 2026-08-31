@@ -216,9 +216,77 @@ lokal ve remote'ta aynı.
 
 ---
 
+## FAZ 9 — Trie (parent-child ağaç) ile çözüm saklama  ✅ (2026-08-31)
+
+**Amaç:** Ortak öneki 1 kez sakla. İlk 50 adımı paylaşan 6M çözüm için o 50 düğüm
+1 satır. Çözümlerin hepsi korunur (kök→yaprak yolu).
+
+**Sonuç:** `docker/initdb/03_trie.sql` (`grid_map` seed 1-6, `solution_step`
+grid_map_id-LIST-partition), `SolutionSink.onRoot/onForward/onBackward` (default
+no-op), `PlayGame` olay yayını, `TrieSolutionSink` (DFS post-order flush, budama,
+client id, batch), `CompositeSolutionSink` (both), `Main --save=none|flat|trie|both`
++ argümansız konsol menüsü. **`TrieSolutionSinkDbTest` yeşil:** 5x5 → 150.609 düğüm
+(düz 297.600 slot, ~2x), Σ kök `subtree_solution_count` = **12_400**, parent-child
+tutarlı, yaprak→kök geri kurulum geçerli 25-hücre çözüm. `mvn test` 21 fast + 2 db.
+
+### 9.0 Kavram
+- Her çözüm = kök (adım 1 = başlangıç karesi) → yaprak (adım N) yolu.
+- Aynı önek = aynı düğümler. Trie düğüm sayısı = **farklı kısmi yol** sayısı, toplam çözüm değil.
+- `subtree_solution_count` = buradan geçen tamamlanmış çözüm sayısı ("bu açılıştan kaç çözüm").
+- `solution_ordinal` (index) = düğüm oluşturulduğunda `bulunan_cozum + 1`. Çözüm bulunana
+  kadar sabit, bulununca +1.
+- **Bellek:** DFS post-order — geri adımda (alt-ağaç bitince) düğümü yaz + bellekten at.
+  Bellekte sadece aktif yol ≈ O(derinlik). Her grid boyutu için çalışır.
+- id'ler **client-side** atanır (parent id çocuktan önce lazım; DB IDENTITY beklenemez).
+
+### 9.1 Şema — `docker/initdb/03_trie.sql`
+- [ ] `grid_map` (id SMALLINT PK, row_size, col_size, UNIQUE(row,col)); seed 1..6 (5x5..10x10).
+- [ ] `solver_run`'a `grid_map_id SMALLINT REFERENCES grid_map(id)` + `save_mode VARCHAR(8)`.
+- [ ] `solution_step` PARTITION BY LIST (grid_map_id):
+  - `id BIGINT` (client-assigned), `run_id`, `grid_map_id`, `parent_step_id BIGINT` (kök NULL),
+    `step_no SMALLINT`, `x`, `y` SMALLINT, `move_from_parent SMALLINT` (0-7, kök NULL),
+    `solution_ordinal BIGINT`, `subtree_solution_count BIGINT`, `is_leaf BOOLEAN`.
+  - PK (run_id, id). Partition 1..6 + DEFAULT. Index (run_id, parent_step_id), (grid_map_id, step_no).
+  - parent_step_id'ye formal FK YOK (dev ağaç; uygulama bütünlüğü sağlar).
+
+### 9.2 SolutionSink genişletme
+- [ ] `onRoot(int x, int y)` — yeni başlangıç karesi (ilk kez + start değişince). Önceki
+      kök alt-ağacı tamam → flush.
+- [ ] `onForward(int step, int x, int y, int move)` — ileri adım.
+- [ ] `onBackward(int steps)` — geri adım (genelde 1).
+- Hepsi default no-op → `NoOpSolutionSink` / flat `JdbcSolutionSink` etkilenmez.
+
+### 9.3 PlayGame olayları
+- [ ] Döngüde `prevStep` + `choose` yakala. `curStep>prev`→onForward, `<`→onBackward,
+      `==1`→onRoot. Döngü öncesi bir kez `onRoot(startX,startY)`.
+
+### 9.4 TrieSolutionSink
+- [ ] `beginRun`: solver_run (grid_map_id lookup/insert, save_mode='trie').
+- [ ] `onRoot`: önceki kökü flush; yeni kök düğümü (step 1, parent NULL), stack=[root].
+- [ ] `onForward`: cache `Map<Long,Map<Integer,Long>>` (parentId→move→childId). Miss→yeni
+      düğüm (client id, solution_ordinal=solutionsFound+1), push. Hit→push mevcut.
+- [ ] `onBackward`: pop; çıkan düğüm alt-ağacı tamam → final count, flush buffer'a, cache'ten sil.
+- [ ] `accept` (çözüm): stack'teki her düğüme `subtree_solution_count++`; yaprak işaretle;
+      `solutionsFound++`.
+- [ ] `endRun`: kalan flush + solver_run COMPLETED. `close`/shutdown: flush + ABORTED.
+- [ ] Batch insert (flat sink gibi, 1000).
+
+### 9.5 Main — mod seçimi
+- [ ] `--save=none|flat|trie|both` argümanı → sessiz. `--save-db` = `--save=flat` (alias).
+- [ ] Argüman yoksa → konsol menüsü (0 yok / 1 flat / 2 trie / 3 both), index seç.
+- [ ] `CompositeSolutionSink` (both için).
+
+### 9.6 Test + doküman
+- [ ] `TrieSolutionSinkDbTest` (@Tag db): 5x5 2. çözüm → trie. Doğrula:
+      Σ kök `subtree_solution_count` = 12_400; düğüm sayısı (sıkışma: X vs 297_600);
+      bir yaprak→kök yolu geçerli 25-hücre çözüm; derinlik-3 düğümün count'u flat ile eşleşir.
+- [ ] `PERSISTENCE.md`: trie modu, `solution_ordinal` semantiği, önek sorgusu, partition notu.
+
+---
+
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31. **TÜM FAZLAR (0-8) TAMAMLANDI.**
+**Son güncelleme:** 2026-08-31. **FAZ 0-9 TAMAMLANDI** (9 = trie parent-child agac).
 
 ### Ne teslim edildi
 

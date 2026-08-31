@@ -50,6 +50,11 @@ public class PlayGame {
         printTableIfPersonPlays();
         appendFileSolutionName();
 
+        int prevStep = player.getStep();
+        if (recordSolutions) {
+            solutionSink.onRoot(player.getLocation().getX(), player.getLocation().getY());
+        }
+
         while (!player.getGameRule().isGameOver(game)) {
 
             game.increaseRoundCounter();
@@ -58,6 +63,11 @@ public class PlayGame {
             moveForwardOrBack.move(
                     new DirectionLocation().
                             getLocationValueAccordingToEnteredValue(game, choose));
+
+            if (recordSolutions) {
+                emitMoveEvent(prevStep, choose);
+            }
+            prevStep = player.getStep();
 
             calculatePlayerTotalWinScore();
 
@@ -122,6 +132,22 @@ public class PlayGame {
             if (recordSolutions) {
                 solutionSink.accept(new SolutionSink.FoundSolution(solutionIndex, extractCurrentPath()));
             }
+        }
+    }
+
+    /**
+     * Bir hamleden sonra sink'e ileri/geri/yeni-kok olayini bildirir.
+     * {@code prevStep} hamleden onceki adim numarasi, {@code choose} secilen yon.
+     */
+    private void emitMoveEvent(int prevStep, int choose) {
+        int curStep = player.getStep();
+        if (curStep > prevStep) {
+            solutionSink.onForward(curStep, player.getLocation().getX(), player.getLocation().getY(), choose);
+        } else if (curStep < prevStep) {
+            solutionSink.onBackward(prevStep - curStep);
+        } else {
+            // adim 1'de kaldi -> baslangic karesi degisti (changeStartLocationSpecialMovement)
+            solutionSink.onRoot(player.getLocation().getX(), player.getLocation().getY());
         }
     }
 

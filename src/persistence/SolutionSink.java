@@ -20,6 +20,21 @@ public interface SolutionSink extends AutoCloseable {
 
     void endRun(RunResult result);
 
+    // --- Trie (parent-child agac) modu icin adim-adim olaylar.
+    //     Duz sink'ler bunlari umursamaz (default no-op). ---
+
+    /** Yeni baslangic karesi: dongu basinda bir kez + oyun her start karesini degistirdiginde. */
+    default void onRoot(int x, int y) {
+    }
+
+    /** Ileri adim: adim numarasi {@code step}, varilan kare (x,y), parent'tan gelen yon 0-7. */
+    default void onForward(int step, int x, int y, int move) {
+    }
+
+    /** Geri adim ({@code steps} kadar; genelde 1). */
+    default void onBackward(int steps) {
+    }
+
     @Override
     void close();
 
