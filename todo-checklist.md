@@ -172,13 +172,26 @@ lokal ve remote'ta aynı.
 - [x] `mvn test` yeşil (21 fast). `mvn test -Dtest.excludedGroups=slow -Dgroups=db` yeşil (1).
 - [x] Commit.
 
-## FAZ 6 — Bağlama (Main)
+## FAZ 6 — Bağlama (Main)  ✅ (2026-08-31)
 
-- [ ] `Main`: DB kaydı flag/menü/env (`PATHEXPLORER_DB=1` veya menüde "3) DB'ye kaydet").
-      Açıksa `JdbcSolutionSink`, kapalıysa `NoOpSolutionSink`.
-- [ ] Algoritma seçimi + start hücresi bilgisi `RunInfo`'ya.
-- [ ] Elle deneme: `docker compose up -d` → 5x5 DB'ye kaydet → `psql` ile satır say.
-- [ ] Commit: "Faz 6: Main -> opsiyonel DB kaydi".
+- [x] `Main.createSolutionSink(args)`: `PATHEXPLORER_DB_ENABLED=1` **veya** `--save-db`
+      argümanı → `JdbcSolutionSink`, yoksa `NoOpSolutionSink`. `try/finally` ile `close()`.
+      Mod ekrana yazılıyor ("DB kaydi: ACIK -> jdbc:...").
+- [x] `pom.xml`: **maven-shade-plugin** → tüm bağımlılıkları içeren tek çalışır jar
+      (`java -jar target/game-solution-algorithm.jar --save-db`). Thin jar deps'i
+      bulamıyordu (`NoClassDefFoundError: HikariConfig`).
+- [x] `RunInfo` = rowCount, colCount, algorithm (`player.getSolutionName()`).
+      Başlangıç hücresi çözüm başına `GridPath.startX/startY` içinde (oyun tüm
+      başlangıçları geziyor).
+- [x] **UÇTAN UCA DOĞRULAMA:** `docker compose up -d` → `java -jar ...jar --save-db`
+      → 5x5 2. çözüm:
+      - `solver_run`: COMPLETED, total_solved **12_400**, round_counter 1_023_656,
+        total_back_steps 511_816, dummy_back_steps 83_076 (hepsi golden değerlerle aynı).
+      - `path_explorer_solution`: grid_size=5005 partition'da **12_400 satır**.
+      - `GROUP BY open1`: her açılış hücresi 552 çözüm (simetriyle tutarlı).
+      - Depolama: 12_400 satır = 3.76 MB toplam, `path` ortalama **9.00 byte**.
+- [x] `mvn test` 21/21.
+- [x] Commit.
 
 ## FAZ 7 — "Açılıştan kaç çözüm" analitiği
 
@@ -201,11 +214,11 @@ lokal ve remote'ta aynı.
 
 ## DURUM / DEVAM RAPORU
 
-**Son güncelleme:** 2026-08-31, Faz 5 bitti.
+**Son güncelleme:** 2026-08-31, Faz 6 bitti.
 
 **Tamamlanan:** Faz 0-3. Faz 1: 5x6=113_456 dogrulandi. Faz 2: PathCodec 3bit/adim. Faz 3: SolutionSink kancasi (5x5 12_400 cozum yakalandi).
 
-**Sıradaki:** Faz 6 — Main entegrasyonu (opsiyonel DB kaydi).
+**Sıradaki:** Faz 7 — acilis istatistigi sorgusu (+ Faz 8 dokuman/rapor).
 
 **Yeni session için notlar:**
 - Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.
