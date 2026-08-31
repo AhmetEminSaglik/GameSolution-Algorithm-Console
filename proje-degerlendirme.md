@@ -6,22 +6,35 @@ hata yönetimi, interface kullanımı vb. sistematik olarak tarandı, en
 kritik dosyalar tek tek okundu). Amaç: nerede sıkıntı var, neden sıkıntı,
 ve nasıl düzeltilir — somut kod örnekleriyle.
 
+> **Yeniden değerlendirme — 2026-08-31.** İlk sürümden bu yana yapılan
+> temizlik turları (`yapilmasi-gereken-duzeltmeler.md`: Bölüm 1 `[R*]`,
+> Bölüm 2 `[L*]` Trace + JOptionPane kaldırma, Bölüm 3 `[D*]` ölü kod,
+> Bölüm 4 `[B*]` boolean; ayrıca `pom.xml` / Maven build) sonrası proje
+> baştan tarandı. §1'de artık **Eski / Yeni** puan sütunları var; kriter
+> bazında ne değişti §7'de. Kod tekrar tarandı: 103 dosya / ~4500 satır,
+> `(Robot)` cast 12, `JOptionPane`/`ShowPanel` **0** (eskiden 27),
+> `printStackTrace` 2 (eskiden 6), `System.out` 37 (eskiden 48), yazım
+> hatası ~72 eşleşme (henüz hiç dokunulmadı), otomatik test **hâlâ 0**.
+> Davranış her turda 5x5/6x6 metrikleriyle sabit tutuldu
+> (`total Solved = 12_400` vs.), yani puan artışı algoritmayı bozmadan geldi.
+
 ---
 
 ## 1. Genel Puanlama
 
-| Kriter | Puan (10 üzerinden) | Kısa gerekçe |
-|---|---|---|
-| **Mimari / Tasarım** | 6/10 | Strategy + Template Method niyeti doğru (Player→Person/Robot, BaseSolution→First/Second/Third), ama katmanlar arası sıkı bağlılık (concrete cast'ler), SRP ihlalleri var. |
-| **Çözüm Yöntemi (algoritma)** | 7.5/10 | Üç farklı algoritma (brute-force kombinasyon → ileri-bakışlı heuristik → graph tabanlı "golden square") gerçek bir algoritmik ilerleme gösteriyor. Bu proje için en güçlü yön. |
-| **Kodlama Kalitesi** | 4/10 | Yazım hataları, tekrar eden anti-pattern'ler (aşağıda), magic number'lar, tutarsız hata yönetimi. |
-| **Clean Code Uygunluğu** | 3.5/10 | Ölü/yorumlanmış kod oranı yüksek, boolean dönüşlerde sistematik bir anti-pattern var (bkz. §3.1), yorumların çoğu "ne"yi değil kafa karışıklığını anlatıyor. |
-| **Test Edilebilirlik / Güvenilirlik** | 2/10 | **Projede hiç test yok** (`find . -iname "*test*"` → sıfır sonuç). Statik `System.out` / `JOptionPane` yan etkileri test yazmayı zorlaştırıyor. |
-| **Genel Ortalama** | **~4.6/10** | 2020'de tek başına yazılmış, öğrenme amaçlı bir proje için hedef iddialı ve isabetli; ama "temiz kod" standardına göre ciddi bir toparlama geçirmesi lazım. |
+| Kriter | Eski | Yeni | Kısa gerekçe (yeni durum) |
+|---|---|---|---|
+| **Mimari / Tasarım** | 6/10 | **6.5/10** | `DirectionCompassValues` çift tanımı silindi, Person yolundaki `ClassCastException` riski `getSolutionName()` ile kapandı, `Model.getTotalSquareCount()` edge² tekrarını topladı, Maven modülü geldi. Ama çekirdek sorunlar duruyor: 12 `(Robot)` cast (`[A2]`), `MathFunctionForSecondSolution` hâlâ 5 iş / ~182 satır (`[A3]`), 8 yön sınıfı enum olmadı (`[A1]`), `SelectFirstSqaureToStart extends DirectionLocation` (`[A4]`). |
+| **Çözüm Yöntemi (algoritma)** | 7.5/10 | **7.5/10** | Değişmedi — algoritmalara bilerek dokunulmadı, davranış birebir korundu. Hâlâ projenin en güçlü yönü. |
+| **Kodlama Kalitesi** | 4/10 | **6/10** | Sistematik boolean anti-pattern (~22 metot) düzeltildi; 2. çözümdeki sessiz boş `catch` kalktı (`[R7]`); `JOptionPane`/`ShowPanel` (27→0) ve `sleep` paketi silindi; sıcak yoldaki `Math.pow`/`edge*edge` isimli metoda döndü; `[R1]`–`[R6]` gerçek bug'lar kapandı; `WeightOfAvailableWay` dizi taşması güvene alındı. Açık: ~72 yazım hatası (`[N*]`), çoğu magic number (`[M*]`), `ErrorMessage.throwError` genel `Exception` (`[X1]`), sıcak yolda `assert` (`[X8]`). |
+| **Clean Code Uygunluğu** | 3.5/10 | **6.5/10** | En büyük hareket burada. Ölü/yorumlu kod: `PlayGame` 27→~0, `MathFunctionForSecondSolution` 18→0, `Robot` 16→0; 2 ölü dosya + öncekilerle 6 dosya silindi; ~9 kullanılmayan import, atanıp okunmayan alanlar kalktı. Boolean sadeleştirmesi diff'leri küçülttü. `Trace` (derleme-zamanı DCE'li, iyi belgelenmiş) dağınık debug'ın yerini aldı. `yapilmasi-gereken-duzeltmeler.md` izlenebilir bir remediation planı olarak eklendi. Açık: yazım hataları okunabilirliği hâlâ tırmalıyor, TR/EN yorum karışık (`[N6]`). |
+| **Test Edilebilirlik / Güvenilirlik** | 2/10 | **3.5/10** | **Hâlâ tek bir otomatik test yok.** Ama altyapı açıldı: `pom.xml` ile JUnit tek bağımlılık uzakta (`[A6]` kısmi); bloklayan `JOptionPane` modalları gitti (eskiden test "fiilen imkânsız"dı); `Trace` derleme-zamanı toggle → testler debug çıktısına boğulmaz; `getSolutionName()` Person + `PlayGame` testini engelleyen cast'i kaldırdı; davranış tekrarlanabilir metrik koşularıyla (12_400 / 511_816 / …) sabitlendi — fakir adamın regresyon kontrolü. `Scanner(System.in)` hâlâ `Main`/`BuildGame`/`SafeScannerInput`'a gömülü. |
+| **Genel Ortalama** | **~4.6/10** | **~6.0/10** | (6.5+7.5+6+6.5+3.5)/5. Temizlik turları okunabilirliği ve kodlama kalitesini belirgin yükseltti; mimari borç ve sıfır test hâlâ tavanı bastırıyor. |
 
-Kısaca: **fikir ve algoritma tarafı iyi, işçilik tarafı dağınık.** Aşağıdaki
-maddeler önem sırasına göre değil, kategori bazlı sıralandı; §5'te öncelik
-sıralı bir eylem planı var.
+Kısaca: **fikir ve algoritma tarafı iyi, işçilik tarafı — eskiden dağınıktı,
+artık büyük ölçüde toparlandı; kalan borç mimari + test + isimlendirme.**
+Aşağıdaki maddeler önem sırasına göre değil, kategori bazlı sıralandı;
+§5'te öncelik sıralı bir eylem planı, §7'de kriter bazında ne değiştiği var.
 
 ---
 
@@ -382,12 +395,36 @@ Kolay/etkisi yüksekten zor/etkisi düşüğe doğru:
 
 ---
 
+## 7. Yeniden Değerlendirme — Kriter Bazında Ne Değişti (2026-08-31)
+
+Aşağıdaki tablo §1'deki puanların **neden** oynadığını (ya da oynamadığını)
+madde madde açıyor. Referanslar `yapilmasi-gereken-duzeltmeler.md` madde
+kodlarına.
+
+| Kriter | Δ | Yapılanlar (puanı yukarı çeken) | Hâlâ açık (tavanı bastıran) |
+|---|---|---|---|
+| Mimari / Tasarım | +0.5 | `DirectionCompassValues` çift-tanımı silindi; Person `ClassCastException` yolu `Player.getSolutionName()` ile kapandı (`[R1]`); `Model.getTotalSquareCount()` edge² dağınıklığını topladı (`[R2]`); `pom.xml` ile gerçek modül. | 12 `(Robot)` cast (`[A2]`); `MathFunctionForSecondSolution` SRP (`[A3]`); 8 yön sınıfı → enum (`[A1]`); kalıtım istismarı (`[A4]`); `Game`'in kullanılmayan constructor'ı (`[A7]`). |
+| Çözüm Yöntemi | 0 | — (bilerek dokunulmadı; her tur 5x5/6x6 metrikleri sabit). | — |
+| Kodlama Kalitesi | +2 | Boolean anti-pattern ~22 metotta düzeldi (`[B1]`/`[B2]`); boş `catch` (`[R7]`); `JOptionPane`/`ShowPanel` 27→0, `sleep` paketi silindi (`[L4]`/`[L7]`); `Math.pow` sıcak yoldan çıktı (`[R2]`); `WeightOfAvailableWay` taşma guard'ı (`[R5]`); `[R3]`/`[R4]`/`[R6]`. | ~72 yazım hatası eşleşmesi, 26 dosya (`[N1]`–`[N6]`); magic number'lar (`[M2]`–`[M8]`); genel `Exception` (`[X1]`); `assert` (`[X8]`); `-1` sentinel dönüş (`[X7]`); 4 adet `catch (Exception)`. |
+| Clean Code | +3 | Ölü/yorumlu kod büyük ölçüde gitti (`[D1]`–`[D16]`): `PlayGame`/`MathFunctionForSecondSolution`/`Robot` yorum blokları, 2 ölü dosya, ~9 kullanılmayan import, atanıp okunmayan alanlar. `Trace` derleme-zamanı loglama (`[L1]`, javadoc'lu). İzlenebilir remediation planı (`yapilmasi-gereken-duzeltmeler.md`). | Yazım hataları + TR/EN yorum karışıklığı (`[N6]`); bilerek bırakılan `printGamelastStuation` yorumlu blokları; `.editorconfig`/`.gitattributes` yok (`[C1]`/`[C2]`). |
+| Test Edilebilirlik | +1.5 | `pom.xml` → JUnit tek bağımlılık uzakta (`[A6]` kısmi); bloklayan modal'lar gitti; `Trace` toggle testleri sessizleştirir; cast kaldırma `PlayGame`'i Person'la test edilebilir yaptı; tekrarlanabilir metrik koşuları (12_400 / 511_816 / 1_023_656 / 83_076) bir regresyon ağı. | **0 test** hâlâ gerçek; `src/test` yok, JUnit eklenmedi (`[A5]`); `Scanner(System.in)` gömülü; sonuç çıktısı statik `System.out`. |
+
+**Net etki:** ~4.6 → ~6.0. Ucuz ve risksiz olan (ölü kod, boolean,
+JOptionPane, Trace) yapıldı; pahalı olan (enum refactor, cast temizliği,
+SRP bölme, ilk testler) duruyor. Bir sonraki en yüksek getirili adım:
+**Bölüm 5 (`[N*]` isimlendirme — IntelliJ `Shift+F6`)** + **`[A5]` ilk
+birim testleri** (Maven artık hazır).
+
+---
+
 ## Özet
 
 Proje, 2020 seviyesi için **iddialı bir algoritma denemesi** — asıl değer
-orada. Ama "clean code" ve "sürdürülebilirlik" açısından bugünün
-standartlarına göre; ölü kod, sistematik boolean anti-pattern'i, sıfır
-test ve tutarsız hata yönetimi en çok puan kaybettiren noktalar. §5'teki
-ilk 4 madde (ölü kod temizliği, boolean sadeleştirme, yazım hataları,
-ilk birim testleri) bir günden az sürede yapılabilir ve okunabilirliği
-orantısız şekilde artırır.
+orada. İlk değerlendirmede en çok puan kaybettiren noktalar (ölü kod,
+sistematik boolean anti-pattern'i, `JOptionPane` yan etkileri, dağınık
+debug loglama) **bu turlarda büyük ölçüde kapatıldı** — Clean Code ve
+Kodlama Kalitesi belirgin yükseldi (§7). Kalan borç daha zor kısımda
+yoğunlaşıyor: **mimari** (concrete cast'ler, şişkin sınıflar, 8 yön
+sınıfı), **sıfır otomatik test** ve **yaygın yazım hataları**. Maven
+geçişi yapıldığı için artık JUnit eklemek ve §5'in kalan maddelerini
+işlemek önündeki teknik engel de kalktı.
