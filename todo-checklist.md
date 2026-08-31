@@ -1,0 +1,196 @@
+# TODO — Çözümleri PostgreSQL'e Batch Kaydetme + Dikdörtgen Grid
+
+> Otonom çalışma listesi. Her madde bitince `[ ]` → `[x]`. Her fazın sonunda
+> commit + bu dosyayı güncelle. **Regresyon testleri (`mvn test`) her fazda
+> yeşil kalmalı** ve DB olmadan çalışmalı (DB opsiyonel/flag'li).
+
+---
+
+## 0. Tasarım kararları (kullanıcı "sen yorumla" dedi)
+
+### 0.1 Path encoding — "byte[]'a mı 4'lü byte'a mı çevirmiştik?"
+Portfolyo projendeki `(x<<4)|(y&0x0F)` = **hücre başına 1 byte, koordinat başına 4 bit → 16x16'da tavan yapar.** 20x20'de patlar.
+
+**Karar: yön-kodlaması (direction encoding), adım başına 3 bit, bit-packed `BYTEA`.**
+- Çözüm = başlangıç hücresi + (N−1) sıçrama yönü. 8 olası yön → 3 bit.
+- Yeniden kurulum: başlangıçtan itibaren yönleri oynat.
+- 10x10: 99 adım × 3 bit ≈ **38 byte**. 100x100: ≈ **3.7 KB**. Her grid boyutunda çalışır.
+- Decode için `start_row/start_col/row_size/col_size` (SMALLINT) sütunları yeter.
+- Codec ayrı sınıf (`PathCodec`), değiştirilebilir. Basit alternatif (mutlak hücre
+  indeksi, ≤256 hücre için 1 byte / değilse 2 byte) yorum olarak bırakılacak.
+
+### 0.2 Ölçek gerçeği — "her çözümü saklamak"
+5x5=12.400 · 6x6≈8M · 7x7 (tek başlangıç)=49M → tüm başlangıçlar ≈ 2 milyar ·
+10x10 = muhtemelen **trilyonlar**. Trilyon satır saklanamaz.
+
+**Karar:**
+- **Şimdi:** her çözümü sakla (≤6x6 rahat, ~7x7 zorlu; batch altyapısı asıl değer).
+  Opt-in flag arkasında.
+- **Normalize et:** run-seviyesi metrikler (`roundCounter`, `elapsedMs`,
+  `totalBackSteps` …) her satırda tekrar edilmez → ayrı **`solver_run`** tablosu.
+- **Partition:** `path_explorer_solution` → `(row_size, col_size)` LIST partition.
+  Her grid boyutu kendi partition'ı; kolay `DROP`.
+- **`opening` sütunu** (indexli) = ilk K hücrenin paketlenmiş hali → "şu açılıştan
+  kaç çözüm var" sorgusu ucuz `GROUP BY`, BYTEA taramadan.
+- **~7x7 üstü:** yalnızca-aggregate moda geç — `(rows, cols, start, opening) → count`
+  tablosu. Şema buna **eklemeli** geçişe uygun tasarlandı. Şimdi yapılmıyor, not düşüldü.
+
+### 0.3 Framework
+Bu proje düz Java (Spring yok). **Düz JDBC + HikariCP**, elle yazılmış batch
+repository. Hibernate'ten hızlı bulk insert, minimum bağımlılık. (Portfolyo Spring
+Boot kodu ayrı proje; sadece isim/fikir referansı.)
+
+### 0.4 Anahtarlar
+- `id BIGINT GENERATED ALWAYS AS IDENTITY` — DB atar, geri okunmaz, batch-dostu.
+- `public_id UUID` (Java `UUID.randomUUID()`) — **evet ekle.** 16 byte, ucuz;
+  ileride başka tabloyla eşleştirmenin güvenli yolu. Unique index.
+- `solution_index BIGINT` — run içi kaçıncı bulundu. Global unique değil, sadece veri.
+- Sequence generator: düz JDBC + IDENTITY ile gerek yok. JPA'ya geçilirse pooled
+  sequence (`allocationSize=1000`) batch-dostu seçim — not düşüldü.
+- **Thread:** her solver thread → kendi `solver_run` + kendi buffer + kendi
+  `solution_index` sayacı. DB IDENTITY eşzamanlı insert'i halleder. Koordinasyon yok.
+
+### 0.5 createdAt hassasiyeti
+Postgres `timestamptz` = **mikrosaniye** (6 hane) tavanı — **nanosaniye
+saklanamaz.** `created_at = Instant.now()` constructor'da (yazarken µs'e kırpılır).
+Gerçek sıralama = `solution_index`. Nano şart olursa `created_epoch_nanos BIGINT`
+eklenir — ama satır oluşturma zamanı için µs zaten fazlasıyla yeterli.
+
+### 0.6 Batch
+JDBC `addBatch()`/`executeBatch()`, 1000'de bir flush, **kalan <1000 için oyun
+bitince son flush**, **Ctrl+C'de shutdown hook** → flush + run'ı ABORTED işaretle.
+JDBC URL `reWriteBatchedInserts=true`. `autocommit=false`, batch başına commit.
+
+### 0.7 Deploy
+`docker-compose.yml` (Postgres 16) + `docker/initdb/01_schema.sql` (ilk boot'ta
+otomatik). `docker compose up -d` → hazır DB. Compose (bare `docker run` değil),
+lokal ve remote'ta aynı.
+
+---
+
+## FAZ 1 — Dikdörtgen grid desteği  (safety net: 5x5 regresyon + yeni 5x6 oracle)
+
+- [ ] `Model`: `getRowCount()` = `gameSquares.length`, `getColCount()` = `gameSquares[0].length`;
+      `getTotalSquareCount()` → `rows * cols` (idi `length*length`).
+- [ ] `Validation.isInputValidForArray`: X sınırı = `rowCount`, Y sınırı = `colCount`
+      (şu an ikisi de `gameSquares.length` — dikdörtgende BUG).
+- [ ] `RobotGameOver`: `squareEdge` → `rows`/`cols`; bitiş `(rows-1, cols-1)`.
+- [ ] `MathFunctionForSecondSolution:167`: `(edgeValue*edgeValue)-1` → `getTotalSquareCount()-1`.
+- [ ] `BuildGame`: `edgeValue` → `rowCount`/`colCount`; `BuildGame(int rows, int cols)`
+      constructor; `BuildGame(int edge)` kare kısayolu kalsın; `buildVisitedArea` →
+      `[rows][cols]`; `clearVisitedAreas` iç döngü `[i].length`.
+- [ ] `Move.changeStartLocationSpecialMovement` (`:68`,`:75`): `locationX` sınırı rows,
+      `locationY` sınırı cols. `:108` formatting `squareEdge-1` → rows-1.
+- [ ] `ResetAllDataForGameAndPlayer`: rows/cols; `new BuildGame(rows, cols)`.
+- [ ] `SelectFirstSqaureToStart:21`: random X ∈ rows, random Y ∈ cols (kontrol et).
+- [ ] `Main`: girişte satır ve sütün ayrı ayrı sorulsun ("5 6" veya "5x6").
+      Tek sayı girilirse kare kabul (geri uyum).
+- [ ] `CopyModel` (ölü kod) kare varsayıyor — dokunma, not düş.
+- [ ] 3. çözüm dosyaları KAPSAM DIŞI — dokunma (kendi `edgeValue`'su var, kare için bozulmaz).
+- [ ] `IndependentSolutionCountTest`: `bruteForceCount(rows, cols)` genelleştir;
+      **yeni test: 5x6 (veya 5x7) için production algo == brute-force.**
+- [ ] `mvn test` yeşil (5x5 sayıları birebir aynı + yeni rect testi geçer).
+- [ ] Commit: "Faz 1: dikdortgen grid destegi".
+
+## FAZ 2 — Path codec (saf, DB yok)
+
+- [ ] `src/persistence/PathCodec.java`: `byte[] encode(int[][] pathCells)` (3 bit/adım,
+      bit-packed) + `int[][] decode(byte[], startRow, startCol, rows, cols, pathLen)`.
+      8 yön vektörü tek yerde (`DIRS`).
+- [ ] `src/persistence/GridPath.java` (veya record): rows, cols, startRow, startCol,
+      `int[][] cells` (adım sırasıyla [x,y]).
+- [ ] `test/persistence/PathCodecTest.java`: encode→decode round-trip (5x5, 5x6,
+      10x10 rastgele geçerli yollar); bilinen küçük örnekte byte uzunluğu kontrolü.
+- [ ] `mvn test` yeşil.
+- [ ] Commit: "Faz 2: path codec (yon-kodlamasi, 3 bit/adim)".
+
+## FAZ 3 — Çözüm toplama (solver içinde, DB yok)
+
+- [ ] `src/persistence/SolutionSink.java` arayüz: `beginRun(RunInfo)`,
+      `accept(FoundSolution)`, `endRun(RunResult)`, `close()` (AutoCloseable).
+- [ ] `src/persistence/NoOpSolutionSink.java` — hiçbir şey yapmaz (varsayılan;
+      mevcut davranış, regresyon testleri etkilenmez).
+- [ ] `PlayGame`: constructor'a `SolutionSink` (default NoOp). `playGame()` başında
+      `beginRun`, `calculatePlayerTotalWinScore` içinde çözüm bulununca
+      `extractPathFromBoard(game)` → `sink.accept(...)`, sonunda `endRun`.
+- [ ] `extractPathFromBoard`: `gameSquares[x][y] = adım no` → `cells[k-1] = {x,y}`.
+- [ ] `solutionIndex` sayacı `PlayGame` içinde (bulunan çözüm sırası).
+- [ ] `mvn test` yeşil (NoOp sink ile sayılar değişmez).
+- [ ] Commit: "Faz 3: SolutionSink + PlayGame kancasi (NoOp default)".
+
+## FAZ 4 — Docker Compose + Postgres + şema
+
+- [ ] `docker-compose.yml`: `postgres:16`, port 5432, volume, healthcheck,
+      env (`POSTGRES_DB=pathexplorer`, user/pass).
+- [ ] `docker/initdb/01_schema.sql`:
+  - `solver_run` (id identity, public_id uuid, row_size, col_size, start_row,
+    start_col, algorithm, total_solved, round_counter, total_steps,
+    total_back_steps, dummy_back_steps, elapsed_ms, started_at, finished_at, status).
+  - `path_explorer_solution` PARTITION BY LIST (row_size, col_size) — id identity,
+    public_id uuid unique, solver_run_id fk, solution_index bigint, row_size,
+    col_size, start_row, start_col, path_len smallint, path bytea, opening int,
+    created_at timestamptz default now().
+  - Partition örnekleri: 5x5, 6x6, 7x7, 10x10 + `DEFAULT`.
+  - Index: `(solver_run_id)`, `(row_size,col_size,opening)`.
+- [ ] `docker/README.md` — `docker compose up -d`, bağlantı bilgisi, `psql` örneği.
+- [ ] Commit: "Faz 4: docker-compose + postgres sema".
+
+## FAZ 5 — JDBC persistence katmanı
+
+- [ ] `pom.xml`: `org.postgresql:postgresql`, `com.zaxxer:HikariCP` (+ SLF4J nop).
+- [ ] `src/persistence/DbConfig.java` — env/`db.properties`'ten url/user/pass;
+      `reWriteBatchedInserts=true`.
+- [ ] `src/persistence/JdbcSolutionSink.java implements SolutionSink`:
+  - `beginRun` → `solver_run` insert, id al.
+  - `accept` → buffer'a ekle; `size == 1000` → `flush()`.
+  - `flush()` → `PreparedStatement.addBatch()`/`executeBatch()`, commit, buffer temizle.
+  - `endRun` → son `flush()` + `solver_run` update (finished_at, status=COMPLETED, sayaçlar).
+  - `close()` → buffer'da kalan varsa flush; bağlantı kapat.
+  - Shutdown hook: JVM kapanırsa flush + status=ABORTED.
+  - `opening` hesabı: ilk K hücre indeksi paketlenmiş (K sabiti, default 3).
+- [ ] `mvn test` yeşil (bu faz testsiz; sadece derlensin).
+- [ ] Commit: "Faz 5: JdbcSolutionSink + Hikari batch".
+
+## FAZ 6 — Bağlama (Main)
+
+- [ ] `Main`: DB kaydı flag/menü/env (`PATHEXPLORER_DB=1` veya menüde "3) DB'ye kaydet").
+      Açıksa `JdbcSolutionSink`, kapalıysa `NoOpSolutionSink`.
+- [ ] Algoritma seçimi + start hücresi bilgisi `RunInfo`'ya.
+- [ ] Elle deneme: `docker compose up -d` → 5x5 DB'ye kaydet → `psql` ile satır say.
+- [ ] Commit: "Faz 6: Main -> opsiyonel DB kaydi".
+
+## FAZ 7 — "Açılıştan kaç çözüm" analitiği
+
+- [ ] `src/persistence/OpeningStatsQuery.java`: `SELECT opening, COUNT(*) ... GROUP BY`
+      + ilk 2-3 adımı okunur formata çeviren yardımcı.
+- [ ] `test` veya küçük bir `main` ile 5x5'te örnek çıktı.
+- [ ] Commit: "Faz 7: acilis istatistigi sorgusu".
+
+## FAZ 8 — Testler + dokümantasyon + rapor
+
+- [ ] `PathCodecTest` genişlet (kenar durumlar).
+- [ ] (Opsiyonel, docker gerekiyorsa `@Tag("db")`) `JdbcSolutionSinkIT` — çalışan
+      Postgres'e 5x5 yaz, oku, doğrula.
+- [ ] `proje-degerlendirme.md` / `gereken-duzenlemeler-2.md` puanları güncelle
+      (Test + Mimari + "persistence" artışı).
+- [ ] Bu dosyanın en altına **DURUM / DEVAM RAPORU** yaz.
+- [ ] Commit: "Faz 8: testler + dokuman + rapor".
+
+---
+
+## DURUM / DEVAM RAPORU
+
+**Son güncelleme:** 2026-08-31, Faz 0 (tasarım + checklist) bitti.
+
+**Tamamlanan:** Faz 0.
+
+**Sıradaki:** Faz 1 — dikdörtgen grid desteği.
+
+**Yeni session için notlar:**
+- Bu proje düz Java + Maven (Spring YOK). `mvn test` 16 test yeşil olmalı.
+- Regresyon ağı: `test/GameRegressionTest.java` (5x5 golden), `IndependentSolutionCountTest`
+  (bağımsız brute-force oracle). Her kod değişikliğinden sonra `mvn test`.
+- `Trace.ENABLED` = false olmalı (true olursa testler milyonlarca satır basar).
+- DB işleri OPT-IN: DB olmadan `mvn test` ve normal çalıştırma bozulmamalı.
+- Docker mevcut (27.5.1, compose v2.32).
+- Branch: `refactor-yorum-satirlari`.
