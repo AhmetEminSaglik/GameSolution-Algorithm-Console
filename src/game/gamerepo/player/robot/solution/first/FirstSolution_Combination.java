@@ -1,6 +1,5 @@
 package game.gamerepo.player.robot.solution.first;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.robot.solution.BaseSolution;
 import game.location.DirectionLocation;

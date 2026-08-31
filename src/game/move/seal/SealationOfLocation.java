@@ -1,6 +1,6 @@
 package game.move.seal;
 
-import errormessage.joptionpanel.ShowPanel;
+import errormessage.ErrorMessage;
 import game.Game;
 import game.gamerepo.player.Player;
 
@@ -19,9 +19,11 @@ public class SealationOfLocation implements UpdateableLocation {
             area[game.getPlayer().getLocation().getX()][game.getPlayer().getLocation().getY()] = signature.isSealed();
 
         } catch (ArrayIndexOutOfBoundsException ex) {
-            ShowPanel.show(getClass(), ex.getMessage()+"\n game.getPlayer().getLocation().getX(): "+game.getPlayer().getLocation().getX()+"\n" +
-                    "game.getPlayer().getLocation().getY()"+game.getPlayer().getLocation().getY()+" step :"+game.getPlayer().getStep());
-            ex.printStackTrace();
+            ErrorMessage.appearWarnings(getClass(), "Sealation index disari tasti"
+                    + " x=" + game.getPlayer().getLocation().getX()
+                    + " y=" + game.getPlayer().getLocation().getY()
+                    + " step=" + game.getPlayer().getStep()
+                    + " : " + ex.getMessage());
         }
 
     }

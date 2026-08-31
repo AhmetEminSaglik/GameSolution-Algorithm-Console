@@ -1,6 +1,5 @@
 package game.gamerepo.player.robot.solution.second.navigation;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.robot.Robot;
 import game.gamerepo.player.robot.solution.second.exitsituation.ExitSituation;
@@ -24,9 +23,7 @@ public class NavigationService {
     public DirectionLocation getCompulsoryLocation(Navigation navigation) {
 //        if (navigation.getCompulsoryLocation() != null) {
 //            selectedDirection = navigation.getCompulsoryLocation();
-//            ShowPanel.show(getClass(),"Navigation compulsory LOCATION "+navigation.getCompulsoryLocation());
 
-//            ShowPanel.show(getClass(), "navigation.getCompulsoryLocation  >>>>>>>>>>>>>>>>>>>>>>>>>>>> " + navigation.getCompulsoryLocation());
         DirectionLocation selectedDirection = navigation.getCompulsoryLocation();
         if (selectedDirection == null)
             throw new NullPointerException("Compulsory Location Is Null");

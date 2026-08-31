@@ -11,6 +11,7 @@ import game.gamerepo.player.robot.solution.second.SecondSolution_CalculateForwar
 import game.play.PlayGame;
 import game.play.input.person.PersonInput;
 import game.play.input.robot.RobotInput;
+import trace.Trace;
 
 import java.util.Scanner;
 
@@ -50,7 +51,7 @@ public class Main {
             Person person = new Person();
             person.setGame(game);
             person.setIPlayerInput(new PersonInput(game));
-            System.out.println("game : " + game.toString());
+            if (Trace.ENABLED) Trace.log("game", game);
             return person;
 
         } else if (input.equals("2")) {

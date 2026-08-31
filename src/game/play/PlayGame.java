@@ -1,6 +1,5 @@
 package game.play;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.Player;
 import game.gamerepo.player.person.Person;
@@ -68,7 +67,6 @@ public class PlayGame {
 
 //            printGamelastStuation(game);
 //            if(player.getStep()==25){
-//                ShowPanel.show(getClass()," 25 e ulasti");
 //            }
 
         }
@@ -98,7 +96,6 @@ public class PlayGame {
     }
 
     Move getMoveBackOrForward(int index) {
-//        ShowPanel.show(getClass(),"Player Move : "+player.getPlayerMove().toString());
         if (index == player.getCompass().getLastLocation()) {
             return player.getPlayerMove().getMoveBack();
         }

@@ -15,6 +15,11 @@
 - Her madde bağımsız uygulanabilir. Madde kodları (`[R1]`, `[D2]`, ...) düzeltme
   aşamasında referans için.
 - Bir madde bitince başındaki `[ ]` → `[x]` yapılacak.
+- **Yorum silme kuralı (kullanıcı notu):** Yorum satırı haline getirilmiş **kod**
+  silinebilir. Ama **davranışı/niyeti açıklayan düz yazı yorumlar KORUNUR**
+  (ör. `MoveBack`'teki "Ozel RoundCounter : geri adim atmaya baslandiktan sonra..."
+  paragrafı). Ayrıca `printGamelastStuation` içeren yorumlu bloklara
+  (`PlayGame.java`, `MoveBack.java`) **dokunulmaz** — kullanıcı "kod var, elleme" dedi.
 
 ---
 
@@ -103,112 +108,163 @@ Bunlar "temiz kod" olduğu kadar **bug** da; en önce bunlar.
 
 ---
 
-## 2. Loglama — test / prod ayrımı tasarımı
+## 2. Loglama — test / prod ayrımı  ✅ (temel kısım yapıldı 2026-08-31)
 
 **Amaç:** Rekor denemesi (prod) yaparken **sıfır loglama maliyeti**; hata ayıklarken
 (test) ayrıntılı iz. Milyar kez çalışan döngüde `System.out` / string birleştirme
 kabul edilemez.
 
-### 2.1 Yaklaşım: derleme-zamanı sabiti ile ölü-kod eleme
+### 2.1 "if'e 1 trilyon kez girmek yavaşlatmaz mı?" — hayır, çünkü `if` derlenmiş kodda YOK
 
-Java'da bu iş için standart deyim: `static final boolean` **derleme-zamanı sabiti**.
-`if (Trace.ENABLED) { ... }` bloğu, `ENABLED = false` iken `javac` tarafından
-**tamamen elenir** — bytecode'a hiç girmez, dal tahmini bile yok.
+Kritik nokta: `Trace.ENABLED` bir **derleme-zamanı sabiti** (`public static final
+boolean ENABLED = false;` — sağ tarafı literal). Java Dil Şartnamesi (JLS §14.21,
+"unreachable statements") gereği `javac`, `if (Trace.ENABLED) { ... }` bloğunu
+`ENABLED == false` iken **bytecode'a hiç koymaz**. Java'da "conditional compilation"
+tam olarak böyle yapılır.
 
-- [ ] **`[L1]` `trace` paketi + `Trace` sınıfı oluştur.**
-  ```java
-  package trace;
+Yani:
 
-  public final class Trace {
-      /** PROD: false (rekor/hız denemesi). TEST: true (hata ayıklama). */
-      public static final boolean ENABLED = false;
+| Durum | Ne oluyor |
+|---|---|
+| `ENABLED = false` + `if (Trace.ENABLED) Trace.log("... " + x)` | `javac` bu satırı **komple siler**: ne `if`, ne string birleştirme, ne metot çağrısı bytecode'da olur. "1 trilyon kez `if(false)`" diye bir şey **yok** — kod derlenmiş halde mevcut değil. Fark: **tam sıfır.** |
+| `ENABLED` **compile-time sabiti değilse** (config'ten okunuyor, `final` değil) | `if` bytecode'da kalır. 1 trilyon kez çalışır. Dal her zaman `false` → CPU dal tahmincisi %100 bilir, ~0.3 ns/tur → ~milisaniyeler-saniye toplamda. Ayrıca JIT ölü dalı silemez, komut önbelleğini şişirir. **İşte bu senaryodan kaçınıyoruz.** |
 
-      private Trace() {}
+**Kural:** guard'ı **çağrı yerinde** de koy:
+```java
+if (Trace.ENABLED) Trace.log("step " + step + " dir " + dir);   // DOĞRU: her şey elenir
+```
+Sadece `log()` içindeki guard'a güvenirsen, `"step " + step + ...` string'i her turda
+**yine üretilir** (asıl pahalı kısım I/O değil, string birleştirmedir); JIT ısındıktan
+sonra bunu *belki* eler ama garanti değil.
 
-      public static void log(String msg) {
-          if (ENABLED) System.out.println("[TRACE] " + msg);
-      }
+**Doğrulama:** `javac` sonrası `javap -c -p <çağrı yapan sınıf>` → `ENABLED=false` iken
+blok bytecode'da görünmez.
 
-      public static void log(String tag, Object value) {
-          if (ENABLED) System.out.println("[TRACE][" + tag + "] " + value);
-      }
-  }
-  ```
-  - Not: Çağrı yerlerinde de `if (Trace.ENABLED)` ile sar ki **argüman string'i
-    bile üretilmesin**:
-    ```java
-    if (Trace.ENABLED) Trace.log("step", robot.getStep() + " dir=" + selectedDirection);
-    ```
-  - `ENABLED` bir `static final` literal olduğu için bu blok prod'da derleyici
-    tarafından silinir; performans etkisi **tam sıfır**.
+**Uyarı (constant inlining):** `ENABLED`'ı `false` yapıp *sadece* `Trace.java`'yı
+derlersen, eski değeri gömmüş öbür sınıflar değişikliği görmez. **Her zaman tüm
+`src`'i yeniden derle.**
 
-- [ ] **`[L2]` (opsiyonel, ileri seviye) İki sınıflı çözüm.**
-  Tek satır değiştirip yeniden derlemek yerine, `Trace.ENABLED`'ı bir
-  `TraceConfig` sınıfından oku:
-  ```java
-  public static final boolean ENABLED = TraceConfig.DEBUG; // TraceConfig tek dosyada
-  ```
-  Yine `static final` zinciri olduğu için ölü-kod eleme korunur; sadece "hangi
-  dosyayı düzenliyorum" netleşir. Basitlik için `[L1]` yeterli.
+### 2.2 `System.out` mu, `java.util.logging` mi, SLF4J/Logback mı?
 
-- [ ] **`[L3]` `System.out.println` çağrılarını sınıflandır ve taşı.** (55 çağrı)
-  Her `System.out` üç kategoriden birine girer:
-  1. **Hata ayıklama izi** (döngü içi, "buraya geldi", değişken dökümü) →
-     `if (Trace.ENABLED) Trace.log(...)`.
-  2. **Kullanıcıya gerçek mesaj** (`Main`'de "Select Player", "Game Dimension",
-     `SafeScannerInput` promptları) → **kalır**, `System.out` uygun. İstenirse
-     `Console` adında ince bir sarmalayıcıya alınır ama şart değil.
-  3. **Sonuç çıktısı** ("All Solutions are DONE", "Total Number Solved ...",
-     "Elapsed time ...") → bunlar loglama değil, **programın ürünü**. `Trace`'e
-     bağlanmaz; `ResultWriter` (bkz. `[L5]`) üzerinden hem konsola hem dosyaya
-     yazılır. Prod'da da görünmeli (tek sefer, döngü dışı — maliyeti yok).
+**Bu proje için karar: `Trace` + `System.out` (yapıldı).** Gerekçe:
 
-- [ ] **`[L4]` `ShowPanel` (JOptionPane) çağrılarını kaldır / `Trace`'e çevir.** (28 çağrı)
-  - Sorun: `JOptionPane.showMessageDialog` **modaldir** — program kullanıcı
-    tıklayana kadar durur. Otomatik/uzun koşuda felaket.
-  - Çözüm: Kod içi debug amaçlı tüm `ShowPanel.show(getClass(), ...)` çağrıları →
-    `if (Trace.ENABLED) Trace.log(getClass().getSimpleName(), ...)`.
-  - `ShowPanel` sınıfı ve `errormessage.joptionpanel` paketi bu turdan sonra
-    tamamen silinebilir (konsol uygulaması; GUI diyaloğuna ihtiyaç yok).
-  - Ayrıca **22 dosyada kullanılmayan `import errormessage.joptionpanel.ShowPanel;`**
-    var — hepsi silinecek (bkz. `[D6]`).
+| Seçenek | Ne zaman mantıklı | Bu projede |
+|---|---|---|
+| **Compile-time `Trace` + `System.out`** | Prod'da **kesinlikle sıfır** maliyet şartı varsa; bağımlılık istemiyorsan; log operasyonel değil, hata-ayıklama aracıysa | ✅ **Bunu kullanıyoruz.** Tek sabit + tüm src derle. Prod'da iz kodu fiziksel olarak yok. |
+| **`java.util.logging` (JUL)** | JDK içi, bağımlılık yok, seviye (FINE/WARNING/SEVERE) istiyorsan; ama `logger.fine(x)` çağrısında argüman yine hesaplanır → `if (logger.isLoggable(FINE))` guard'ı gerekir ve bu **runtime** kontrolü, derleyici silmez | ❌ Runtime guard maliyeti + kurulum hantallığı; "tam sıfır" veremez. |
+| **SLF4J + Logback / Log4j2** | Uzun ömürlü servis; runtime'da seviye değiştirme; rolling file; **async appender** (I/O'yu döngüden çıkarır); JSON/yapılandırılmış log; korelasyon ID; Spring vb. entegrasyonu | ❌ Bağımlılık + build sistemi (`[A6]`) gerektirir; senin duruşun "prod'da log yok" → async'e bile gerek yok. Uygulama servise dönüşürse tekrar değerlendir. |
 
-- [ ] **`[L5]` Sonuç dosyası yazımını "loglama"dan ayır — `ResultWriter` kavramı.**
-  - `FileWriteProcess` şu an sonuç dosyalarını (`*_Completed.txt`,
-    `*_EverySingleSquareTotalValue.txt`) yazıyor. Bunlar **prod'da da yazılmalı**
-    (ürünün kendisi). Sadece döngü **dışında**, oyun bitince çağrıldıkları için
-    hız sorunu yok — dokunmaya gerek yok, sadece isimlendirme/kavram olarak
-    "log değil, sonuç" diye ayrılsın (yorum + belki `print` paketini `result`
-    olarak yeniden adlandır).
-  - **Önemli:** `FileWriteProcess.append()` her çağrıda dosyayı `open` + `close`
-    yapıyor. Bugün sıcak yolda değil; ama ileride adım-adım iz dosyaya yazılmak
-    istenirse **kesinlikle** buffer açık tutulmalı. Şimdilik sadece yorum notu.
+**Her framework için değişmeyen sıcak-döngü kuralı:** milyar turluk döngüde
+logger'ı **asla guard'sız çağırma**. Ya derleme-zamanı ele (Trace deyimi) ya
+`if (logger.isLoggableX())` ile sar. String kurmak öldürür, I/O değil (zaten hiç olmuyor).
 
-- [ ] **`[L6]` `printGamelastStuation` / `printToFile` / `appendFileSolutionName` gibi
-      "yarı ölü" metotları netleştir.**
-  - `src/game/play/PlayGame.java:171-194` — bu metotlar ya boş ya tamamen yorumlu
-    gövdeye sahip, `// todo: db'ye kaydedilecek` notlu.
-  - Karar: "test modunda son durumu bas" özelliği isteniyorsa → gövdesi
-    `if (Trace.ENABLED) { ... }` ile tek satırlık gerçek bir implementasyona
-    kavuşsun. İstenmiyorsa → sil (`git` geçmişi zaten tutuyor).
-  - `printTableIfPersonPlays()` gerçekten kullanılıyor (Person tahtayı görmeli) —
-    o kalır ama `printGamelastStuation`'ın gerçek bir gövdesi olmalı.
+### 2.3 Yapılanlar (2026-08-31)
 
-- [ ] **`[L7]` `Sleep` sınıfı ve `sleep` paketi silinecek.**
-  - `src/sleep/Sleep.java` hiçbir yerde `new`lenmiyor. İçinde `java.util.logging`
-    kullanımı da var (projenin geri kalanıyla tutarsız). Komple sil.
+- [x] **`[L1]` `trace.Trace` sınıfı oluşturuldu.** `src/trace/Trace.java` —
+  `public static final boolean ENABLED = false`, `log(msg)` / `log(tag, value)`,
+  ikisi de içeride `if (ENABLED)` guard'lı; sınıf javadoc'unda yukarıdaki
+  "neden sıfır maliyet" açıklaması + `javap` doğrulama notu var.
+- [x] **`[L4]` TÜM JOptionPane / `ShowPanel` kaldırıldı.**
+  - `src/errormessage/joptionpanel/` paketi + `ShowPanel.java` **silindi**.
+  - 19 dosyadan `import errormessage.joptionpanel.ShowPanel;` ve tüm yorum-içi
+    `// ShowPanel.show(...)` satırları temizlendi.
+  - 2 aktif çağrı `ErrorMessage.appearWarnings(...)`'a çevrildi:
+    `Move.changeStartLocationSpecialMovement` ("Y siniri asti"),
+    `SealationOfLocation` catch bloğu (index taşması — `printStackTrace` de kaldırıldı,
+    detay mesaja gömüldü).
+  - `UpdateForMovedBack`'ten artık kullanılmayan `import javax.swing.*;` ve
+    `import sleep.Sleep;` kaldırıldı.
+- [x] **`[L7]` `sleep` paketi silindi.** `src/sleep/Sleep.java` hiç kullanılmıyordu.
+- [x] **`[L3]` (kısmi) birkaç debug `System.out` → `Trace`:**
+  `Main.selectPlayer` (`"game : ..."`), `CopyModel` tanılama satırları (4 adet).
+  - **Kasıtlı bırakılanlar:** menü/prompt çıktıları (`Main`, `BuildGame`,
+    `SafeScannerInput`) ve **sonuç çıktıları** (`"All Solutions are DONE"`,
+    `PlayGame`'deki `"Elapsed time"`, `"Total Back Step"`, `"Total Step"`,
+    `"Total Number Solved"`). Bunlar loglama değil, **programın ürünü** — prod'da
+    da görünmeli, döngü dışında oldukları için maliyetsiz. (`[L5]`)
 
-### 2.2 Özet kural
+### 2.4 Kalanlar (sonraki tur)
+
+- [ ] **`[L5]` `print` paketini kavramsal olarak "sonuç yazımı" diye netleştir.**
+  `FileWriteProcess` sonuç dosyalarını (`*_Completed.txt`,
+  `*_EverySingleSquareTotalValue.txt`) yazıyor — bunlar **ürün**, prod'da da yazılır.
+  - **Önemli teknik borç:** `FileWriteProcess.append()` her çağrıda dosyayı
+    `open`+`close` yapıyor. Bugün sıcak yolda değil (oyun sonu). DB'ye / adım-adım
+    ize geçilirse buffer/bağlantı **açık tutulmalı** (bkz. §2.5).
+- [ ] **`[L6]` `PlayGame.printToFile` / `appendFileSolutionName` boş gövdeli metotlar.**
+  - "Test modunda son durumu bas" isteniyorsa gövde `if (Trace.ENABLED) { ... }`
+    ile gerçek implementasyona kavuşsun; istenmiyorsa sil.
+  - **`printGamelastStuation` içindeki yorumlu bloğa DOKUNMA** (kullanıcı notu:
+    "kod var, elleme"). Aynısı `MoveBack.java`'daki yorumlu `printGamelastStuation`
+    kopyası için de geçerli.
+- [ ] **`[L8]` Kalan debug `System.out`'ları da `Trace`'e taşı** (isteğe bağlı):
+  `Location.printLocation()`, `PrintArray.*` (bunlar zaten "yazdır" amaçlı util;
+  çağıran karar versin — düşük öncelik).
+
+### 2.5 DB'ye kaydetme — test / prod / persistence tasarımı (ileriye dönük not)
+
+Soru: sonuçlar (ör. 10x10'da tüm kareler dolu bir çözüm haritası) artık txt yerine
+**DB'ye batch-insert** edilecek. Ayrı bir mod mu (`test / prod / db_save`)? Yoksa
+DB yazarken süreyi mi duraklatalım?
+
+**Öneri — ayrı mod AÇMA. İki dik eksen var, karıştırma:**
+
+1. **İz (trace) ekseni** — derleme-zamanı `Trace.ENABLED` (yukarıdaki). Tek karar.
+2. **Sonuç hedefi (sink) ekseni** — sonuç *her zaman* bir yere yazılır (ürün bu):
+   ```
+   interface ResultSink {
+       void accept(int[][] solvedMap);   // veya düz int[]/byte[] buffer
+       void flush();
+       void close();
+   }
+   ```
+   - `FileResultSink`  → bugünkü txt davranışı
+   - `DbBatchResultSink` → JDBC `addBatch()` + N'de bir `executeBatch()`
+   - `NullResultSink`  → **saf algoritma hızını** ölçmek için (hiçbir şey yazmaz)
+
+   Başlangıçta `Main`'de tek satır / tek sabitle seçilir. "3. mod" yok; sadece
+   sink implementasyonu değişir.
+
+**Süre ölçümü — "algoritma süresi" ile "duvar saati"ni ayır:**
+
+`TimeKeeper`'a duraklatılabilir bir kronometre ekle:
+```
+stopwatch.start();
+... çöz ...
+// her flush öncesi:
+stopwatch.pause();  jdbcBatch.executeBatch();  stopwatch.resume();
+```
+Rapor:
+- `algorithmElapsed = totalElapsed - sinkTime`  → **rekor için baktığın sayı**
+- `totalElapsed`  → dürüst duvar saati
+- `sinkTime`  → persistence maliyeti (batch boyutu doğru mu anlarsın)
+
+Bu tam olarak senin "hem total başlangıç-bitiş, hem batch insert aralığını çıkaran
+bir toplam" fikrin — ve doğru yaklaşım bu.
+
+**Batch insert pratiği:**
+- Bellekte tampon (`List<int[][]>` ya da düz `int[]`); N'de bir flush (ör. 1_000–10_000).
+  10x10 harita = 100 int; 10k batch ≈ birkaç MB — sorun değil.
+- Tek `Connection`, `autoCommit = false`, batch başına `commit`.
+- MySQL: `rewriteBatchedStatements=true`. Postgres: `COPY` en hızlısı.
+- `PreparedStatement` + `addBatch()`/`executeBatch()`.
+
+**İleri seviye (opsiyonel):** çözücü thread sadece üretir, ayrı bir thread kuyruktan
+alıp batch-insert eder (producer/consumer). O zaman çözücü I/O için hiç durmaz;
+`algorithmElapsed == totalElapsed` doğal olur. Maliyeti: karmaşıklık + backpressure.
+Şimdilik pause/resume kronometre yeterli.
+
+### 2.6 Özet kural
 
 | Ne | Nereye |
 |---|---|
-| Döngü içi "buraya geldi", değişken dökümü | `if (Trace.ENABLED) Trace.log(...)` |
+| Döngü içi "buraya geldi", değişken dökümü | `if (Trace.ENABLED) Trace.log(...)` — prod'da fiziksel olarak silinir |
 | Kullanıcı promptu / menü | `System.out` (kalır) |
-| "Çözüldü", süre, toplam — programın çıktısı | `ResultWriter` (konsol + dosya, döngü dışı) |
-| Modal uyarı (`ShowPanel`) | Tamamen kaldır |
+| "Çözüldü", süre, toplam, harita — programın ürünü | `ResultSink` (File/Db/Null), döngü dışı; süre ölçümünde `pause/resume` |
+| Modal uyarı (`JOptionPane`) | ✅ tamamen kaldırıldı |
+| Gerçek uyarı / hata | `ErrorMessage.appearWarnings` / `appearFatalError` |
 
 ---
-
 ## 3. Öncelik 2 — Ölü kod ve yorum satırı haline getirilmiş kod
 
 `git` geçmişi her şeyi tutuyor; bunlar okunabilirliği düşürüyor ve "acaba lazım mı"

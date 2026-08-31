@@ -1,6 +1,5 @@
 package game.move.fundamental.thirdsolution;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.robot.Robot;
 import game.gamerepo.player.robot.solution.second.exitsituation.ExitSituation;
@@ -76,7 +75,6 @@ public class MoveForwardThirdSolution extends MoveForward {
         robot.getRobotMemory().getRoadMemory().updateExistSituation(ExitSituation.EXIT_LOCATED);
         navigation.setExitSituationWasLocatedInThisStep(true);
 //        printGamelastStuation(game);
-//        ShowPanel.show(getClass(), "LOCATED OLDUUU");
     }
   /*  String getEasyReadyNumber(long number) {
         return new EasylyReadNumber().getReadableNumberInStringFormat(number);

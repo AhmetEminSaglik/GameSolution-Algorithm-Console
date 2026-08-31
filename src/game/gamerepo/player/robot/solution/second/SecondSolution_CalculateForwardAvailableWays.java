@@ -1,6 +1,5 @@
 package game.gamerepo.player.robot.solution.second;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.robot.solution.BaseSolution;
 import game.move.fundamental.secondsolutionforrobot.MoveBackSecondSolution;
@@ -24,7 +23,6 @@ public class SecondSolution_CalculateForwardAvailableWays extends BaseSolution {
     public void buildRobotMove() {
         setMoveForward(new MoveForwardSecondSolution(getGame()));
         setMoveBack(new MoveBackSecondSolution(getGame()));
-//        ShowPanel.show(getClass()," moveForward -movebackk: "+getMoveForward()+" - "+getMoveBack());
     }
 
     @Override

@@ -1,6 +1,5 @@
 package game.move.fundamental;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.GameModelProcess;
 import game.gamerepo.updategamemodel.UpdateForMovedBack;
@@ -26,7 +25,6 @@ public class MoveBack extends Move {
 
        if (game.getPlayer().getScore().isLockedCounterOfMovingBackLose() == true) {
 //            printGamelastStuation(game);
-//            ShowPanel.show(getClass(),"KITLI OLDUGU HALDE GERI ADIM ATTI   Step : "+game.getPlayer().getStep());
             game.getPlayer().getScore().increaseCounterOfDummyBackMove();
             game.getPlayer().getScore().unlockCounterOfMovingBackLose();
 
@@ -47,7 +45,6 @@ public class MoveBack extends Move {
 
     @Override
     public void updateBeforeStep() {
-//        ShowPanel.show(getClass()," Move Back udpateBefore Step");
 
         updateVisitedArea();
         updateVisitedDirection();

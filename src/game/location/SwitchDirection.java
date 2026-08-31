@@ -2,7 +2,6 @@ package game.location;
 
 import compass.Compass;
 import errormessage.ErrorMessage;
-import errormessage.joptionpanel.ShowPanel;
 import game.location.direction.South;
 import game.location.direction.East;
 import game.location.direction.LastLocation;
@@ -27,7 +26,6 @@ public class SwitchDirection {
      * TODO: yonler bir enum'a alininca bu 9'lu if zinciri ve null sozlesmesi kalkacak.
      */
     public DirectionLocation choseDirection(int value) {
-//        ShowPanel.show(getClass(),"compass.getNorth() "+compass.getNorth()+" value : "+value);
 
         if (compass.getNorth() == value) {
             North north = new North();

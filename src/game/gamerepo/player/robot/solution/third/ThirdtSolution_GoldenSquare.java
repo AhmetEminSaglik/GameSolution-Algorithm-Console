@@ -1,6 +1,5 @@
 package game.gamerepo.player.robot.solution.third;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.gamerepo.player.robot.Robot;
 import game.gamerepo.player.robot.solution.BaseSolution;

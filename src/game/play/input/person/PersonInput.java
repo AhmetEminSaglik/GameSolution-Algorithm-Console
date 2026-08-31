@@ -4,7 +4,6 @@ import check.CheckSquare;
 import compass.Compass;
 import compass.KeyboardCompass;
 import errormessage.ErrorMessage;
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.location.Location;
 import game.play.input.BaseControlInput;

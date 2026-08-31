@@ -1,13 +1,9 @@
 package game.gamerepo.updategamemodel;
 
-import errormessage.joptionpanel.ShowPanel;
 import game.Game;
 import game.location.DirectionLocation;
 import game.move.seal.Signature;
-import sleep.Sleep;
 import validation.Validation;
-
-import javax.swing.*;
 
 public class UpdateForMovedBack extends UpdateValuesInGameModel {
 

@@ -1,7 +1,6 @@
 package game.move;
 
 import errormessage.ErrorMessage;
-import errormessage.joptionpanel.ShowPanel;
 import game.gamerepo.FillGameSquare;
 import game.gamerepo.updategamemodel.UpdateValuesInGameModel;
 import compass.Compass;
@@ -51,9 +50,7 @@ public abstract class Move implements IMove { // ICalculateMove
 //            System.out.println("AAAAAAAAAAAAAAA");
 //            changeStartLocationSpecialMovement();
         } else {
-//ShowPanel.show(getClass(),directionLocation.toString());
             setLocation(directionLocation);
-//            ShowPanel.show(getClass()," direction : "+directionLocation);
             updateBeforeStep();
             updatePlayerStepValue();
             updateAfterStep();
@@ -67,7 +64,6 @@ public abstract class Move implements IMove { // ICalculateMove
 //        StringFormat stringFormat = new StringFormat();
 //        String text = stringFormat.getStringFormatArray(game.getPlayer().getVisitedDirections());
 //        System.out.println(text);
-//        ShowPanel.show(getClass(), "directions Yazdirildil bi incele");
     }
 
     @Override
@@ -77,7 +73,6 @@ public abstract class Move implements IMove { // ICalculateMove
 
     @Override
     public void changeStartLocationSpecialMovement() {
-//        ShowPanel.show(getClass(), "square  total solved value :" + game.getPlayer().getSquareTotalSolvedValue());
         appendFileSquareTotalSolvedValue();
         int locationX = game.getPlayer().getLocation().getX();
         int locationY = game.getPlayer().getLocation().getY();
@@ -106,8 +101,7 @@ public abstract class Move implements IMove { // ICalculateMove
 
             }
         } else {
-
-            ShowPanel.show(getClass(), " Y siniri asti ");
+            ErrorMessage.appearWarnings(getClass(), "Y siniri asti - baslangic karesi daha fazla ilerletilemedi");
         }
     }
 
@@ -141,7 +135,6 @@ public abstract class Move implements IMove { // ICalculateMove
 
     @Override
     public void updateVisitedArea() {
-//        ShowPanel.show(getClass(),"GELDIIII"+game.getPlayer().getPlayerMove().getMove().getClass().getName());
         updateValuesInGameModel.updateValueVisitedArea();
     }
 

@@ -2,6 +2,7 @@ package game.play;
 
 import game.gamerepo.Model;
 import printarray.PrintArray;
+import trace.Trace;
 
 import java.util.ArrayList;
 
@@ -21,8 +22,7 @@ public class CopyModel {
 
     void addToList(int[][] value) {
         modelList.add(value);
-        System.out.println("Listeye eklendi boyutu : " + modelList.size());
-
+        if (Trace.ENABLED) Trace.log("CopyModel", "listeye eklendi, boyut : " + modelList.size());
     }
 
     public void sendModelToCompareAndAddToList(Model model) {
@@ -32,20 +32,18 @@ public class CopyModel {
         } else {
              for (int[][] tmp : modelList) {
                 if (comparedItemsAreSame(tmp, values)) {
-                    System.out.println("Solution values are SAME so this solution WONT BE ADDED to list");
-
-                    for (int i = 0; i < modelList.size(); i++) {
-
-                        System.out.println("Same solution is in this  index : " + i);
-                        new PrintArray().printMultipleArray(modelList.get(i));
+                    if (Trace.ENABLED) {
+                        Trace.log("CopyModel", "ayni cozum, listeye eklenmeyecek");
+                        for (int i = 0; i < modelList.size(); i++) {
+                            Trace.log("CopyModel", "ayni cozum bu indekste : " + i);
+                            new PrintArray().printMultipleArray(modelList.get(i));
+                        }
                     }
-
                     return;
                 }
             }
             addToList(values);
-            System.out.println("Solution values are DIFFERENT so this solution WILL BE ADDED to list " + modelList.size());
-
+            if (Trace.ENABLED) Trace.log("CopyModel", "farkli cozum, listeye eklendi, boyut : " + modelList.size());
         }
 
 
