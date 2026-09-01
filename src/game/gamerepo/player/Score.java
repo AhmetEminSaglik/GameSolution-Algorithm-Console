@@ -76,4 +76,18 @@ public class Score {
     public long getCounterTotalBackStep() {
         return counterTotalBackStep;
     }
+
+    /**
+     * Checkpoint'ten geri yukleme (persistence.checkpoint). Normal oyun akisinda
+     * KULLANILMAZ.
+     */
+    public void restoreCounters(long totalGameFinishedScore, int overLongTotalGameFinishedScore,
+                                long counterTotalBackStep, long counterOfDummyBackMove,
+                                boolean lockedCounterOfMovingBackLose) {
+        this.totalGameFinishedScore = totalGameFinishedScore;
+        this.overLongTotalGameFinishedScore = overLongTotalGameFinishedScore;
+        this.counterTotalBackStep = counterTotalBackStep;
+        this.counterOfDummyBackMove = counterOfDummyBackMove;
+        this.lockedCounterOfMovingBackLose = lockedCounterOfMovingBackLose;
+    }
 }

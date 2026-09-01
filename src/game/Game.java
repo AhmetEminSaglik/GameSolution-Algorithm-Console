@@ -50,4 +50,13 @@ public class Game {
         this.player = player;
     }
 
+    /**
+     * Checkpoint'ten geri yukleme (persistence.checkpoint). Normal oyun akisinda
+     * KULLANILMAZ - sadece kaydedilmis bir cozucu state'ini aynen kurmak icin.
+     */
+    public void restoreRoundCounter(long roundCounter, int overLongRoundCounter) {
+        this.roundCounter = roundCounter;
+        this.overLongRoundCounter = overLongRoundCounter;
+    }
+
 }

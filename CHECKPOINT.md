@@ -12,9 +12,10 @@ Tablolar:
 - **`solving_checkpoint`** — snapshot'lar; `algorithm_id` → `solving_algorithm`,
   `grid_map_id` → `grid_map` ile eşleşir. `row_size`/`col_size` yok.
 
-> **Durum:** Faz A = state'i DB'ye **yazma** (bu commit). Faz B = geri yükleme +
-> replay (sonraki adım). Şu an checkpoint'leri DB'de görebilirsin ama henüz
-> onlardan çözüm yeniden üretmiyoruz.
+> **Durum:** Faz A (yazma) + Faz B (geri yükleme + replay) yazıldı.
+> Checkpoint noktaları: **#1**, her `interval` katı, ve **son çözüm** (koşu sonu /
+> Ctrl+C'de interval'e denk gelmese bile). Her çözümde snapshot alınır ama sadece
+> bu noktalar DB'ye yazılır.
 
 ## Aç
 
@@ -105,6 +106,32 @@ ORDER BY solution_index DESC LIMIT 1;
 Metrikler rapor sürekliliği içindir; replay doğruluğu için şart değil. Bir checkpoint
 **anlık görüntüdür** — koşu sonu toplamları her zaman son checkpoint'ten büyüktür
 (son çözümden sonra arama tükenene kadar geri sarma devam eder).
+
+## Faz B — replay (checkpoint'ten çözüm üretme)
+
+`persistence.checkpoint.ReplayMain` CLI:
+
+```bash
+# [from, to] arasındaki çözümleri yeniden üret
+java -cp <cp> persistence.checkpoint.ReplayMain replay <solving_run_id> 12001 12400
+
+# determinizm doğrula: #12000 checkpoint'inden bir sonrakine oynat, state'i karşılaştır
+java -cp <cp> persistence.checkpoint.ReplayMain verify <solving_run_id> 12000
+```
+
+Nasıl çalışır: `<= from` olan son checkpoint yüklenir (`Algo2StateRestorer` tahta +
+`visitedDirections` + `RoadMemory` + sayaçları kurar), Algoritma 2 çözücüsü o
+state'ten `PlayGame` döngüsünün çekirdeğiyle (`Algo2ReplayEngine.Replay`) ileri
+oynatılır. `[from, to]` aralığındaki çözümler `GridPath` olarak toplanır.
+
+**`verify` boş çıktı = tam eşleşme** → replay deterministik, güvenilir. Fark
+listelerse gizli bir non-determinizm var demektir.
+
+Kısıtlar:
+- `algorithm_id != 2` veya `algorithm_version` kod ile uyuşmuyorsa reddeder.
+- İlk checkpoint'ten (#1) önce çözüm yok — #1 hep saklandığı için pratik sınır yok.
+- Replay o anki çalışma dizininde `Solution-2-<RxC>_*` dosyalarını yazar (mevcut
+  oyun makinesinin yan etkisi; determinizmi etkilemez).
 
 ## Sınır
 

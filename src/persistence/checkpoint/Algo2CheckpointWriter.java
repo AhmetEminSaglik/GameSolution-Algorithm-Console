@@ -51,6 +51,11 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     private final Thread shutdownHook;
     private boolean closed = false;
 
+    // Her cozumun snapshot'i buraya alinir; interval'de buffer'a eklenir. Kapanista
+    // (kosu sonu veya Ctrl+C) interval'e denk gelmese bile SON snapshot yazilir.
+    private Pending lastPending;
+    private boolean lastPendingStored = false;
+
     private record Pending(long solutionIndex, Algo2Snapshot snap) { }
 
     public Algo2CheckpointWriter(DbConfig cfg, Algo2CheckpointConfig ccfg,
@@ -102,12 +107,24 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     @Override
     public void maybeRecord(Game game, long solutionIndex) {
-        if (solutionIndex % interval != 0) {
-            return;
+        Pending pending = new Pending(solutionIndex, Algo2Snapshot.capture(game));
+        lastPending = pending;
+        lastPendingStored = false;
+        // #1 de saklanir: yoksa ilk interval'e kadarki cozumler replay edilemez.
+        if (solutionIndex == 1 || solutionIndex % interval == 0) {
+            buffer.add(pending);
+            lastPendingStored = true;
+            if (buffer.size() >= flushEvery) {
+                flush();
+            }
         }
-        buffer.add(new Pending(solutionIndex, Algo2Snapshot.capture(game)));
-        if (buffer.size() >= flushEvery) {
-            flush();
+    }
+
+    /** Interval'e denk gelmediyse son cozumun snapshot'ini da yaz. */
+    private void persistLastIfNeeded() {
+        if (lastPending != null && !lastPendingStored) {
+            buffer.add(lastPending);
+            lastPendingStored = true;
         }
     }
 
@@ -171,6 +188,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         }
         closed = true;
         try {
+            persistLastIfNeeded();
             flush();
         } catch (RuntimeException ignored) {
         }
@@ -186,6 +204,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
             return;
         }
         try {
+            persistLastIfNeeded();
             flush();
         } catch (RuntimeException ignored) {
         }

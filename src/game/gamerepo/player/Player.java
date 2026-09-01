@@ -153,6 +153,11 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
         squareTotalSolvedValue = 0;
     }
 
+    /** Checkpoint'ten geri yukleme (persistence.checkpoint). Normal akista KULLANILMAZ. */
+    public void restoreSquareTotalSolvedValue(int value) {
+        this.squareTotalSolvedValue = value;
+    }
+
     public PrintAble getPrintableFileScore() {
         return printableFileScore;
     }
