@@ -157,8 +157,7 @@ public class PlayGame {
     void calculatePlayerTotalWinScore() {
         if (player.getStep() == game.getModel().getTotalSquareCount()) {
             player.getScore().increaseTotalGameFinishedScore();
-//            System.out.println("Total Solved : " + player.getScore().getTotalGameFinishedScore());
-//            printGamelastStuation(game);
+            printGamelastStuation(game);   // butun map doldu (bir cozum): grid + istatistik yazdir
             player.increaseSquareTotalSolvedValue();
             solutionIndex++;
             checkpointRecorder.maybeRecord(game, solutionIndex);
@@ -261,8 +260,8 @@ public class PlayGame {
                 "\nStep : " + player.getStep() + "\n";
 
 
-//        textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares
-//        System.out.println(textWillAppendToFile);
+        textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares
+        System.out.println(textWillAppendToFile);
 //        System.out.println();
 //        printToFile(textWillAppendToFile);
     }
