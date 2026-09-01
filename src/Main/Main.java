@@ -44,9 +44,9 @@ public class Main {
 
         buildGameModel.createVisitedArea();
 
-        // Algoritma 2: bastan calistir mi, yoksa checkpoint araligindan cozum goster mi?
+        // Algoritma 2: bastan calistir mi, yoksa checkpoint araligindan devam mi?
         if (wantsCheckpointList(args, main.baseSolution)) {
-            listCheckpointRange(game);   // cozucuyu calistirmaz, sadece araligi yazdirir
+            runCheckpointRange(game);   // #from checkpoint'ten oynat, #to'da dur
             return;
         }
 
@@ -174,16 +174,17 @@ public class Main {
     }
 
     /**
-     * Checkpoint'leri gosterir, kullanicidan aralik alir ve o cozumleri
-     * {@link persistence.checkpoint.Algo2ReplayEngine} ile yeniden uretip yazdirir.
-     * Cozucuyu CALISTIRMAZ.
+     * Checkpoint'leri listeler, kullanicidan aralik alir; {@code #from} checkpoint'ini
+     * game'e restore edip cozucuyu {@link PlayGame} ile oradan oynatir, {@code #to}
+     * cozumune gelince durur. Cikti tamamen cozucunun kendi loglarindan +
+     * PlayGame'in kosu sonu istatistiginden gelir (bu metod bir sey yazdirmaz).
      *
      * Aralik girdisi (N, M = liste sira numaralari):
      *   "N-M"  → N. checkpoint'in cozum index'inden M. checkpoint'in cozum index'ine.
-     *   "N" veya "N-"  → N. checkpoint'ten sona kadar.
+     *   "N" / "N-"  → N. checkpoint'ten sona kadar.
      *   bos    → bastan sona.
      */
-    static void listCheckpointRange(Game game) {
+    static void runCheckpointRange(Game game) {
         int row = game.getModel().getRowCount();
         int col = game.getModel().getColCount();
         List<CheckpointSummary> cps;
@@ -227,41 +228,17 @@ public class Main {
         long from = cps.get(fromRow - 1).solutionIndex();
         long to = (toRow == null) ? 0 : cps.get(toRow - 1).solutionIndex();  // 0 = sona kadar
 
-        try (persistence.checkpoint.Algo2ReplayEngine engine =
-                     new persistence.checkpoint.Algo2ReplayEngine(DbConfig.load())) {
-            System.out.println("---- " + row + "x" + col + " algo2  cozum " + from + ".."
-                    + (to <= 0 ? "son" : to) + " ----");
-            long produced = engine.replay(row, col, 2, from, to,
-                    (path, idx) -> printReplaySolution(idx, path));
-            System.out.println("---- toplam " + produced + " cozum ----");
-        } catch (RuntimeException e) {
-            System.err.println("[checkpoint][WARN] replay: " + e.getMessage());
+        // #from checkpoint'ini restore et, cozucuyu oradan oynat, #to'da dur.
+        // Cikti tamamen cozucunun kendi loglarindan + PlayGame'in alttaki istatistiginden gelir.
+        if (!Algo2ResumeService.restoreInto(game, 2, from, DbConfig.load())) {
+            return;
         }
-    }
-
-    private static void printReplaySolution(long idx, persistence.GridPath p) {
-        int[][] cells = p.cells();
-        StringBuilder yol = new StringBuilder();
-        for (int i = 0; i < cells.length; i++) {
-            yol.append('(').append(cells[i][0]).append(',').append(cells[i][1]).append(')');
-            if (i < cells.length - 1) yol.append(' ');
+        PlayGame playGame = new PlayGame(game, new NoOpSolutionSink(), CheckpointRecorder.NONE);
+        playGame.resumeFrom(from);
+        if (to > 0) {
+            playGame.stopAfter(to);
         }
-        int rows = p.rowCount(), cols = p.colCount();
-        int[][] b = new int[rows][cols];
-        for (int k = 0; k < cells.length; k++) {
-            b[cells[k][0]][cells[k][1]] = k + 1;
-        }
-        int w = Integer.toString(rows * cols).length();
-        System.out.println();
-        System.out.println("#" + idx + "  start=(" + p.startX() + "," + p.startY() + ")  adim=" + p.length());
-        System.out.println("  yol: " + yol);
-        for (int x = 0; x < rows; x++) {
-            StringBuilder sb = new StringBuilder("  ");
-            for (int y = 0; y < cols; y++) {
-                sb.append(String.format("%" + w + "d ", b[x][y]));
-            }
-            System.out.println(sb);
-        }
+        playGame.playGame();
     }
 
     private static boolean hasArg(String[] args, String name) {

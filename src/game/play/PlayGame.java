@@ -28,6 +28,11 @@ public class PlayGame {
     private final CheckpointRecorder checkpointRecorder;
     private long solutionIndex = 0;
 
+    /** > 0 ise: game state disaridan checkpoint'ten restore edilmis. PrepareGame ATLANIR, solutionIndex buradan devam eder. */
+    private long resumeFromIndex = 0;
+    /** > 0 ise: solutionIndex bu degere ulasinca dongu kirilir (checkpoint araligi cikti). */
+    private long stopAfterIndex = 0;
+
     public PlayGame(Game game) {
         this(game, new NoOpSolutionSink());
     }
@@ -45,12 +50,29 @@ public class PlayGame {
         printable = new FileWriteProcess(game.getPlayer().getName());
     }
 
+    /**
+     * Checkpoint'ten devam: {@code startSolutionIndex}. game state'inin ZATEN restore
+     * edilmis oldugu varsayilir (bkz. persistence.checkpoint). PrepareGame calismaz.
+     */
+    public void resumeFrom(long startSolutionIndex) {
+        this.resumeFromIndex = startSolutionIndex;
+    }
+
+    /** solutionIndex bu degere ulasinca donguyu kir (dahil). 0 = sinir yok. */
+    public void stopAfter(long lastSolutionIndex) {
+        this.stopAfterIndex = lastSolutionIndex;
+    }
+
     public void playGame() {
         player.startTimeKeeper();
         solutionSink.beginRun(new SolutionSink.RunInfo(
                 game.getModel().getRowCount(), game.getModel().getColCount(), player.getSolutionName()));
 
-        prepareGame = new PrepareGame(game);
+        if (resumeFromIndex > 0) {
+            this.solutionIndex = resumeFromIndex;   // state disaridan restore edildi; PrepareGame atlanir
+        } else {
+            prepareGame = new PrepareGame(game);
+        }
         Move moveForwardOrBack;
 
         printTableIfPersonPlays();
@@ -76,6 +98,10 @@ public class PlayGame {
             prevStep = player.getStep();
 
             calculatePlayerTotalWinScore();
+
+            if (stopAfterIndex > 0 && solutionIndex >= stopAfterIndex) {
+                break;   // checkpoint araligi cikti tamamlandi
+            }
 
 //            if (game.getModel().getGameSquares()[0][0] != 1)
 //                break;

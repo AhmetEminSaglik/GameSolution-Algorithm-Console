@@ -24,9 +24,10 @@ Algoritma 2 seçince:
 Baslangic:  1) Bastan calistir   2) Checkpoint araligindan cozum goster
 ```
 - **1** → normal akış, ardından `DB kayit modu sec: 0) yok 1) flat 2) trie 3) checkpoint 4) all`
-- **2** → çözücüyü **çalıştırmaz**. Checkpoint'ler numaralı listelenir, bir **aralık**
-  girersin, o aralıktaki çözümler checkpoint'ten yeniden üretilip (tam yol + grid)
-  yazdırılır, program biter.
+- **2** → checkpoint'ler numaralı listelenir, bir **aralık** girersin. `#from`
+  checkpoint'i restore edilir, çözücü **oradan** oynatılır, `#to` çözümüne gelince
+  durur. Çıktı tamamen çözücünün kendi loglarından + `PlayGame`'in koşu sonu
+  istatistiğinden gelir — bu akış kendi başına bir şey yazdırmaz.
   ```
   Checkpoint'ler (5x5 algo2):
      1) #1000   round=82157    total_solved=1000   back=41066   ...
@@ -35,11 +36,10 @@ Baslangic:  1) Bastan calistir   2) Checkpoint araligindan cozum goster
   Aralik (N-M / N / bos = hepsi):
   ```
   N, M = **liste sıra no**.
-  - `3-5` → 3. checkpoint'ten (#3000) 5. checkpoint'e (#5000) → çözüm 3000..5000.
+  - `2-3` → 2. checkpoint (#2000) restore, oradan oynat, #3000'e gelince dur.
+    Yani #2001, #2002, … #3000 üretilir (senin logların basar), sonra istatistik.
   - `3` → 3. checkpoint'ten (#3000) sona kadar.
   - boş → baştan sona.
-
-Ham çözüm index'iyle (IDE dışı): `ReplayMain replay 5x5 2 <from> <to>`.
 
 Argüman / env (sessiz mod):
 ```
@@ -115,32 +115,19 @@ Metrikler rapor sürekliliği içindir. Bir checkpoint **anlık görüntüdür**
 toplamları her zaman son checkpoint'ten büyüktür (son çözümden sonra arama tükenene
 kadar geri sarma devam eder).
 
-## Faz B — replay / verify CLI
+## Nasıl çalışır (checkpoint aralığı)
 
-`persistence.checkpoint.ReplayMain` (anahtar: harita + algoritma):
-
-```
-ReplayMain replay <RxC> <algo> [from] [to]        # replay 5x5 2 5000 5000
-ReplayMain verify <RxC> <algo> <checkpointIndex>  # verify 5x5 2 12000
-```
-
-- **replay**: `from`/`to` verilmezse konsoldan sorar. **`to` boş ya da `0` → sona
-  kadar** (çözümler 1'den başladığı için 0 karışıklık yapmaz). `<= from` olan son
-  checkpoint otomatik yüklenir (`Algo2StateRestorer` tahta + `visitedDirections` +
-  `RoadMemory` + sayaçları kurar), Algoritma 2 çözücüsü o state'ten `PlayGame`
-  döngüsünün çekirdeğiyle ileri oynatılır; `[from, to]` aralığındaki her çözüm
-  **tam yol + adım-numaralı ASCII grid** ile yazdırılır (streaming — büyük aralık
-  belleği şişirmez).
-- **verify**: checkpoint'ten bir sonrakine oynatır, varılan state'i (tüm sayaçlar +
-  `path`/`visited_dirs`/`one_way_list` baytları) o satırla karşılaştırır. **Boş çıktı =
-  tam eşleşme → determinizm doğrulandı.** Fark listelerse gizli bir non-determinizm var.
+`Algo2StateRestorer` `#from` satırını mevcut `Game`'e uygular: tahta +
+`visitedDirections` + `RoadMemory` (exitSituation + oneWayNumbersList) + sayaçlar.
+Sonra `PlayGame.resumeFrom(from)` + `stopAfter(to)` ile **gerçek çözüm döngüsü**
+çalışır — `PrepareGame` atlanır, `solutionIndex` = `from`. `#to` çözümü üretilince
+döngü kırılır, `PlayGame` koşu sonu istatistiğini basar.
 
 Kısıtlar:
-- `algorithm_id != 2` veya `algorithm_version` kod ile uyuşmuyorsa reddeder.
-- İlk (`interval`) checkpoint'inden önceki çözümler replay edilemez (o aralık için
-  checkpoint yok).
-- Replay/devam çalışma dizininde `Solution-2-<RxC>_*` dosyalarını yazar (oyun
-  makinesinin yan etkisi; determinizmi etkilemez).
+- Yalnız Algoritma 2. `algorithm_version` kod ile uyuşmazsa restore reddeder.
+- İlk (`interval`) checkpoint'inden önceki çözümler için checkpoint yok.
+- Çalışma dizininde `Solution-2-<RxC>_*` dosyalarını yazar (oyun makinesinin yan
+  etkisi).
 
 ## Sınır
 
