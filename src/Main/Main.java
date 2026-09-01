@@ -21,9 +21,11 @@ import persistence.checkpoint.Algo2CheckpointConfig;
 import persistence.checkpoint.Algo2CheckpointWriter;
 import persistence.checkpoint.Algo2ResumeService;
 import persistence.checkpoint.CheckpointRecorder;
+import persistence.checkpoint.CheckpointSummary;
 import trace.Trace;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 
@@ -44,10 +46,9 @@ public class Main {
 
         // Algoritma 2 icin: bastan basla mi, checkpoint'ten devam mi?
         long resumeIndex = 0;
-        boolean resume = wantsResume(args, main.baseSolution);
         String saveMode;
-        if (resume) {
-            resumeIndex = Algo2ResumeService.resumeInto(game, 2, DbConfig.load()).orElse(0L);
+        if (wantsResume(args, main.baseSolution)) {
+            resumeIndex = pickCheckpointAndRestore(args, game);
             saveMode = "checkpoint";   // devam edince ilerleme kaydi surer
         } else {
             saveMode = readSaveMode(args);
@@ -161,6 +162,64 @@ public class Main {
         }
         System.out.println("Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et");
         return new Scanner(System.in).nextLine().trim().equals("2");
+    }
+
+    /**
+     * "Devam et" secildi: bu harita + Algoritma 2 icin DB'deki checkpoint'leri
+     * LISTELER, kullaniciya sira no ile sectirir ve secileni {@code game}'e restore eder.
+     * {@code --resume} argumaniyla (sessiz) en son checkpoint alinir.
+     *
+     * @return restore edilen solution_index; 0 = checkpoint yok / iptal / hata (bastan baslanir).
+     */
+    static long pickCheckpointAndRestore(String[] args, Game game) {
+        DbConfig cfg = DbConfig.load();
+        int row = game.getModel().getRowCount();
+        int col = game.getModel().getColCount();
+
+        if (hasArg(args, "--resume")) {
+            return Algo2ResumeService.resumeLatest(game, 2, cfg);
+        }
+
+        List<CheckpointSummary> cps;
+        try {
+            cps = Algo2ResumeService.list(row, col, 2, cfg);
+        } catch (RuntimeException e) {
+            System.err.println("[checkpoint][WARN] liste alinamadi, bastan: " + e.getMessage());
+            return 0;
+        }
+        if (cps.isEmpty()) {
+            System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok -> bastan.");
+            return 0;
+        }
+
+        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2):");
+        for (int i = 0; i < cps.size(); i++) {
+            CheckpointSummary s = cps.get(i);
+            System.out.printf("  %2d) #%-8d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
+                    i + 1, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
+                    s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
+        }
+        System.out.print("Hangisinden devam? (sira no, bos = sonuncu): ");
+        String in = new Scanner(System.in).nextLine().trim();
+
+        CheckpointSummary chosen;
+        if (in.isEmpty()) {
+            chosen = cps.get(cps.size() - 1);
+        } else {
+            int n;
+            try {
+                n = Integer.parseInt(in);
+            } catch (NumberFormatException e) {
+                System.out.println("[checkpoint] gecersiz secim -> bastan.");
+                return 0;
+            }
+            if (n < 1 || n > cps.size()) {
+                System.out.println("[checkpoint] sira no aralik disi -> bastan.");
+                return 0;
+            }
+            chosen = cps.get(n - 1);
+        }
+        return Algo2ResumeService.restoreFrom(game, 2, chosen.solutionIndex(), cfg);
     }
 
     private static boolean hasArg(String[] args, String name) {

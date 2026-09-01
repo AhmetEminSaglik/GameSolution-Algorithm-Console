@@ -25,9 +25,18 @@ Algoritma 2 seçince:
 Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et
 ```
 - **1** → normal akış, ardından `DB kayit modu sec: 0) yok 1) flat 2) trie 3) checkpoint 4) all`
-- **2** → bu harita + Algoritma 2 için DB'deki **en son checkpoint** yüklenir, oradan
-  devam edilir; checkpoint kaydı otomatik açık kalır. Kayıt yoksa / `algorithm_version`
-  uyuşmazsa baştan başlar (loglanır).
+- **2** → bu harita + Algoritma 2 için DB'deki **tüm checkpoint'ler listelenir**, sıra
+  no ile seçersin (boş = sonuncu). Seçilen state restore edilip oradan devam edilir;
+  checkpoint kaydı açık kalır. Kayıt yoksa / `algorithm_version` uyuşmazsa / geçersiz
+  seçim → baştan başlar (loglanır).
+  ```
+  Checkpoint'ler (5x5 algo2):
+     1) #1000   round=82157    total_solved=1000   back=41066   ...
+     2) #2000   round=153813   total_solved=2000   back=76893   ...
+    ...
+  Hangisinden devam? (sira no, bos = sonuncu):
+  ```
+  Sessiz: `--resume` → en son checkpoint.
 
 Argüman / env (sessiz mod):
 ```

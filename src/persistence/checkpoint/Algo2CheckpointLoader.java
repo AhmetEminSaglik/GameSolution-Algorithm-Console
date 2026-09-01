@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -38,6 +40,34 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         hc.setMaximumPoolSize(1);
         hc.setPoolName("solving-checkpoint-read");
         this.dataSource = new HikariDataSource(hc);
+    }
+
+    /** Bu harita + algoritma icin tum checkpoint ozetleri, solution_index artan. */
+    List<CheckpointSummary> listSummaries(int row, int col, int algo) {
+        String sql = """
+                SELECT c.solution_index, c.step, c.round_counter, c.total_solved,
+                       c.total_back_steps, c.dummy_back_steps, c.square_total_solved, c.created_at
+                  FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
+                 WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
+                 ORDER BY c.solution_index ASC
+                """;
+        List<CheckpointSummary> out = new ArrayList<>();
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, row);
+            ps.setInt(2, col);
+            ps.setInt(3, algo);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new CheckpointSummary(
+                            rs.getLong(1), rs.getInt(2), rs.getLong(3), rs.getLong(4),
+                            rs.getLong(5), rs.getLong(6), rs.getInt(7), rs.getTimestamp(8)));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("checkpoint listesi alinamadi: " + e.getMessage(), e);
+        }
+        return out;
     }
 
     long count(int row, int col, int algo) {
