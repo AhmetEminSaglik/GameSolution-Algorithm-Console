@@ -7,13 +7,15 @@ import persistence.DbConfig;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Algoritma 2 checkpoint'lerini {@code algo2_checkpoint} tablosuna yazar.
+ * Cozucu checkpoint'lerini {@code solving_checkpoint} tablosuna yazar. SADECE
+ * Algoritma 2 (state RoadMemory'ye bagli).
  *
  * <ul>
  *   <li>{@code maybeRecord} → solutionIndex araligin kati ise state'i buffer'a alir.</li>
@@ -22,25 +24,28 @@ import java.util.UUID;
  *   <li>JVM shutdown hook: kalan buffer'i yazmaya calisir.</li>
  * </ul>
  *
- * Tek is parcacigi icindir. Mevcut solver_run / path_explorer_solution tablolariyla
- * iliskisi yok.
+ * {@code grid_map_id} kurulusta (row,col) → grid_map.id ile cozulur; {@code algorithm_id}
+ * disaridan verilir (BaseSolution.getSolutionCreatedOrder()). Mevcut solver_run /
+ * path_explorer_solution tablolariyla iliskisi yok.
  */
 public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     private static final String INSERT = """
-            INSERT INTO algo2_checkpoint
-              (run_id, solution_index, row_size, col_size, algo_version, interval_size,
+            INSERT INTO solving_checkpoint
+              (solving_run_id, solution_index, grid_map_id, algorithm_id, algorithm_version, interval_size,
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
                total_back_step, dummy_back_move, locked_back_lose, square_total_solved)
             VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?)
-            ON CONFLICT (run_id, solution_index) DO NOTHING
+            ON CONFLICT (solving_run_id, solution_index) DO NOTHING
             """;
 
     private final HikariDataSource dataSource;
-    private final UUID runId = UUID.randomUUID();
+    private final UUID solvingRunId = UUID.randomUUID();
     private final int interval;
     private final int flushEvery;
+    private final int gridMapId;
+    private final int algorithmId;
 
     private final List<Pending> buffer = new ArrayList<>();
     private final Thread shutdownHook;
@@ -48,28 +53,51 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     private record Pending(long solutionIndex, Algo2Snapshot snap) { }
 
-    public Algo2CheckpointWriter(DbConfig cfg, Algo2CheckpointConfig ccfg, int rowSize, int colSize) {
+    public Algo2CheckpointWriter(DbConfig cfg, Algo2CheckpointConfig ccfg,
+                                 int rowSize, int colSize, int algorithmId) {
         this.interval = Math.max(1, ccfg.intervalFor(rowSize, colSize));
         this.flushEvery = Math.max(1, ccfg.flushEvery());
+        this.algorithmId = algorithmId;
 
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(cfg.url());
         hc.setUsername(cfg.user());
         hc.setPassword(cfg.password());
         hc.setMaximumPoolSize(1);
-        hc.setPoolName("algo2-checkpoint");
+        hc.setPoolName("solving-checkpoint");
         this.dataSource = new HikariDataSource(hc);
 
-        this.shutdownHook = new Thread(this::onJvmShutdown, "algo2-checkpoint-shutdown");
+        this.gridMapId = resolveGridMapId(rowSize, colSize);
+
+        this.shutdownHook = new Thread(this::onJvmShutdown, "solving-checkpoint-shutdown");
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
-    public UUID runId() {
-        return runId;
+    public UUID solvingRunId() {
+        return solvingRunId;
     }
 
     public int interval() {
         return interval;
+    }
+
+    private int resolveGridMapId(int rowSize, int colSize) {
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT id FROM grid_map WHERE row_size = ? AND col_size = ?")) {
+            ps.setInt(1, rowSize);
+            ps.setInt(2, colSize);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalStateException("grid_map'te " + rowSize + "x" + colSize
+                            + " kaydi yok. Once ekle:  INSERT INTO grid_map (id, row_size, col_size) VALUES (<id>, "
+                            + rowSize + ", " + colSize + ");");
+                }
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("grid_map_id cozulemedi: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -101,7 +129,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("algo2_checkpoint yazilamadi: " + e.getMessage(), e);
+            throw new IllegalStateException("solving_checkpoint yazilamadi: " + e.getMessage(), e);
         } finally {
             buffer.clear();
         }
@@ -110,11 +138,11 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     private void bind(PreparedStatement ps, Pending pending) throws SQLException {
         Algo2Snapshot s = pending.snap();
         int i = 1;
-        ps.setObject(i++, runId);
+        ps.setObject(i++, solvingRunId);
         ps.setLong(i++, pending.solutionIndex());
-        ps.setInt(i++, s.rowSize());
-        ps.setInt(i++, s.colSize());
-        ps.setShort(i++, Algo2Snapshot.ALGO_VERSION);
+        ps.setInt(i++, gridMapId);
+        ps.setInt(i++, algorithmId);
+        ps.setShort(i++, Algo2Snapshot.ALGORITHM_VERSION);
         ps.setInt(i++, interval);
 
         ps.setInt(i++, s.step());

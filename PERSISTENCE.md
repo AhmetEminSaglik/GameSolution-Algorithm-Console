@@ -3,17 +3,19 @@
 Cözücü bulduğu her çözümü, istenirse, batch'lerle PostgreSQL'e yazar.
 DB **opsiyoneldir** — kapalıyken proje ve testler aynen çalışır.
 
-## İki kayıt modu
+## Kayıt modları
 
 | mod | ne yapar | ne zaman |
 |---|---|---|
 | **flat** | her çözüm = 1 satır (`path_explorer_solution`, yön-kodlamalı `BYTEA`) | küçük haritalar (5x5, 6x6); yolların tekil erişimi |
 | **trie** | parent-child ağaç (`solution_step`): **ortak önek 1 kez** | her boyut, özellikle büyük; "şu açılıştan kaç çözüm" analizi |
-| **both** | ikisi birden | karşılaştırma / küçük haritada doğrulama |
+| **checkpoint** | çözüm saklanmaz; çözücü state'i her S çözümde bir (`solving_checkpoint`) — bkz. `CHECKPOINT.md` | **sadece Algoritma 2**; büyük çözüm sayısı |
+| **all** | flat + trie + checkpoint | hepsi |
 
 Mod seçimi:
-- **Argüman varsa sessiz:** `--save=none|flat|trie|both` (`--save-db` = `--save=flat`).
-- **Argüman yoksa** konsoldan sorar: `0) yok  1) flat  2) trie  3) both`.
+- **Argüman varsa sessiz:** `--save=none|flat|trie|checkpoint|all` (`--save-db` = `--save=flat`;
+  `--save=both` = flat+trie legacy; `--checkpoint` bayrağı herhangi bir modla birlikte checkpoint'i açar).
+- **Argüman yoksa** konsoldan sorar: `0) yok  1) flat  2) trie  3) checkpoint  4) all`.
 - `PATHEXPLORER_DB_ENABLED=1` = flat (prod için).
 
 ## Hızlı başlangıç

@@ -24,7 +24,7 @@ import java.util.List;
 public final class Algo2Snapshot {
 
     /** Algoritma 2 karar mantiginin surumu. Mantik degisince ARTIR (eski checkpoint'ler gecersiz olur). */
-    public static final short ALGO_VERSION = 1;
+    public static final short ALGORITHM_VERSION = 1;
 
     private final int rowSize;
     private final int colSize;

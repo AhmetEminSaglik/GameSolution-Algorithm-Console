@@ -41,8 +41,9 @@ public class Main {
 
         buildGameModel.createVisitedArea();
 
-        SolutionSink sink = createSolutionSink(args);
-        CheckpointRecorder checkpoint = createCheckpointRecorder(args, main.baseSolution, game);
+        String saveMode = readSaveMode(args);
+        SolutionSink sink = createSolutionSink(saveMode);
+        CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, main.baseSolution, game);
         try {
             new PlayGame(game, sink, checkpoint).playGame();
         } finally {
@@ -60,17 +61,13 @@ public class Main {
     }
 
     /**
-     * DB kayit modunu belirler.
-     *  - Argüman verilmişse sessiz: {@code --save=none|flat|trie|both}
-     *    ({@code --save-db} = {@code --save=flat} kısayolu; {@code PATHEXPLORER_DB_ENABLED=1} = flat).
-     *  - Argüman yoksa konsoldan menü ile sorulur (lokal geliştirme).
-     *
-     *  flat  : her çözüm 1 satır (küçük haritalar).
-     *  trie  : parent-child ağaç, ortak önek 1 kez (her boyut, özellikle büyük).
-     *  both  : ikisi birden.
+     * DB kayit modunu {@code mode}'a gore kurar.
+     *   flat       : her cozum 1 satir (path_explorer_solution).
+     *   trie       : parent-child agac, ortak onek 1 kez (solution_step).
+     *   checkpoint : cozum saklanmaz; state snapshot'i {@link #createCheckpointRecorder} ile yazilir.
+     *   all        : flat + trie + checkpoint.
      */
-    static SolutionSink createSolutionSink(String[] args) {
-        String mode = readSaveMode(args);
+    static SolutionSink createSolutionSink(String mode) {
         DbConfig cfg = DbConfig.load();
         switch (mode) {
             case "flat":
@@ -83,6 +80,13 @@ public class Main {
                 System.out.println("DB kaydi: FLAT + TRIE  -> " + cfg.url());
                 return new CompositeSolutionSink(java.util.List.of(
                         new JdbcSolutionSink(cfg), new TrieSolutionSink(cfg)));
+            case "all":
+                System.out.println("DB kaydi: FLAT + TRIE + CHECKPOINT  -> " + cfg.url());
+                return new CompositeSolutionSink(java.util.List.of(
+                        new JdbcSolutionSink(cfg), new TrieSolutionSink(cfg)));
+            case "checkpoint":
+                System.out.println("DB kaydi: CHECKPOINT  -> " + cfg.url());
+                return new NoOpSolutionSink();
             default:
                 System.out.println("DB kaydi: kapali");
                 return new NoOpSolutionSink();
@@ -91,25 +95,28 @@ public class Main {
 
     /**
      * Checkpoint kayit modu (SADECE Algoritma 2). Acilir:
+     *   - {@code mode} = {@code checkpoint} veya {@code all}, veya
      *   - {@code --checkpoint} argumani, veya
      *   - {@code checkpoint.enabled=true} (db.properties) / {@code PATHEXPLORER_CHECKPOINT_ENABLED=1}
      * Aralik: {@code checkpoint.interval.<R>x<C>} (orn. 5x5=1000, 6x6=10000), yoksa
      * {@code checkpoint.interval.default}. {@code PATHEXPLORER_CHECKPOINT_INTERVAL} hepsini ezer.
      */
-    static CheckpointRecorder createCheckpointRecorder(String[] args, BaseSolution solution, Game game) {
+    static CheckpointRecorder createCheckpointRecorder(String mode, String[] args, BaseSolution solution, Game game) {
         Algo2CheckpointConfig ccfg = Algo2CheckpointConfig.load();
-        boolean on = hasArg(args, "--checkpoint") || ccfg.isEnabled();
+        boolean on = mode.equals("checkpoint") || mode.equals("all")
+                || hasArg(args, "--checkpoint") || ccfg.isEnabled();
         if (!on) {
             return CheckpointRecorder.NONE;
         }
-        if (solution == null || solution.getSolutionCreatedOrder() != 2) {
+        Integer order = (solution == null) ? null : solution.getSolutionCreatedOrder();
+        if (order == null || order != 2) {
             System.out.println("Checkpoint: yalniz Algoritma 2 icin -> kapali");
             return CheckpointRecorder.NONE;
         }
         DbConfig cfg = DbConfig.load();
         Algo2CheckpointWriter writer = new Algo2CheckpointWriter(
-                cfg, ccfg, game.getModel().getRowCount(), game.getModel().getColCount());
-        System.out.println("Checkpoint: ACIK  run=" + writer.runId()
+                cfg, ccfg, game.getModel().getRowCount(), game.getModel().getColCount(), order);
+        System.out.println("Checkpoint: ACIK  run=" + writer.solvingRunId()
                 + "  her " + writer.interval() + " cozumde bir  -> " + cfg.url());
         return writer;
     }
@@ -136,12 +143,13 @@ public class Main {
             return "flat";
         }
         // argüman yok → sor
-        System.out.println("DB kayit modu sec:  0) yok   1) flat   2) trie   3) both");
+        System.out.println("DB kayit modu sec:  0) yok   1) flat   2) trie   3) checkpoint   4) all");
         String in = new Scanner(System.in).nextLine().trim();
         return switch (in) {
             case "1" -> "flat";
             case "2" -> "trie";
-            case "3" -> "both";
+            case "3" -> "checkpoint";
+            case "4" -> "all";
             default -> "none";
         };
     }
