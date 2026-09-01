@@ -13,7 +13,7 @@ Aşağıdaki çıktılar 5x5, 2. çözüm (`SecondSolution`) koşusundan alınd�
 Her çözüm = 1 satır. `path` = yön-kodlaması (adım başına 3 bit, `PathCodec`).
 
 ```bash
-docker exec pathexplorer-db psql -U pathexplorer -d pathexplorer -c "
+docker exec dev-postgres psql -U pathexplorer -d pathexplorer -c "
 SELECT id, solution_index AS sol_idx, start_x AS sx, start_y AS sy, path_len AS len,
        open1, open2, open3, encode(path,'hex') AS path_hex
 FROM path_explorer_solution
@@ -62,7 +62,7 @@ farklı.
 Parent-child ağaç. Ortak önek 1 kez. Bir düğüm = kısmi bir yol adımı.
 
 ```bash
-docker exec pathexplorer-db psql -U pathexplorer -d pathexplorer -c "
+docker exec dev-postgres psql -U pathexplorer -d pathexplorer -c "
 SELECT id, parent_step_id AS parent, step_no AS step, x, y,
        move_from_parent AS mv, solution_ordinal AS ord,
        subtree_solution_count AS subtree_cnt, is_leaf

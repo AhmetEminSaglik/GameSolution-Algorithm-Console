@@ -1,24 +1,25 @@
-# PathExplorer — cozum kaydi icin PostgreSQL
+# Paylasimli lokal gelistirme PostgreSQL'i
 
-Bu klasor, cozucunun buldugu cozumleri kaydettigi ayri bir PostgreSQL'i
-Docker Compose ile ayaga kaldirir. Ana projenin remote Postgres'iyle ilgisi yok.
+`docker-compose.yml` **tek** bir PostgreSQL container'i (`dev-postgres`) ayaga
+kaldirir. Butun yan projeler bu instance'i paylasir; her proje **ayri bir port
+degil, ayri bir database** kullanir. Portfolio projesinin Postgres'iyle ilgisi
+yok, ona dokunulmuyor.
 
 ## Kullanim
 
 ```bash
-# baslat (ilk seferde 01_schema.sql otomatik calisir)
+# baslat (ilk seferde initdb/*.sql otomatik calisir)
 docker compose up -d
 
-# durumu gor
 docker compose ps
 
 # psql ile baglan
-docker exec -it pathexplorer-db psql -U pathexplorer -d pathexplorer
+docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer
 
-# durdur (veri kalir)
+# durdur — VERI KALIR (bunu kullan)
 docker compose down
 
-# tamamen sifirla (veri + sema silinir, sonraki up'ta sema yeniden kurulur)
+# volume'u sil — TUM VERI GIDER, sonraki up'ta sema sifirdan kurulur (dikkat!)
 docker compose down -v
 ```
 
@@ -27,16 +28,41 @@ docker compose down -v
 | | |
 |---|---|
 | host | `localhost` |
-| port | `5442` (5432 native PostgreSQL ile cakisiyordu; doluysa `docker-compose.yml` + `db.properties` degistir) |
+| port | `5443` |
 | database | `pathexplorer` |
 | user | `pathexplorer` |
 | password | `pathexplorer` |
-| JDBC URL | `jdbc:postgresql://localhost:5442/pathexplorer?reWriteBatchedInserts=true` |
+| JDBC URL | `jdbc:postgresql://localhost:5443/pathexplorer?reWriteBatchedInserts=true` |
 
 Java uygulamasi bu degerleri `db.properties` dosyasindan veya `PATHEXPLORER_DB_*`
-ortam degiskenlerinden okur (bkz. Faz 5).
+ortam degiskenlerinden okur.
 
-## Sema ozeti
+## pgAdmin'e ekleme
+
+Servers → sag tik → Register → Server
+- **General → Name:** `local-dev` (ya da istedigin bir isim)
+- **Connection:** Host `localhost`, Port `5443`, Maintenance DB `pathexplorer`,
+  Username `pathexplorer`, Password `pathexplorer`
+
+## Yeni proje ekleme (ileride)
+
+Container zaten ayaktaysa `initdb/*.sql` bir daha calismaz. Yeni projeyi elle ekle:
+
+```bash
+# 1) rol + database
+docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer -c \
+  "CREATE ROLE yeniproje LOGIN PASSWORD 'yeniproje';"
+docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer -c \
+  "CREATE DATABASE yeniproje OWNER yeniproje;"
+
+# 2) o projenin semasini yukle
+docker exec -i dev-postgres psql -U yeniproje -d yeniproje < yol/schema.sql
+```
+
+`pathexplorer` kullanicisi bu instance'in superuser'i oldugu icin yeni
+rol/database olusturabilir.
+
+## Sema ozeti (pathexplorer)
 
 - **`solver_run`** — bir cozucu kosusunun run-seviyesi metrikleri (bir satir/kosu).
   `status`: `RUNNING` → `COMPLETED` (normal bitis) / `ABORTED` (Ctrl+C).
@@ -48,6 +74,8 @@ ortam degiskenlerinden okur (bkz. Faz 5).
     "Su acilistan kac cozum var" sorgusu icin (`GROUP BY open1, open2, open3`).
   - `created_at` — `timestamptz`, mikrosaniye tavani (nanosaniye YOK).
     Gercek siralama `solution_index`.
+- **`grid_map`**, **`solution_step`** (+ `_m1.._m6` partition) — trie (parent-child
+  agac) ile cozum saklama (`03_trie.sql`).
 
 ## Ornek sorgular
 

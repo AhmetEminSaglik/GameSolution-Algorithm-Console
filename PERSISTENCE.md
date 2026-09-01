@@ -33,7 +33,7 @@ java -jar target/game-solution-algorithm.jar --save-db
 java -cp target/game-solution-algorithm.jar persistence.OpeningStats 5 5
 
 # 5) elle sorgu
-docker exec -it pathexplorer-db psql -U pathexplorer -d pathexplorer
+docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer
 ```
 
 DB kapalı (varsayılan) çalıştırma:
@@ -86,13 +86,13 @@ PlayGame ──(çözüm bulununca)──> SolutionSink.accept(GridPath)
 
 | env | varsayılan |
 |---|---|
-| `PATHEXPLORER_DB_URL` | `jdbc:postgresql://localhost:5442/pathexplorer?reWriteBatchedInserts=true` |
+| `PATHEXPLORER_DB_URL` | `jdbc:postgresql://localhost:5443/pathexplorer?reWriteBatchedInserts=true` |
 | `PATHEXPLORER_DB_USER` | `pathexplorer` |
 | `PATHEXPLORER_DB_PASSWORD` | `pathexplorer` |
 | `PATHEXPLORER_DB_BATCH_SIZE` | `1000` |
 | `PATHEXPLORER_DB_ENABLED` | (yok) — `1`/`true` ise DB kaydı açık |
 
-> Port **5442** — 5432 bu makinede native PostgreSQL ile çakışıyordu.
+> Port **5443** — paylaşımlı lokal `dev-postgres` (5432 native PostgreSQL, 5439 portfolio ile çakışmasın diye).
 
 Remote/prod için `db.properties`'i değiştirme; env değişkeni geç:
 ```bash

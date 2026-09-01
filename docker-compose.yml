@@ -1,25 +1,33 @@
-# PathExplorer cozum kaydi icin ayri bir PostgreSQL.
-# Kaldir:  docker compose up -d
-# Durdur:  docker compose down          (veri kalir)
-# Sifirla: docker compose down -v       (veri silinir)
-# Baglan:  docker exec -it pathexplorer-db psql -U pathexplorer -d pathexplorer
+# Paylasimli LOKAL gelistirme PostgreSQL'i.
+# Amac: yan projelerin hepsi TEK bir Postgres instance'ini paylassin.
+# Yeni proje gelince -> yeni PORT degil, bu instance'in icine yeni DATABASE ac
+# (bkz. docker/README.md "Yeni proje ekleme"). Portfolio projesine dokunmuyoruz.
 #
-# 5442 kullaniliyor (5432 lokalde native PostgreSQL ile cakisiyordu). Doluysa asagidaki "5442:5432" -> "5433:5432" yap ve
-# db.properties'te port'u 5433 yap.
+# Port: 5443  (portfolio-postgres 5439, eski pathexplorer 5442 -> +1 = 5443, bos).
+#
+# ┌─ VERI GUVENLIGI ────────────────────────────────────────────────────────┐
+# │  docker compose down       -> durur, VERI KALIR   (bunu kullan)          │
+# │  docker compose down -v    -> VOLUME SILINIR, TUM VERI GIDER (kullanma!) │
+# └────────────────────────────────────────────────────────────────────────┘
+#
+# baslat:  docker compose up -d
+# psql:    docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer
 
 services:
   postgres:
     image: postgres:16
-    container_name: pathexplorer-db
+    container_name: dev-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: pathexplorer
       POSTGRES_USER: pathexplorer
       POSTGRES_PASSWORD: pathexplorer
     ports:
-      - "5442:5432"
+      - "5443:5432"
     volumes:
-      - pathexplorer_pgdata:/var/lib/postgresql/data
+      - dev_pgdata:/var/lib/postgresql/data
+      # initdb/*.sql SADECE volume ilk olusurken calisir. Sonradan proje
+      # eklerken elle uygula:  docker exec -i dev-postgres psql -U pathexplorer -d <db> < ...
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pathexplorer -d pathexplorer"]
@@ -28,4 +36,4 @@ services:
       retries: 10
 
 volumes:
-  pathexplorer_pgdata:
+  dev_pgdata:

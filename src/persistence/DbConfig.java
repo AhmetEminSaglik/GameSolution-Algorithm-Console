@@ -18,7 +18,7 @@ import java.util.Properties;
 public final class DbConfig {
 
     private static final String DEFAULT_URL =
-            "jdbc:postgresql://localhost:5442/pathexplorer?reWriteBatchedInserts=true";
+            "jdbc:postgresql://localhost:5443/pathexplorer?reWriteBatchedInserts=true";
     private static final String DEFAULT_USER = "pathexplorer";
     private static final String DEFAULT_PASSWORD = "pathexplorer";
     private static final int DEFAULT_BATCH_SIZE = 1000;
