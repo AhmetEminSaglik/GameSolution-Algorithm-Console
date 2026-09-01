@@ -44,14 +44,19 @@ public class Main {
 
         buildGameModel.createVisitedArea();
 
-        // Algoritma 2 icin: bastan basla mi, checkpoint'ten devam mi?
+        // Algoritma 2 icin: bastan / checkpoint'ten devam / checkpoint araligini listele
         long resumeIndex = 0;
         String saveMode;
-        if (wantsResume(args, main.baseSolution)) {
-            resumeIndex = pickCheckpointAndRestore(args, game);
-            saveMode = "checkpoint";   // devam edince ilerleme kaydi surer
-        } else {
-            saveMode = readSaveMode(args);
+        switch (startMode(args, main.baseSolution)) {
+            case LIST -> {
+                listCheckpointRange(game);   // cozmez, sadece yazdirir
+                return;
+            }
+            case RESUME -> {
+                resumeIndex = pickCheckpointAndRestore(args, game);
+                saveMode = "checkpoint";     // devam edince ilerleme kaydi surer
+            }
+            default -> saveMode = readSaveMode(args);
         }
 
         SolutionSink sink = createSolutionSink(saveMode);
@@ -144,54 +149,44 @@ public class Main {
      *   - Yoksa konsoldan sorar.
      * Algoritma 2 disinda her zaman false.
      */
-    static boolean wantsResume(String[] args, BaseSolution solution) {
+    enum StartMode { FRESH, RESUME, LIST }
+
+    /**
+     * Algoritma 2 icin baslangic modu.
+     *   --resume  → RESUME (sessiz).   Save argumani / PATHEXPLORER_DB_ENABLED → FRESH.
+     *   Yoksa konsoldan sorar: 1) bastan  2) devam  3) checkpoint araligini listele.
+     * Algoritma 2 disinda her zaman FRESH.
+     */
+    static StartMode startMode(String[] args, BaseSolution solution) {
         Integer order = (solution == null) ? null : solution.getSolutionCreatedOrder();
         if (order == null || order != 2) {
-            return false;
+            return StartMode.FRESH;
         }
         if (hasArg(args, "--resume")) {
-            return true;
+            return StartMode.RESUME;
         }
         for (String a : (args == null ? new String[0] : args)) {
             if (a.equals("--save-db") || a.startsWith("--save=")) {
-                return false;
+                return StartMode.FRESH;
             }
         }
         if (DbConfig.isDbEnabled()) {
-            return false;
+            return StartMode.FRESH;
         }
-        System.out.println("Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et");
-        return new Scanner(System.in).nextLine().trim().equals("2");
+        System.out.println("Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et   3) Checkpoint araligini listele");
+        return switch (new Scanner(System.in).nextLine().trim()) {
+            case "2" -> StartMode.RESUME;
+            case "3" -> StartMode.LIST;
+            default -> StartMode.FRESH;
+        };
     }
 
-    /**
-     * "Devam et" secildi: bu harita + Algoritma 2 icin DB'deki checkpoint'leri
-     * LISTELER, kullaniciya sira no ile sectirir ve secileni {@code game}'e restore eder.
-     * {@code --resume} argumaniyla (sessiz) en son checkpoint alinir.
-     *
-     * @return restore edilen solution_index; 0 = checkpoint yok / iptal / hata (bastan baslanir).
-     */
-    static long pickCheckpointAndRestore(String[] args, Game game) {
-        DbConfig cfg = DbConfig.load();
-        int row = game.getModel().getRowCount();
-        int col = game.getModel().getColCount();
-
-        if (hasArg(args, "--resume")) {
-            return Algo2ResumeService.resumeLatest(game, 2, cfg);
-        }
-
-        List<CheckpointSummary> cps;
-        try {
-            cps = Algo2ResumeService.list(row, col, 2, cfg);
-        } catch (RuntimeException e) {
-            System.err.println("[checkpoint][WARN] liste alinamadi, bastan: " + e.getMessage());
-            return 0;
-        }
+    /** Checkpoint listesini numarali yazdirir. Bos ise false doner. */
+    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col) {
         if (cps.isEmpty()) {
-            System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok -> bastan.");
-            return 0;
+            System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok.");
+            return false;
         }
-
         System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2):");
         for (int i = 0; i < cps.size(); i++) {
             CheckpointSummary s = cps.get(i);
@@ -199,14 +194,40 @@ public class Main {
                     i + 1, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
                     s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
         }
+        return true;
+    }
+
+    private static List<CheckpointSummary> loadCheckpointList(Game game) {
+        return Algo2ResumeService.list(game.getModel().getRowCount(),
+                game.getModel().getColCount(), 2, DbConfig.load());
+    }
+
+    /**
+     * "Devam et": checkpoint'leri listeler, sira no ile sectirir, secileni {@code game}'e
+     * restore eder. {@code --resume} → sessiz, en son checkpoint.
+     * @return restore edilen solution_index; 0 = kayit yok / gecersiz / hata (bastan).
+     */
+    static long pickCheckpointAndRestore(String[] args, Game game) {
+        DbConfig cfg = DbConfig.load();
+        if (hasArg(args, "--resume")) {
+            return Algo2ResumeService.resumeLatest(game, 2, cfg);
+        }
+        int row = game.getModel().getRowCount();
+        int col = game.getModel().getColCount();
+        List<CheckpointSummary> cps;
+        try {
+            cps = loadCheckpointList(game);
+        } catch (RuntimeException e) {
+            System.err.println("[checkpoint][WARN] liste alinamadi, bastan: " + e.getMessage());
+            return 0;
+        }
+        if (!printCheckpointList(cps, row, col)) {
+            return 0;
+        }
         System.out.print("Hangisinden devam? (sira no, bos = sonuncu): ");
         String in = new Scanner(System.in).nextLine().trim();
-
-        CheckpointSummary chosen;
-        if (in.isEmpty()) {
-            chosen = cps.get(cps.size() - 1);
-        } else {
-            int n;
+        int n = cps.size();
+        if (!in.isEmpty()) {
             try {
                 n = Integer.parseInt(in);
             } catch (NumberFormatException e) {
@@ -217,9 +238,96 @@ public class Main {
                 System.out.println("[checkpoint] sira no aralik disi -> bastan.");
                 return 0;
             }
-            chosen = cps.get(n - 1);
         }
-        return Algo2ResumeService.restoreFrom(game, 2, chosen.solutionIndex(), cfg);
+        return Algo2ResumeService.restoreFrom(game, 2, cps.get(n - 1).solutionIndex(), cfg);
+    }
+
+    /**
+     * "Checkpoint araligini listele": checkpoint'leri gosterir, kullanicidan aralik alir
+     * ("N-M" / "N-" / "N" / bos), o cozumleri {@link persistence.checkpoint.ReplayMain}
+     * motoruyla yeniden uretip yazdirir. Cozucuyu CALISTIRMAZ.
+     *
+     * N, M = liste sira numaralari. N-M → N. checkpoint'ten M. checkpoint'e.
+     * N / N- → N. checkpoint'ten sona. bos → bastan sona.
+     */
+    static void listCheckpointRange(Game game) {
+        int row = game.getModel().getRowCount();
+        int col = game.getModel().getColCount();
+        List<CheckpointSummary> cps;
+        try {
+            cps = loadCheckpointList(game);
+        } catch (RuntimeException e) {
+            System.err.println("[checkpoint][WARN] liste alinamadi: " + e.getMessage());
+            return;
+        }
+        if (!printCheckpointList(cps, row, col)) {
+            return;
+        }
+        System.out.print("Aralik (N-M / N- / N / bos = hepsi): ");
+        String in = new Scanner(System.in).nextLine().trim();
+
+        int fromRow = 1;
+        int toRow = cps.size();
+        try {
+            if (!in.isEmpty()) {
+                int dash = in.indexOf('-');
+                if (dash < 0) {
+                    fromRow = Integer.parseInt(in.trim());
+                } else {
+                    fromRow = Integer.parseInt(in.substring(0, dash).trim());
+                    String rest = in.substring(dash + 1).trim();
+                    if (!rest.isEmpty()) {
+                        toRow = Integer.parseInt(rest);
+                    }
+                }
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("[checkpoint] gecersiz aralik.");
+            return;
+        }
+        if (fromRow < 1 || fromRow > cps.size() || toRow < fromRow || toRow > cps.size()) {
+            System.out.println("[checkpoint] sira no aralik disi.");
+            return;
+        }
+
+        long from = cps.get(fromRow - 1).solutionIndex();
+        long to = (toRow == cps.size()) ? 0 : cps.get(toRow - 1).solutionIndex();  // son satir → sona kadar
+
+        try (persistence.checkpoint.Algo2ReplayEngine engine =
+                     new persistence.checkpoint.Algo2ReplayEngine(DbConfig.load())) {
+            System.out.println("---- " + row + "x" + col + " algo2  cozum " + from + ".."
+                    + (to <= 0 ? "son" : to) + " ----");
+            long produced = engine.replay(row, col, 2, from, to,
+                    (path, idx) -> printReplaySolution(idx, path));
+            System.out.println("---- toplam " + produced + " cozum ----");
+        } catch (RuntimeException e) {
+            System.err.println("[checkpoint][WARN] replay: " + e.getMessage());
+        }
+    }
+
+    private static void printReplaySolution(long idx, persistence.GridPath p) {
+        int[][] cells = p.cells();
+        StringBuilder yol = new StringBuilder();
+        for (int i = 0; i < cells.length; i++) {
+            yol.append('(').append(cells[i][0]).append(',').append(cells[i][1]).append(')');
+            if (i < cells.length - 1) yol.append(' ');
+        }
+        int rows = p.rowCount(), cols = p.colCount();
+        int[][] b = new int[rows][cols];
+        for (int k = 0; k < cells.length; k++) {
+            b[cells[k][0]][cells[k][1]] = k + 1;
+        }
+        int w = Integer.toString(rows * cols).length();
+        System.out.println();
+        System.out.println("#" + idx + "  start=(" + p.startX() + "," + p.startY() + ")  adim=" + p.length());
+        System.out.println("  yol: " + yol);
+        for (int x = 0; x < rows; x++) {
+            StringBuilder sb = new StringBuilder("  ");
+            for (int y = 0; y < cols; y++) {
+                sb.append(String.format("%" + w + "d ", b[x][y]));
+            }
+            System.out.println(sb);
+        }
     }
 
     private static boolean hasArg(String[] args, String name) {

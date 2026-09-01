@@ -22,21 +22,26 @@ Tablolar:
 
 Algoritma 2 seçince:
 ```
-Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et
+Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et   3) Checkpoint araligini listele
 ```
 - **1** → normal akış, ardından `DB kayit modu sec: 0) yok 1) flat 2) trie 3) checkpoint 4) all`
-- **2** → bu harita + Algoritma 2 için DB'deki **tüm checkpoint'ler listelenir**, sıra
-  no ile seçersin (boş = sonuncu). Seçilen state restore edilip oradan devam edilir;
-  checkpoint kaydı açık kalır. Kayıt yoksa / `algorithm_version` uyuşmazsa / geçersiz
-  seçim → baştan başlar (loglanır).
+- **2 (devam et — ÇÖZER)** → tüm checkpoint'ler numaralı listelenir, **tek** sıra no
+  seçersin (boş = sonuncu). O state restore edilip **sona kadar çözmeye devam** eder
+  (checkpoint kaydı açık kalır). Kayıt yoksa / `algorithm_version` uyuşmazsa / geçersiz
+  seçim → baştan (loglanır). Sessiz: `--resume` → en son.
+- **3 (listele — ÇÖZMEZ)** → checkpoint'ler listelenir, **aralık** girersin, o aralıktaki
+  çözümler yeniden üretilip (tam yol + grid) yazdırılır, program biter.
   ```
   Checkpoint'ler (5x5 algo2):
      1) #1000   round=82157    total_solved=1000   back=41066   ...
      2) #2000   round=153813   total_solved=2000   back=76893   ...
     ...
-  Hangisinden devam? (sira no, bos = sonuncu):
+  Aralik (N-M / N- / N / bos = hepsi):
   ```
-  Sessiz: `--resume` → en son checkpoint.
+  N, M = **liste sıra no**. `2-3` → 2. checkpoint'ten 3. checkpoint'e (çözüm 1000..3000).
+  `2` / `2-` → 2. checkpoint'ten sona. Boş → baştan sona.
+
+Daha ince kontrol (ham çözüm index'i, IDE dışı): `ReplayMain replay 5x5 2 <from> <to>`.
 
 Argüman / env (sessiz mod):
 ```
