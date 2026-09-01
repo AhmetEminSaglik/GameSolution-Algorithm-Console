@@ -109,14 +109,17 @@ kadar geri sarma devam eder).
 `persistence.checkpoint.ReplayMain` (anahtar: harita + algoritma):
 
 ```
-ReplayMain replay <RxC> <algo> <from> <to>       # replay 5x5 2 12001 12400
-ReplayMain verify <RxC> <algo> <checkpointIndex> # verify 5x5 2 12000
+ReplayMain replay <RxC> <algo> [from] [to]        # replay 5x5 2 5000 5000
+ReplayMain verify <RxC> <algo> <checkpointIndex>  # verify 5x5 2 12000
 ```
 
-- **replay**: `<= from` olan son checkpoint yüklenir (`Algo2StateRestorer` tahta +
-  `visitedDirections` + `RoadMemory` + sayaçları kurar), Algoritma 2 çözücüsü o
-  state'ten `PlayGame` döngüsünün çekirdeğiyle ileri oynatılır; `[from, to]`
-  aralığındaki çözümler `GridPath` olarak yazdırılır.
+- **replay**: `from`/`to` verilmezse konsoldan sorar. **`to` boş ya da `0` → sona
+  kadar** (çözümler 1'den başladığı için 0 karışıklık yapmaz). `<= from` olan son
+  checkpoint otomatik yüklenir (`Algo2StateRestorer` tahta + `visitedDirections` +
+  `RoadMemory` + sayaçları kurar), Algoritma 2 çözücüsü o state'ten `PlayGame`
+  döngüsünün çekirdeğiyle ileri oynatılır; `[from, to]` aralığındaki her çözüm
+  **tam yol + adım-numaralı ASCII grid** ile yazdırılır (streaming — büyük aralık
+  belleği şişirmez).
 - **verify**: checkpoint'ten bir sonrakine oynatır, varılan state'i (tüm sayaçlar +
   `path`/`visited_dirs`/`one_way_list` baytları) o satırla karşılaştırır. **Boş çıktı =
   tam eşleşme → determinizm doğrulandı.** Fark listelerse gizli bir non-determinizm var.

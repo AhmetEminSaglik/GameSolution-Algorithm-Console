@@ -15,6 +15,7 @@ import persistence.GridPath;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.ObjLongConsumer;
 
 /**
  * Faz B: bir harita + Algoritma 2 icin kaydedilmis {@code solving_checkpoint}'lerden
@@ -35,8 +36,20 @@ public final class Algo2ReplayEngine implements AutoCloseable {
 
     // ================= replay =================
 
-    public List<GridPath> replay(int row, int col, int algo, long fromIndex, long toIndex) {
-        if (fromIndex < 1 || toIndex < fromIndex) {
+    /**
+     * {@code [fromIndex, toIndex]} arasindaki cozumleri yeniden uretir. {@code toIndex <= 0}
+     * → sona kadar (oyun bitene dek). Her cozum bulundukca {@code sink}'e verilir
+     * (streaming; buyuk araliklarda bellek sisirmez).
+     *
+     * @return uretilen cozum sayisi
+     */
+    public long replay(int row, int col, int algo, long fromIndex, long toIndex,
+                       ObjLongConsumer<GridPath> sink) {
+        if (fromIndex < 1) {
+            throw new IllegalArgumentException("baslangic index >= 1 olmali: " + fromIndex);
+        }
+        long effectiveTo = (toIndex <= 0) ? Long.MAX_VALUE : toIndex;
+        if (effectiveTo < fromIndex) {
             throw new IllegalArgumentException("gecersiz aralik: " + fromIndex + ".." + toIndex);
         }
         Algo2CheckpointRow start = loader.latestAtOrBefore(row, col, algo, fromIndex - 1)
@@ -46,13 +59,21 @@ public final class Algo2ReplayEngine implements AutoCloseable {
         checkAlgorithm(start);
 
         Replay r = start(start);
-        List<GridPath> out = new ArrayList<>();
-        while (r.currentIndex < toIndex && !r.isGameOver()) {
+        long produced = 0;
+        while (r.currentIndex < effectiveTo && !r.isGameOver()) {
             boolean solved = r.stepOnce();
-            if (solved && r.currentIndex >= fromIndex && r.currentIndex <= toIndex) {
-                out.add(r.extractPath());
+            if (solved && r.currentIndex >= fromIndex && r.currentIndex <= effectiveTo) {
+                sink.accept(r.extractPath(), r.currentIndex);
+                produced++;
             }
         }
+        return produced;
+    }
+
+    /** Toplayan surum (kucuk araliklar / testler icin). */
+    public List<GridPath> replay(int row, int col, int algo, long fromIndex, long toIndex) {
+        List<GridPath> out = new ArrayList<>();
+        replay(row, col, algo, fromIndex, toIndex, (p, idx) -> out.add(p));
         return out;
     }
 
