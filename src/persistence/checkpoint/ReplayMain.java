@@ -4,16 +4,15 @@ import persistence.DbConfig;
 import persistence.GridPath;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
- * Checkpoint replay CLI (Faz B).
+ * Checkpoint replay CLI (Faz B). Anahtar: harita + algoritma (calisma id'si degil).
  *
- *   java -cp ... persistence.checkpoint.ReplayMain replay <solving_run_id> <from> <to>
- *       -> [from, to] arasindaki cozumleri yeniden uretir ve yazar.
+ *   ReplayMain replay <RxC> <algo> <from> <to>     orn: replay 5x5 2 12001 12400
+ *       -> [from, to] arasindaki cozumleri yeniden uretir.
  *
- *   java -cp ... persistence.checkpoint.ReplayMain verify <solving_run_id> <checkpointIndex>
- *       -> <checkpointIndex> checkpoint'inden bir sonrakine oynatir, state'i karsilastirir.
+ *   ReplayMain verify <RxC> <algo> <checkpointIndex>   orn: verify 5x5 2 12000
+ *       -> checkpoint'ten bir sonrakine oynatir, state'i karsilastirir.
  *          Fark yoksa determinizm dogrulanmis demektir.
  */
 public final class ReplayMain {
@@ -24,39 +23,52 @@ public final class ReplayMain {
             return;
         }
         DbConfig cfg = DbConfig.load();
-        switch (args[0]) {
-            case "replay" -> {
-                if (args.length != 4) { usage(); return; }
-                UUID runId = UUID.fromString(args[1]);
-                long from = Long.parseLong(args[2]);
-                long to = Long.parseLong(args[3]);
-                try (Algo2ReplayEngine engine = new Algo2ReplayEngine(cfg)) {
-                    List<GridPath> paths = engine.replay(runId, from, to);
-                    System.out.println("Yeniden uretilen cozum sayisi: " + paths.size()
-                            + "  (aralik " + from + ".." + to + ")");
-                    long idx = from;
-                    for (GridPath p : paths) {
-                        System.out.println("#" + idx++ + "  start=(" + p.startX() + "," + p.startY()
-                                + ")  " + cellsToString(p));
+        try {
+            switch (args[0]) {
+                case "replay" -> {
+                    if (args.length != 5) { usage(); return; }
+                    int[] rc = parseGrid(args[1]);
+                    int algo = Integer.parseInt(args[2]);
+                    long from = Long.parseLong(args[3]);
+                    long to = Long.parseLong(args[4]);
+                    try (Algo2ReplayEngine engine = new Algo2ReplayEngine(cfg)) {
+                        List<GridPath> paths = engine.replay(rc[0], rc[1], algo, from, to);
+                        System.out.println("Yeniden uretilen cozum: " + paths.size()
+                                + "  (" + rc[0] + "x" + rc[1] + " algo" + algo + ", aralik " + from + ".." + to + ")");
+                        long idx = from;
+                        for (GridPath p : paths) {
+                            System.out.println("#" + idx++ + "  start=(" + p.startX() + "," + p.startY()
+                                    + ")  " + cellsToString(p));
+                        }
                     }
                 }
-            }
-            case "verify" -> {
-                if (args.length != 3) { usage(); return; }
-                UUID runId = UUID.fromString(args[1]);
-                long cpIndex = Long.parseLong(args[2]);
-                try (Algo2ReplayEngine engine = new Algo2ReplayEngine(cfg)) {
-                    List<String> diffs = engine.verify(runId, cpIndex);
-                    if (diffs.isEmpty()) {
-                        System.out.println("OK - #" + cpIndex + " -> sonraki checkpoint TAM ESLESME. Determinizm dogrulandi.");
-                    } else {
-                        System.out.println("FARK VAR - #" + cpIndex + ":");
-                        diffs.forEach(d -> System.out.println("  - " + d));
+                case "verify" -> {
+                    if (args.length != 4) { usage(); return; }
+                    int[] rc = parseGrid(args[1]);
+                    int algo = Integer.parseInt(args[2]);
+                    long cpIndex = Long.parseLong(args[3]);
+                    try (Algo2ReplayEngine engine = new Algo2ReplayEngine(cfg)) {
+                        List<String> diffs = engine.verify(rc[0], rc[1], algo, cpIndex);
+                        if (diffs.isEmpty()) {
+                            System.out.println("OK - #" + cpIndex + " -> sonraki checkpoint TAM ESLESME. Determinizm dogrulandi.");
+                        } else {
+                            System.out.println("FARK VAR - #" + cpIndex + ":");
+                            diffs.forEach(d -> System.out.println("  - " + d));
+                        }
                     }
                 }
+                default -> usage();
             }
-            default -> usage();
+        } catch (RuntimeException e) {
+            System.err.println("HATA: " + e.getMessage());
         }
+    }
+
+    private static int[] parseGrid(String s) {
+        String[] p = s.toLowerCase().split("x");
+        int r = Integer.parseInt(p[0].trim());
+        int c = (p.length > 1) ? Integer.parseInt(p[1].trim()) : r;
+        return new int[]{r, c};
     }
 
     private static String cellsToString(GridPath p) {
@@ -74,8 +86,8 @@ public final class ReplayMain {
     private static void usage() {
         System.out.println("""
                 Kullanim:
-                  ReplayMain replay <solving_run_id> <from> <to>
-                  ReplayMain verify <solving_run_id> <checkpointIndex>
+                  ReplayMain replay <RxC> <algo> <from> <to>      orn: replay 5x5 2 12001 12400
+                  ReplayMain verify <RxC> <algo> <checkpointIndex> orn: verify 5x5 2 12000
                 """);
     }
 }

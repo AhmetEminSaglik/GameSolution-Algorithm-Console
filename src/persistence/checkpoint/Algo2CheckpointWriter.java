@@ -18,15 +18,13 @@ import java.util.UUID;
  * Algoritma 2 (state RoadMemory'ye bagli).
  *
  * <ul>
- *   <li>{@code maybeRecord} → solutionIndex araligin kati ise state'i buffer'a alir.</li>
- *   <li>buffer {@code flushEvery}'ye ulasinca tek batch commit.</li>
- *   <li>{@code close} → kalan buffer flush + kaynaklar kapatilir.</li>
- *   <li>JVM shutdown hook: kalan buffer'i yazmaya calisir.</li>
+ *   <li>{@code maybeRecord} → solutionIndex, interval'in kati ise state'i buffer'a alir.</li>
+ *   <li>buffer {@code flushEvery}'ye ulasinca tek batch commit (ON CONFLICT DO NOTHING).</li>
+ *   <li>{@code close} / JVM shutdown → kalan buffer + interval'e denk gelmeyen SON snapshot yazilir.</li>
  * </ul>
  *
- * {@code grid_map_id} kurulusta (row,col) → grid_map.id ile cozulur; {@code algorithm_id}
- * disaridan verilir (BaseSolution.getSolutionCreatedOrder()). Mevcut solver_run /
- * path_explorer_solution tablolariyla iliskisi yok.
+ * Tekillik: {@code (grid_map_id, algorithm_id, solution_index)}. Ayni ilerleme
+ * noktasi tekrar YAZILMAZ. DB hatalari cozucuyu DURDURMAZ - loglanip devam edilir.
  */
 public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
@@ -37,22 +35,23 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
                total_back_steps, dummy_back_steps, locked_back_lose, square_total_solved)
             VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?)
-            ON CONFLICT (solving_run_id, solution_index) DO NOTHING
+            ON CONFLICT (grid_map_id, algorithm_id, solution_index) DO NOTHING
             """;
 
     private final HikariDataSource dataSource;
     private final UUID solvingRunId = UUID.randomUUID();
     private final int interval;
     private final int flushEvery;
-    private final int gridMapId;
     private final int algorithmId;
+    private int gridMapId = -1;
+    private boolean disabled = false;
 
     private final List<Pending> buffer = new ArrayList<>();
     private final Thread shutdownHook;
     private boolean closed = false;
 
     // Her cozumun snapshot'i buraya alinir; interval'de buffer'a eklenir. Kapanista
-    // (kosu sonu veya Ctrl+C) interval'e denk gelmese bile SON snapshot yazilir.
+    // interval'e denk gelmese bile SON snapshot yazilir.
     private Pending lastPending;
     private boolean lastPendingStored = false;
 
@@ -72,7 +71,12 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         hc.setPoolName("solving-checkpoint");
         this.dataSource = new HikariDataSource(hc);
 
-        this.gridMapId = resolveGridMapId(rowSize, colSize);
+        try {
+            this.gridMapId = resolveGridMapId(rowSize, colSize);
+        } catch (RuntimeException e) {
+            disabled = true;
+            logWarn("checkpoint devre disi - " + e.getMessage());
+        }
 
         this.shutdownHook = new Thread(this::onJvmShutdown, "solving-checkpoint-shutdown");
         Runtime.getRuntime().addShutdownHook(shutdownHook);
@@ -95,7 +99,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     throw new IllegalStateException("grid_map'te " + rowSize + "x" + colSize
-                            + " kaydi yok. Once ekle:  INSERT INTO grid_map (id, row_size, col_size) VALUES (<id>, "
+                            + " yok. Once ekle: INSERT INTO grid_map (id, row_size, col_size) VALUES (<id>, "
                             + rowSize + ", " + colSize + ");");
                 }
                 return rs.getInt(1);
@@ -107,11 +111,13 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     @Override
     public void maybeRecord(Game game, long solutionIndex) {
+        if (disabled) {
+            return;
+        }
         Pending pending = new Pending(solutionIndex, Algo2Snapshot.capture(game));
         lastPending = pending;
         lastPendingStored = false;
-        // #1 de saklanir: yoksa ilk interval'e kadarki cozumler replay edilemez.
-        if (solutionIndex == 1 || solutionIndex % interval == 0) {
+        if (solutionIndex % interval == 0) {
             buffer.add(pending);
             lastPendingStored = true;
             if (buffer.size() >= flushEvery) {
@@ -122,12 +128,13 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     /** Interval'e denk gelmediyse son cozumun snapshot'ini da yaz. */
     private void persistLastIfNeeded() {
-        if (lastPending != null && !lastPendingStored) {
+        if (!disabled && lastPending != null && !lastPendingStored) {
             buffer.add(lastPending);
             lastPendingStored = true;
         }
     }
 
+    /** DB hatasi cozucuyu durdurmaz: loglanir, buffer bosaltilir, devam edilir. */
     private void flush() {
         if (buffer.isEmpty()) {
             return;
@@ -145,8 +152,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
                 c.rollback();
                 throw e;
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("solving_checkpoint yazilamadi: " + e.getMessage(), e);
+        } catch (SQLException | RuntimeException e) {
+            logWarn("solving_checkpoint batch yazilamadi (" + buffer.size() + " satir atlandi): " + e.getMessage());
         } finally {
             buffer.clear();
         }
@@ -181,6 +188,10 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         ps.setInt(i, s.squareTotalSolved());
     }
 
+    private static void logWarn(String msg) {
+        System.err.println("[checkpoint][WARN] " + msg);
+    }
+
     @Override
     public void close() {
         if (closed) {
@@ -190,7 +201,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         try {
             persistLastIfNeeded();
             flush();
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException e) {
+            logWarn("kapanista: " + e.getMessage());
         }
         dataSource.close();
         try {
@@ -206,7 +218,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         try {
             persistLastIfNeeded();
             flush();
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException e) {
+            logWarn("shutdown: " + e.getMessage());
         }
         dataSource.close();
     }

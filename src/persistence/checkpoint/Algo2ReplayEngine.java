@@ -15,39 +15,34 @@ import persistence.GridPath;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
- * Faz B: bir {@code solving_checkpoint} kosusundan cozumleri YENIDEN URETIR.
+ * Faz B: bir harita + Algoritma 2 icin kaydedilmis {@code solving_checkpoint}'lerden
+ * cozumleri YENIDEN URETIR.
  *
- * {@code <= from} olan son checkpoint yuklenir, Algoritma 2 cozucusu o state'ten
- * deterministik olarak ileri oynatilir; {@code [from, to]} araligindaki cozumler
- * {@link GridPath} olarak toplanir.
+ * {@code <= from} olan son checkpoint yuklenir, cozucu o state'ten deterministik ileri
+ * oynatilir; {@code [from, to]} araligindaki cozumler {@link GridPath} olarak toplanir.
  *
  * SADECE Algoritma 2. {@code algorithm_version} eslesmezse reddeder.
  */
 public final class Algo2ReplayEngine implements AutoCloseable {
 
-    private final DbConfig cfg;
     private final Algo2CheckpointLoader loader;
 
     public Algo2ReplayEngine(DbConfig cfg) {
-        this.cfg = cfg;
         this.loader = new Algo2CheckpointLoader(cfg);
     }
 
     // ================= replay =================
 
-    /** {@code [fromIndex, toIndex]} arasindaki cozumleri yeniden uretir (dahil). */
-    public List<GridPath> replay(UUID runId, long fromIndex, long toIndex) {
+    public List<GridPath> replay(int row, int col, int algo, long fromIndex, long toIndex) {
         if (fromIndex < 1 || toIndex < fromIndex) {
             throw new IllegalArgumentException("gecersiz aralik: " + fromIndex + ".." + toIndex);
         }
-        Algo2CheckpointRow start = loader.latestAtOrBefore(runId, fromIndex - 1)
-                .or(() -> loader.latestAtOrBefore(runId, fromIndex))
+        Algo2CheckpointRow start = loader.latestAtOrBefore(row, col, algo, fromIndex - 1)
+                .or(() -> loader.latestAtOrBefore(row, col, algo, fromIndex))
                 .orElseThrow(() -> new IllegalStateException(
-                        "kosu " + runId + " icin <= " + fromIndex + " checkpoint yok"));
+                        row + "x" + col + " algo" + algo + " icin <= " + fromIndex + " checkpoint yok"));
         checkAlgorithm(start);
 
         Replay r = start(start);
@@ -64,15 +59,14 @@ public final class Algo2ReplayEngine implements AutoCloseable {
     // ================= verify =================
 
     /**
-     * {@code checkpointIndex} checkpoint'inden bir SONRAKI checkpoint'e kadar oynatir
-     * ve varilan state'i o checkpoint satiriyla karsilastirir. Bos liste = tam eslesme
-     * (determinizm dogrulandi). Aksi halde farklarin listesi.
+     * {@code checkpointIndex} checkpoint'inden bir SONRAKI checkpoint'e oynatir ve varilan
+     * state'i o satirla karsilastirir. Bos liste = tam eslesme (determinizm dogrulandi).
      */
-    public List<String> verify(UUID runId, long checkpointIndex) {
-        Algo2CheckpointRow start = loader.exact(runId, checkpointIndex)
+    public List<String> verify(int row, int col, int algo, long checkpointIndex) {
+        Algo2CheckpointRow start = loader.exact(row, col, algo, checkpointIndex)
                 .orElseThrow(() -> new IllegalStateException(
-                        "kosu " + runId + " icin #" + checkpointIndex + " checkpoint yok"));
-        Algo2CheckpointRow expected = loader.firstAfter(runId, checkpointIndex)
+                        row + "x" + col + " algo" + algo + " icin #" + checkpointIndex + " checkpoint yok"));
+        Algo2CheckpointRow expected = loader.firstAfter(row, col, algo, checkpointIndex)
                 .orElseThrow(() -> new IllegalStateException(
                         "#" + checkpointIndex + " sonrasi checkpoint yok (dogrulanacak hedef yok)"));
         checkAlgorithm(start);
@@ -127,18 +121,7 @@ public final class Algo2ReplayEngine implements AutoCloseable {
     }
 
     private Replay start(Algo2CheckpointRow row) {
-        BuildGame bg = new BuildGame(row.rowSize(), row.colSize());
-        Game game = bg.createGame();
-        bg.createVisitedArea();
-
-        Robot robot = new Robot();
-        robot.setGame(game);
-        BaseSolution solution = new SecondSolution_CalculateForwardAvailableWays(game);
-        robot.setSolution(solution);
-        robot.setIPlayerInput(new RobotInput(solution, game));
-        robot.startTimeKeeper();
-
-        Algo2StateRestorer.restore(game, row);
+        Game game = Algo2GameBuilder.buildAndRestore(row);
         return new Replay(game, row.solutionIndex());
     }
 
@@ -160,7 +143,7 @@ public final class Algo2ReplayEngine implements AutoCloseable {
     }
 
     /** Tek bir replay oturumu: PlayGame'in cozum dongusunun cekirdegi. */
-    private static final class Replay {
+    static final class Replay {
         final Game game;
         final int totalSquareCount;
         final int lastLocationId;
@@ -177,7 +160,6 @@ public final class Algo2ReplayEngine implements AutoCloseable {
             return game.getPlayer().getGameRule().isGameOver(game);
         }
 
-        /** Bir hamle. true → bu hamlede bir cozum tamamlandi (currentIndex artti). */
         boolean stepOnce() {
             Player player = game.getPlayer();
             game.increaseRoundCounter();
@@ -196,7 +178,6 @@ public final class Algo2ReplayEngine implements AutoCloseable {
             return false;
         }
 
-        /** Tahta dolu; adim numaralarindan tam cozum yolunu cikarir. */
         GridPath extractPath() {
             int rows = game.getModel().getRowCount();
             int cols = game.getModel().getColCount();

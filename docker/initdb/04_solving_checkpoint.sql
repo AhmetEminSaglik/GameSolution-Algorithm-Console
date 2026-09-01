@@ -43,14 +43,16 @@ CREATE TABLE IF NOT EXISTS solving_checkpoint (
 
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (checkpoint_id),
-    UNIQUE (solving_run_id, solution_index)      -- "su kosu, su cozumden onceki son checkpoint" sorgusu bu index'i kullanir
+    -- Ilerleme (harita + algoritma) bazinda tekil. Ayni checkpoint tekrar YAZILMAZ
+    -- (ON CONFLICT DO NOTHING). "Devam et" bu anahtardan okur.
+    UNIQUE (grid_map_id, algorithm_id, solution_index)
 );
 
--- Kosu listesi / son durum:
+-- audit: bir satiri ilk hangi calisma yazdi
 CREATE INDEX IF NOT EXISTS ix_solving_cp_run_created
     ON solving_checkpoint (solving_run_id, created_at);
 
--- "3200. cozumden onceki son checkpoint":
---   SELECT * FROM solving_checkpoint
---    WHERE solving_run_id = :run AND solution_index <= 3200
---    ORDER BY solution_index DESC LIMIT 1;
+-- "5x5 + algoritma 2 icin en son checkpoint" (devam et):
+--   SELECT c.* FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
+--    WHERE g.row_size=5 AND g.col_size=5 AND c.algorithm_id=2
+--    ORDER BY c.solution_index DESC LIMIT 1;

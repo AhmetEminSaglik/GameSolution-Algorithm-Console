@@ -9,10 +9,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
- * {@code solving_checkpoint} + {@code grid_map} okur. Replay motoru bunu kullanir.
+ * {@code solving_checkpoint} + {@code grid_map} okur. Anahtar: (row, col, algorithm_id)
+ * -- checkpoint'ler ilerleme bazinda tekil, hangi calismanin yazdigina bakilmaz.
  */
 final class Algo2CheckpointLoader implements AutoCloseable {
 
@@ -22,6 +22,10 @@ final class Algo2CheckpointLoader implements AutoCloseable {
             c.one_way_list, c.round_counter, c.round_counter_overlong, c.total_solved,
             c.total_solved_overlong, c.total_back_steps, c.dummy_back_steps, c.locked_back_lose,
             c.square_total_solved
+            """;
+    private static final String FROM_WHERE = """
+             FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
+             WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
             """;
 
     private final HikariDataSource dataSource;
@@ -36,12 +40,14 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         this.dataSource = new HikariDataSource(hc);
     }
 
-    /** Bir kosunun herhangi bir checkpoint'i var mi + kac tane. */
-    long count(UUID runId) {
+    long count(int row, int col, int algo) {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(
-                     "SELECT count(*) FROM solving_checkpoint WHERE solving_run_id = ?")) {
-            ps.setObject(1, runId);
+                     "SELECT count(*) FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id"
+                             + " WHERE g.row_size=? AND g.col_size=? AND c.algorithm_id=?")) {
+            ps.setInt(1, row);
+            ps.setInt(2, col);
+            ps.setInt(3, algo);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getLong(1);
@@ -51,39 +57,38 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         }
     }
 
+    /** Bu harita + algoritma icin EN SON checkpoint ("devam et"). */
+    Optional<Algo2CheckpointRow> latest(int row, int col, int algo) {
+        return queryOne("SELECT " + SELECT_COLS + FROM_WHERE
+                + " ORDER BY c.solution_index DESC LIMIT 1", row, col, algo, null);
+    }
+
     /** {@code solution_index <= target} olan EN SON checkpoint. */
-    Optional<Algo2CheckpointRow> latestAtOrBefore(UUID runId, long target) {
-        return queryOne(
-                "SELECT " + SELECT_COLS + """
-                 FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
-                 WHERE c.solving_run_id = ? AND c.solution_index <= ?
-                 ORDER BY c.solution_index DESC LIMIT 1
-                 """, runId, target);
+    Optional<Algo2CheckpointRow> latestAtOrBefore(int row, int col, int algo, long target) {
+        return queryOne("SELECT " + SELECT_COLS + FROM_WHERE
+                + " AND c.solution_index <= ? ORDER BY c.solution_index DESC LIMIT 1", row, col, algo, target);
     }
 
     /** {@code solution_index > after} olan EN KUCUK checkpoint (verify icin "sonraki"). */
-    Optional<Algo2CheckpointRow> firstAfter(UUID runId, long after) {
-        return queryOne(
-                "SELECT " + SELECT_COLS + """
-                 FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
-                 WHERE c.solving_run_id = ? AND c.solution_index > ?
-                 ORDER BY c.solution_index ASC LIMIT 1
-                 """, runId, after);
+    Optional<Algo2CheckpointRow> firstAfter(int row, int col, int algo, long after) {
+        return queryOne("SELECT " + SELECT_COLS + FROM_WHERE
+                + " AND c.solution_index > ? ORDER BY c.solution_index ASC LIMIT 1", row, col, algo, after);
     }
 
-    Optional<Algo2CheckpointRow> exact(UUID runId, long index) {
-        return queryOne(
-                "SELECT " + SELECT_COLS + """
-                 FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
-                 WHERE c.solving_run_id = ? AND c.solution_index = ?
-                 """, runId, index);
+    Optional<Algo2CheckpointRow> exact(int row, int col, int algo, long index) {
+        return queryOne("SELECT " + SELECT_COLS + FROM_WHERE
+                + " AND c.solution_index = ?", row, col, algo, index);
     }
 
-    private Optional<Algo2CheckpointRow> queryOne(String sql, UUID runId, long idx) {
+    private Optional<Algo2CheckpointRow> queryOne(String sql, int row, int col, int algo, Long idx) {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setObject(1, runId);
-            ps.setLong(2, idx);
+            ps.setInt(1, row);
+            ps.setInt(2, col);
+            ps.setInt(3, algo);
+            if (idx != null) {
+                ps.setLong(4, idx);
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? Optional.of(map(rs)) : Optional.empty();
             }

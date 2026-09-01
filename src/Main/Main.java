@@ -19,6 +19,7 @@ import persistence.SolutionSink;
 import persistence.TrieSolutionSink;
 import persistence.checkpoint.Algo2CheckpointConfig;
 import persistence.checkpoint.Algo2CheckpointWriter;
+import persistence.checkpoint.Algo2ResumeService;
 import persistence.checkpoint.CheckpointRecorder;
 import trace.Trace;
 
@@ -41,11 +42,25 @@ public class Main {
 
         buildGameModel.createVisitedArea();
 
-        String saveMode = readSaveMode(args);
+        // Algoritma 2 icin: bastan basla mi, checkpoint'ten devam mi?
+        long resumeIndex = 0;
+        boolean resume = wantsResume(args, main.baseSolution);
+        String saveMode;
+        if (resume) {
+            resumeIndex = Algo2ResumeService.resumeInto(game, 2, DbConfig.load()).orElse(0L);
+            saveMode = "checkpoint";   // devam edince ilerleme kaydi surer
+        } else {
+            saveMode = readSaveMode(args);
+        }
+
         SolutionSink sink = createSolutionSink(saveMode);
         CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, main.baseSolution, game);
         try {
-            new PlayGame(game, sink, checkpoint).playGame();
+            PlayGame playGame = new PlayGame(game, sink, checkpoint);
+            if (resumeIndex > 0) {
+                playGame.resumeFrom(resumeIndex);
+            }
+            playGame.playGame();
         } finally {
             checkpoint.close();
             sink.close();
@@ -119,6 +134,33 @@ public class Main {
         System.out.println("Checkpoint: ACIK  run=" + writer.solvingRunId()
                 + "  her " + writer.interval() + " cozumde bir  -> " + cfg.url());
         return writer;
+    }
+
+    /**
+     * Algoritma 2 secildikten sonra: bastan mi, checkpoint'ten devam mi?
+     *   - {@code --resume} argumani → devam.
+     *   - Save argumani varsa (sessiz mod) → bastan.
+     *   - Yoksa konsoldan sorar.
+     * Algoritma 2 disinda her zaman false.
+     */
+    static boolean wantsResume(String[] args, BaseSolution solution) {
+        Integer order = (solution == null) ? null : solution.getSolutionCreatedOrder();
+        if (order == null || order != 2) {
+            return false;
+        }
+        if (hasArg(args, "--resume")) {
+            return true;
+        }
+        for (String a : (args == null ? new String[0] : args)) {
+            if (a.equals("--save-db") || a.startsWith("--save=")) {
+                return false;
+            }
+        }
+        if (DbConfig.isDbEnabled()) {
+            return false;
+        }
+        System.out.println("Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et");
+        return new Scanner(System.in).nextLine().trim().equals("2");
     }
 
     private static boolean hasArg(String[] args, String name) {
