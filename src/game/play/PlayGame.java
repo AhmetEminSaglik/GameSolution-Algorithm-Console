@@ -261,14 +261,12 @@ public class PlayGame {
 
 
         textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares
-        System.out.println(textWillAppendToFile);
-//        System.out.println();
-//        printToFile(textWillAppendToFile);
+        printToFile(textWillAppendToFile);
     }
 
+    /** printGamelastStuation ciktisi -> "_Completed" dosyasi (getPrintableFileScore). */
     void printToFile(String text) {
-//        game.getPlayer().getPrintableFileScore().append(text);
-//        printable.append(text);
+        game.getPlayer().getPrintableFileScore().append(text);
     }
 
     void printTableIfPersonPlays(){
