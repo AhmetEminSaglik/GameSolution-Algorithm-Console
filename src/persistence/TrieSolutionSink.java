@@ -34,9 +34,10 @@ public final class TrieSolutionSink implements SolutionSink {
 
     private static final String INSERT_STEP = """
             INSERT INTO solution_step
-              (id, run_id, grid_map_id, parent_step_id, step_no, x, y,
+              (id, run_id, grid_map_id, algorithm_id, parent_step_id, step_no, x, y,
                move_from_parent, solution_ordinal, subtree_solution_count, is_leaf)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT (grid_map_id, algorithm_id, id) DO NOTHING
             """;
 
     private final HikariDataSource dataSource;
@@ -49,6 +50,7 @@ public final class TrieSolutionSink implements SolutionSink {
     private Connection batchConnection;
     private long runId = -1;
     private int gridMapId = -1;
+    private int algorithmId = -1;
     private long nextNodeId = 1;
     private long solutionsFound = 0;
     private long nodesKept = 0;
@@ -72,6 +74,7 @@ public final class TrieSolutionSink implements SolutionSink {
     public void beginRun(RunInfo info) {
         try (Connection c = dataSource.getConnection()) {
             gridMapId = resolveGridMapId(c, info.rowCount(), info.colCount());
+            algorithmId = resolveAlgorithmId(c, info.algorithm());
             String sql = """
                     INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode)
                     VALUES (?,?,?,?, 'RUNNING', ?, 'trie')
@@ -211,22 +214,23 @@ public final class TrieSolutionSink implements SolutionSink {
                 ps.setLong(1, n.id);
                 ps.setLong(2, runId);
                 ps.setInt(3, gridMapId);
+                ps.setInt(4, algorithmId);
                 if (n.parentId == null) {
-                    ps.setNull(4, Types.BIGINT);
+                    ps.setNull(5, Types.BIGINT);
                 } else {
-                    ps.setLong(4, n.parentId);
+                    ps.setLong(5, n.parentId);
                 }
-                ps.setInt(5, n.stepNo);
-                ps.setInt(6, n.x);
-                ps.setInt(7, n.y);
+                ps.setInt(6, n.stepNo);
+                ps.setInt(7, n.x);
+                ps.setInt(8, n.y);
                 if (n.move == null) {
-                    ps.setNull(8, Types.SMALLINT);
+                    ps.setNull(9, Types.SMALLINT);
                 } else {
-                    ps.setInt(8, n.move);
+                    ps.setInt(9, n.move);
                 }
-                ps.setLong(9, n.solutionOrdinal);
-                ps.setLong(10, n.subtreeCount);
-                ps.setBoolean(11, n.leaf);
+                ps.setLong(10, n.solutionOrdinal);
+                ps.setLong(11, n.subtreeCount);
+                ps.setBoolean(12, n.leaf);
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -260,6 +264,32 @@ public final class TrieSolutionSink implements SolutionSink {
                 ps.setInt(1, newId);
                 ps.setInt(2, rows);
                 ps.setInt(3, cols);
+                ps.executeUpdate();
+            }
+            return newId;
+        }
+    }
+
+    /** solving_algorithm.id (code = cozum sinif adi). Yoksa placeholder satir ekler. */
+    private int resolveAlgorithmId(Connection c, String code) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT id FROM solving_algorithm WHERE code = ?")) {
+            ps.setString(1, code);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT COALESCE(MAX(id), 0) + 1 FROM solving_algorithm")) {
+            rs.next();
+            int newId = rs.getInt(1);
+            try (PreparedStatement ps = c.prepareStatement(
+                    "INSERT INTO solving_algorithm (id, code, name, description) VALUES (?,?,?,'(otomatik eklendi)')")) {
+                ps.setInt(1, newId);
+                ps.setString(2, code);
+                ps.setString(3, code);
                 ps.executeUpdate();
             }
             return newId;

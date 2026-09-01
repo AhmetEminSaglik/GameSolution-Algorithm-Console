@@ -44,6 +44,14 @@ class TrieSolutionSinkDbTest {
         DbConfig cfg = DbConfig.load();
         assumeTrue(reachable(cfg), "Postgres yok — test atlandi");
 
+        // trie artik (grid_map_id, algorithm_id) bazinda tekil (ON CONFLICT DO NOTHING).
+        // Onceki calismanin birakmis olabilecegi 5x5 + algo2 dugumlerini temizle ki
+        // bu kosu her satiri gercekten yazsin.
+        try (Connection c = DriverManager.getConnection(cfg.url(), cfg.user(), cfg.password());
+             var ps = c.prepareStatement("DELETE FROM solution_step WHERE grid_map_id = 1 AND algorithm_id = 2")) {
+            ps.executeUpdate();
+        }
+
         long runId;
         TrieSolutionSink sink = new TrieSolutionSink(cfg);
         PrintStream original = System.out;

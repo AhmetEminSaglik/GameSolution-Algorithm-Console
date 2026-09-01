@@ -109,13 +109,24 @@ Her çözüm, kökten (adım 1 = başlangıç karesi) yaprağa (adım N) giden b
 Aynı önek → aynı düğümler → **bir kez saklanır**. İlk 50 adımı paylaşan 6 milyon
 çözüm için o 50 düğüm 1 kez.
 
-**`grid_map`** ref tablosu: 5x5→1, 6x6→2, … 10x10→6, sonra 5x6→11. Aynı `(0,0)→(0,3)`
-geçişi farklı haritalarda karışmasın diye trie `grid_map_id` + `run_id` ile ayrılır.
+**`grid_map`** ref tablosu: 5x5→1, 6x6→2, … 10x10→6, sonra 5x6→11.
+
+**Tekillik:** trie bir **`(grid_map_id, algorithm_id)`** için TEK kez saklanır.
+Çözücü deterministik → düğüm `id`'leri her koşuda aynı → tekrar çalıştırma
+`ON CONFLICT (grid_map_id, algorithm_id, id) DO NOTHING` ile atlanır (`count(*)`
+sabit). `run_id` artık sadece "bu düğümü ilk yazan koşu" (audit). `algorithm_id` →
+`solving_algorithm(id)`. Örnek sorgular `WHERE run_id = :run` yerine
+`WHERE grid_map_id = 1 AND algorithm_id = 2` ile çalışır.
+> Bir koşu **ABORTED** bitmişse üst düğümlerin `subtree_solution_count`'u eksik
+> kalabilir; sonraki tam koşu bunu DÜZELTMEZ (DO NOTHING). Temiz değer için önce
+> o `(grid_map_id, algorithm_id)` satırlarını sil.
 
 **`solution_step`** sütunları:
 | sütun | anlam |
 |---|---|
-| `id` | client-assigned (parent id çocuktan önce lazım) |
+| `id` | client-assigned (parent id çocuktan önce lazım); deterministik → koşular arası aynı |
+| `algorithm_id` | → `solving_algorithm(id)`; aynı harita farklı algoritma = ayrı trie |
+| `run_id` | bu düğümü **ilk yazan** koşu (audit) |
 | `parent_step_id` | üst düğüm (kök için NULL) |
 | `step_no` | derinlik / adım no (1 = kök) |
 | `x`, `y` | bu adımda bulunulan kare |
