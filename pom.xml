@@ -32,7 +32,14 @@
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
         </dependency>
-        <!-- HikariCP slf4j-api ister; ciktiyi susturmak icin nop binding -->
+        <!-- HikariCP slf4j-api ister. api + nop AYNI surum olmali; yoksa
+             "Failed to load StaticLoggerBinder" uyarisi. api'yi transitif
+             1.7.x yerine acikca 2.0.13'e sabitle (direct dep transitif'i ezer). -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-nop</artifactId>
