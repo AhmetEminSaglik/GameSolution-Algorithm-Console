@@ -17,6 +17,9 @@ import persistence.JdbcSolutionSink;
 import persistence.NoOpSolutionSink;
 import persistence.SolutionSink;
 import persistence.TrieSolutionSink;
+import persistence.checkpoint.Algo2CheckpointConfig;
+import persistence.checkpoint.Algo2CheckpointWriter;
+import persistence.checkpoint.CheckpointRecorder;
 import trace.Trace;
 
 import java.util.Arrays;
@@ -39,9 +42,11 @@ public class Main {
         buildGameModel.createVisitedArea();
 
         SolutionSink sink = createSolutionSink(args);
+        CheckpointRecorder checkpoint = createCheckpointRecorder(args, main.baseSolution, game);
         try {
-            new PlayGame(game, sink).playGame();
+            new PlayGame(game, sink, checkpoint).playGame();
         } finally {
+            checkpoint.close();
             sink.close();
         }
         System.out.println();
@@ -82,6 +87,40 @@ public class Main {
                 System.out.println("DB kaydi: kapali");
                 return new NoOpSolutionSink();
         }
+    }
+
+    /**
+     * Checkpoint kayit modu (SADECE Algoritma 2). Acilir:
+     *   - {@code --checkpoint} argumani, veya
+     *   - {@code checkpoint.enabled=true} (db.properties) / {@code PATHEXPLORER_CHECKPOINT_ENABLED=1}
+     * Aralik: {@code checkpoint.interval.<R>x<C>} (orn. 5x5=1000, 6x6=10000), yoksa
+     * {@code checkpoint.interval.default}. {@code PATHEXPLORER_CHECKPOINT_INTERVAL} hepsini ezer.
+     */
+    static CheckpointRecorder createCheckpointRecorder(String[] args, BaseSolution solution, Game game) {
+        Algo2CheckpointConfig ccfg = Algo2CheckpointConfig.load();
+        boolean on = hasArg(args, "--checkpoint") || ccfg.isEnabled();
+        if (!on) {
+            return CheckpointRecorder.NONE;
+        }
+        if (solution == null || solution.getSolutionCreatedOrder() != 2) {
+            System.out.println("Checkpoint: yalniz Algoritma 2 icin -> kapali");
+            return CheckpointRecorder.NONE;
+        }
+        DbConfig cfg = DbConfig.load();
+        Algo2CheckpointWriter writer = new Algo2CheckpointWriter(
+                cfg, ccfg, game.getModel().getRowCount(), game.getModel().getColCount());
+        System.out.println("Checkpoint: ACIK  run=" + writer.runId()
+                + "  her " + writer.interval() + " cozumde bir  -> " + cfg.url());
+        return writer;
+    }
+
+    private static boolean hasArg(String[] args, String name) {
+        for (String a : (args == null ? new String[0] : args)) {
+            if (name.equals(a)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String readSaveMode(String[] args) {

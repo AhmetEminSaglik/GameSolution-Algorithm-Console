@@ -8,6 +8,7 @@ import game.move.Move;
 import persistence.GridPath;
 import persistence.NoOpSolutionSink;
 import persistence.SolutionSink;
+import persistence.checkpoint.CheckpointRecorder;
 import print.EasylyReadNumber;
 import print.FileWriteProcess;
 import print.PrintAble;
@@ -24,6 +25,7 @@ public class PlayGame {
 
     private final SolutionSink solutionSink;
     private final boolean recordSolutions;
+    private final CheckpointRecorder checkpointRecorder;
     private long solutionIndex = 0;
 
     public PlayGame(Game game) {
@@ -31,9 +33,14 @@ public class PlayGame {
     }
 
     public PlayGame(Game game, SolutionSink solutionSink) {
+        this(game, solutionSink, CheckpointRecorder.NONE);
+    }
+
+    public PlayGame(Game game, SolutionSink solutionSink, CheckpointRecorder checkpointRecorder) {
         this.game = game;
         this.solutionSink = solutionSink;
         this.recordSolutions = solutionSink.isEnabled();
+        this.checkpointRecorder = checkpointRecorder;
         player = game.getPlayer();
         printable = new FileWriteProcess(game.getPlayer().getName());
     }
@@ -129,6 +136,7 @@ public class PlayGame {
 //            printGamelastStuation(game);
             player.increaseSquareTotalSolvedValue();
             solutionIndex++;
+            checkpointRecorder.maybeRecord(game, solutionIndex);
             if (recordSolutions) {
                 solutionSink.accept(new SolutionSink.FoundSolution(solutionIndex, extractCurrentPath()));
             }
