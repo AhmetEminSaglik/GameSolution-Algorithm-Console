@@ -35,7 +35,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
               (solving_run_id, solution_index, grid_map_id, algorithm_id, algorithm_version, interval_size,
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
-               total_back_step, dummy_back_move, locked_back_lose, square_total_solved)
+               total_back_steps, dummy_back_steps, locked_back_lose, square_total_solved)
             VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?)
             ON CONFLICT (solving_run_id, solution_index) DO NOTHING
             """;

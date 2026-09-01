@@ -69,7 +69,7 @@ FROM solving_checkpoint GROUP BY 1,2,3 ORDER BY 7 DESC;
 SELECT solution_index, step, exit_situation,
        octet_length(path) AS path_b, octet_length(visited_dirs) AS vdirs_b,
        octet_length(one_way_list) AS owl_b,
-       round_counter, total_solved, total_back_step, dummy_back_move
+       round_counter, total_solved, total_back_steps, dummy_back_steps
 FROM solving_checkpoint WHERE solving_run_id = '...' ORDER BY solution_index;
 
 -- "3200. çözümden önceki son checkpoint"
@@ -95,7 +95,16 @@ ORDER BY solution_index DESC LIMIT 1;
 | `visited_dirs` | `visitedDirections[step][dir]` bitset; bit = `step*dir_count + dir`. Backtrack cursor'ı. |
 | `exit_situation` | `RoadMemory.exitSituation` (0 EXIT_FREE / 1 EXIT_LOCATED). |
 | `one_way_list` | `RoadMemory.oneWayNumbersList`: `int count`, sonra her nav → `int step, int oneWayValue, int compulsoryDirId(-1=null), byte exitLocatedHere`. |
-| `round_counter(+_overlong)`, `total_solved(+_overlong)`, `total_back_step`, `dummy_back_move`, `locked_back_lose`, `square_total_solved` | Metrik — rapor sürekliliği için; replay doğruluğu için şart değil. |
+| `round_counter` (+`_overlong`) | `Game.roundCounter`. While döngüsü tur sayısı. `_overlong` = `Long.MAX_VALUE` taşma sayacı → gerçek = `overlong*MAX + round_counter`. |
+| `total_solved` (+`_overlong`) | `Score.totalGameFinishedScore` — o ana kadar bulunan çözüm. `_overlong` aynı taşma mantığı. |
+| `total_back_steps` | `Score.counterTotalBackStep`. Toplam geri adım. (isim `solver_run` ile aynı) |
+| `dummy_back_steps` | `Score.counterOfDummyBackMove`. Çözüm bulmadan atılan "boşa" geri adım (verim ölçüsü). |
+| `locked_back_lose` | `Score.lockedCounterOfMovingBackLose`. `dummy_back_steps` sayacının kapısı olan bayrak. |
+| `square_total_solved` | `Player.squareTotalSolvedValue`. O anki başlangıç karesinden bulunan çözüm (kare değişince 0'lanır). |
+
+Metrikler rapor sürekliliği içindir; replay doğruluğu için şart değil. Bir checkpoint
+**anlık görüntüdür** — koşu sonu toplamları her zaman son checkpoint'ten büyüktür
+(son çözümden sonra arama tükenene kadar geri sarma devam eder).
 
 ## Sınır
 

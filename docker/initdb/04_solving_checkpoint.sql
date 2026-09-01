@@ -31,14 +31,15 @@ CREATE TABLE IF NOT EXISTS solving_checkpoint (
     one_way_list      BYTEA    NOT NULL,          -- RoadMemory.oneWayNumbersList: int count, sonra her nav: int step, int oneWayValue, int compulsoryDirId(-1=null), byte exitLocatedHere
 
     -- --- metrik (rapor surekliligi; replay dogrulugu icin sart degil) ---
+    -- isimler solver_run ile ayni: total_back_steps, dummy_back_steps
     round_counter          BIGINT  NOT NULL,
-    round_counter_overlong INTEGER NOT NULL DEFAULT 0,
+    round_counter_overlong INTEGER NOT NULL DEFAULT 0,   -- round_counter Long.MAX_VALUE'yi asinca +1 (round = overlong*MAX + round_counter)
     total_solved           BIGINT  NOT NULL,
-    total_solved_overlong  INTEGER NOT NULL DEFAULT 0,
-    total_back_step        BIGINT  NOT NULL,
-    dummy_back_move        BIGINT  NOT NULL,
-    locked_back_lose       BOOLEAN NOT NULL,
-    square_total_solved    INTEGER NOT NULL,
+    total_solved_overlong  INTEGER NOT NULL DEFAULT 0,   -- total_solved Long.MAX_VALUE'yi asinca +1
+    total_back_steps       BIGINT  NOT NULL,             -- Score.counterTotalBackStep
+    dummy_back_steps       BIGINT  NOT NULL,             -- Score.counterOfDummyBackMove ("bosa" geri adim)
+    locked_back_lose       BOOLEAN NOT NULL,             -- Score.lockedCounterOfMovingBackLose (dummy sayacinin kapisi)
+    square_total_solved    INTEGER NOT NULL,             -- Player.squareTotalSolvedValue (o anki baslangic karesinden bulunan)
 
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (checkpoint_id),
