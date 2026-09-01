@@ -27,8 +27,6 @@ public class PlayGame {
     private final boolean recordSolutions;
     private final CheckpointRecorder checkpointRecorder;
     private long solutionIndex = 0;
-    /** > 0 ise: checkpoint'ten devam. game state disaridan restore edilmis; PrepareGame ATLANIR. */
-    private long resumeFromIndex = 0;
 
     public PlayGame(Game game) {
         this(game, new NoOpSolutionSink());
@@ -47,27 +45,12 @@ public class PlayGame {
         printable = new FileWriteProcess(game.getPlayer().getName());
     }
 
-    /**
-     * Checkpoint'ten devam modu. Cagrilirsa: game state'inin ZATEN restore edilmis
-     * oldugu varsayilir (bkz. Algo2ResumeService), PrepareGame calistirilmaz ve
-     * solutionIndex buradan devam eder.
-     */
-    public void resumeFrom(long solutionIndex) {
-        this.resumeFromIndex = solutionIndex;
-    }
-
-
     public void playGame() {
         player.startTimeKeeper();
         solutionSink.beginRun(new SolutionSink.RunInfo(
                 game.getModel().getRowCount(), game.getModel().getColCount(), player.getSolutionName()));
 
-        if (resumeFromIndex > 0) {
-            this.solutionIndex = resumeFromIndex;
-            System.out.println("Checkpoint'ten devam: #" + resumeFromIndex);
-        } else {
-            prepareGame = new PrepareGame(game);
-        }
+        prepareGame = new PrepareGame(game);
         Move moveForwardOrBack;
 
         printTableIfPersonPlays();

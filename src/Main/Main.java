@@ -44,29 +44,17 @@ public class Main {
 
         buildGameModel.createVisitedArea();
 
-        // Algoritma 2 icin: bastan / checkpoint'ten devam / checkpoint araligini listele
-        long resumeIndex = 0;
-        String saveMode;
-        switch (startMode(args, main.baseSolution)) {
-            case LIST -> {
-                listCheckpointRange(game);   // cozmez, sadece yazdirir
-                return;
-            }
-            case RESUME -> {
-                resumeIndex = pickCheckpointAndRestore(args, game);
-                saveMode = "checkpoint";     // devam edince ilerleme kaydi surer
-            }
-            default -> saveMode = readSaveMode(args);
+        // Algoritma 2: bastan calistir mi, yoksa checkpoint araligindan cozum goster mi?
+        if (wantsCheckpointList(args, main.baseSolution)) {
+            listCheckpointRange(game);   // cozucuyu calistirmaz, sadece araligi yazdirir
+            return;
         }
 
+        String saveMode = readSaveMode(args);
         SolutionSink sink = createSolutionSink(saveMode);
         CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, main.baseSolution, game);
         try {
-            PlayGame playGame = new PlayGame(game, sink, checkpoint);
-            if (resumeIndex > 0) {
-                playGame.resumeFrom(resumeIndex);
-            }
-            playGame.playGame();
+            new PlayGame(game, sink, checkpoint).playGame();
         } finally {
             checkpoint.close();
             sink.close();
@@ -143,42 +131,25 @@ public class Main {
     }
 
     /**
-     * Algoritma 2 secildikten sonra: bastan mi, checkpoint'ten devam mi?
-     *   - {@code --resume} argumani → devam.
-     *   - Save argumani varsa (sessiz mod) → bastan.
-     *   - Yoksa konsoldan sorar.
-     * Algoritma 2 disinda her zaman false.
+     * Algoritma 2 secildikten sonra: bastan calistir mi, yoksa checkpoint araligindan
+     * cozum goster mi? Save argumani (sessiz mod) / Algoritma 2 disi → bastan.
+     * Yoksa konsoldan sorar.
      */
-    enum StartMode { FRESH, RESUME, LIST }
-
-    /**
-     * Algoritma 2 icin baslangic modu.
-     *   --resume  → RESUME (sessiz).   Save argumani / PATHEXPLORER_DB_ENABLED → FRESH.
-     *   Yoksa konsoldan sorar: 1) bastan  2) devam  3) checkpoint araligini listele.
-     * Algoritma 2 disinda her zaman FRESH.
-     */
-    static StartMode startMode(String[] args, BaseSolution solution) {
+    static boolean wantsCheckpointList(String[] args, BaseSolution solution) {
         Integer order = (solution == null) ? null : solution.getSolutionCreatedOrder();
         if (order == null || order != 2) {
-            return StartMode.FRESH;
-        }
-        if (hasArg(args, "--resume")) {
-            return StartMode.RESUME;
+            return false;
         }
         for (String a : (args == null ? new String[0] : args)) {
             if (a.equals("--save-db") || a.startsWith("--save=")) {
-                return StartMode.FRESH;
+                return false;
             }
         }
         if (DbConfig.isDbEnabled()) {
-            return StartMode.FRESH;
+            return false;
         }
-        System.out.println("Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et   3) Checkpoint araligini listele");
-        return switch (new Scanner(System.in).nextLine().trim()) {
-            case "2" -> StartMode.RESUME;
-            case "3" -> StartMode.LIST;
-            default -> StartMode.FRESH;
-        };
+        System.out.println("Baslangic:  1) Bastan calistir   2) Checkpoint araligindan cozum goster");
+        return new Scanner(System.in).nextLine().trim().equals("2");
     }
 
     /** Checkpoint listesini numarali yazdirir. Bos ise false doner. */
@@ -203,52 +174,14 @@ public class Main {
     }
 
     /**
-     * "Devam et": checkpoint'leri listeler, sira no ile sectirir, secileni {@code game}'e
-     * restore eder. {@code --resume} → sessiz, en son checkpoint.
-     * @return restore edilen solution_index; 0 = kayit yok / gecersiz / hata (bastan).
-     */
-    static long pickCheckpointAndRestore(String[] args, Game game) {
-        DbConfig cfg = DbConfig.load();
-        if (hasArg(args, "--resume")) {
-            return Algo2ResumeService.resumeLatest(game, 2, cfg);
-        }
-        int row = game.getModel().getRowCount();
-        int col = game.getModel().getColCount();
-        List<CheckpointSummary> cps;
-        try {
-            cps = loadCheckpointList(game);
-        } catch (RuntimeException e) {
-            System.err.println("[checkpoint][WARN] liste alinamadi, bastan: " + e.getMessage());
-            return 0;
-        }
-        if (!printCheckpointList(cps, row, col)) {
-            return 0;
-        }
-        System.out.print("Hangisinden devam? (sira no, bos = sonuncu): ");
-        String in = new Scanner(System.in).nextLine().trim();
-        int n = cps.size();
-        if (!in.isEmpty()) {
-            try {
-                n = Integer.parseInt(in);
-            } catch (NumberFormatException e) {
-                System.out.println("[checkpoint] gecersiz secim -> bastan.");
-                return 0;
-            }
-            if (n < 1 || n > cps.size()) {
-                System.out.println("[checkpoint] sira no aralik disi -> bastan.");
-                return 0;
-            }
-        }
-        return Algo2ResumeService.restoreFrom(game, 2, cps.get(n - 1).solutionIndex(), cfg);
-    }
-
-    /**
-     * "Checkpoint araligini listele": checkpoint'leri gosterir, kullanicidan aralik alir
-     * ("N-M" / "N-" / "N" / bos), o cozumleri {@link persistence.checkpoint.ReplayMain}
-     * motoruyla yeniden uretip yazdirir. Cozucuyu CALISTIRMAZ.
+     * Checkpoint'leri gosterir, kullanicidan aralik alir ve o cozumleri
+     * {@link persistence.checkpoint.Algo2ReplayEngine} ile yeniden uretip yazdirir.
+     * Cozucuyu CALISTIRMAZ.
      *
-     * N, M = liste sira numaralari. N-M → N. checkpoint'ten M. checkpoint'e.
-     * N / N- → N. checkpoint'ten sona. bos → bastan sona.
+     * Aralik girdisi (N, M = liste sira numaralari):
+     *   "N-M"  → N. checkpoint'in cozum index'inden M. checkpoint'in cozum index'ine.
+     *   "N" veya "N-"  → N. checkpoint'ten sona kadar.
+     *   bos    → bastan sona.
      */
     static void listCheckpointRange(Game game) {
         int row = game.getModel().getRowCount();
@@ -263,11 +196,11 @@ public class Main {
         if (!printCheckpointList(cps, row, col)) {
             return;
         }
-        System.out.print("Aralik (N-M / N- / N / bos = hepsi): ");
+        System.out.print("Aralik (N-M / N / bos = hepsi): ");
         String in = new Scanner(System.in).nextLine().trim();
 
         int fromRow = 1;
-        int toRow = cps.size();
+        Integer toRow = null;   // null = sona kadar
         try {
             if (!in.isEmpty()) {
                 int dash = in.indexOf('-');
@@ -285,13 +218,14 @@ public class Main {
             System.out.println("[checkpoint] gecersiz aralik.");
             return;
         }
-        if (fromRow < 1 || fromRow > cps.size() || toRow < fromRow || toRow > cps.size()) {
+        if (fromRow < 1 || fromRow > cps.size()
+                || (toRow != null && (toRow < fromRow || toRow > cps.size()))) {
             System.out.println("[checkpoint] sira no aralik disi.");
             return;
         }
 
         long from = cps.get(fromRow - 1).solutionIndex();
-        long to = (toRow == cps.size()) ? 0 : cps.get(toRow - 1).solutionIndex();  // son satir → sona kadar
+        long to = (toRow == null) ? 0 : cps.get(toRow - 1).solutionIndex();  // 0 = sona kadar
 
         try (persistence.checkpoint.Algo2ReplayEngine engine =
                      new persistence.checkpoint.Algo2ReplayEngine(DbConfig.load())) {

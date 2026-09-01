@@ -1,9 +1,8 @@
 # Checkpoint (Algoritma 2)
 
 Her çözümü tek tek saklamak yerine, **deterministik** Algoritma 2 çözücüsünün
-state'ini her `S` çözümde bir kaydeder. Sonra:
-- **Devam et:** en son checkpoint'ten kaldığın yerden çözmeye devam.
-- **Replay:** bir çözüm aralığını yeniden üret.
+state'ini her `S` çözümde bir kaydeder. Sonra bir **çözüm aralığını** checkpoint'ten
+hızlıca yeniden üretip inceleyebilirsin (baştan çözmeye gerek yok).
 
 Sadece **Algoritma 2** (`SecondSolution_CalculateForwardAvailableWays`). Mevcut
 tablolara (`solver_run`, `path_explorer_solution`, `solution_step`) dokunmaz.
@@ -22,30 +21,28 @@ Tablolar:
 
 Algoritma 2 seçince:
 ```
-Baslangic:  1) Bastan basla   2) Checkpoint'ten devam et   3) Checkpoint araligini listele
+Baslangic:  1) Bastan calistir   2) Checkpoint araligindan cozum goster
 ```
 - **1** → normal akış, ardından `DB kayit modu sec: 0) yok 1) flat 2) trie 3) checkpoint 4) all`
-- **2 (devam et — ÇÖZER)** → tüm checkpoint'ler numaralı listelenir, **tek** sıra no
-  seçersin (boş = sonuncu). O state restore edilip **sona kadar çözmeye devam** eder
-  (checkpoint kaydı açık kalır). Kayıt yoksa / `algorithm_version` uyuşmazsa / geçersiz
-  seçim → baştan (loglanır). Sessiz: `--resume` → en son.
-- **3 (listele — ÇÖZMEZ)** → checkpoint'ler listelenir, **aralık** girersin, o aralıktaki
-  çözümler yeniden üretilip (tam yol + grid) yazdırılır, program biter.
+- **2** → çözücüyü **çalıştırmaz**. Checkpoint'ler numaralı listelenir, bir **aralık**
+  girersin, o aralıktaki çözümler checkpoint'ten yeniden üretilip (tam yol + grid)
+  yazdırılır, program biter.
   ```
   Checkpoint'ler (5x5 algo2):
      1) #1000   round=82157    total_solved=1000   back=41066   ...
      2) #2000   round=153813   total_solved=2000   back=76893   ...
     ...
-  Aralik (N-M / N- / N / bos = hepsi):
+  Aralik (N-M / N / bos = hepsi):
   ```
-  N, M = **liste sıra no**. `2-3` → 2. checkpoint'ten 3. checkpoint'e (çözüm 1000..3000).
-  `2` / `2-` → 2. checkpoint'ten sona. Boş → baştan sona.
+  N, M = **liste sıra no**.
+  - `3-5` → 3. checkpoint'ten (#3000) 5. checkpoint'e (#5000) → çözüm 3000..5000.
+  - `3` → 3. checkpoint'ten (#3000) sona kadar.
+  - boş → baştan sona.
 
-Daha ince kontrol (ham çözüm index'i, IDE dışı): `ReplayMain replay 5x5 2 <from> <to>`.
+Ham çözüm index'iyle (IDE dışı): `ReplayMain replay 5x5 2 <from> <to>`.
 
 Argüman / env (sessiz mod):
 ```
---resume                        # Algoritma 2'de checkpoint'ten devam
 --save=checkpoint | --save=all
 --checkpoint                    # herhangi bir save moduyla birlikte checkpoint'i açar
 PATHEXPLORER_CHECKPOINT_ENABLED=1
