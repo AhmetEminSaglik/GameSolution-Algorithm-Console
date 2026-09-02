@@ -1,9 +1,11 @@
 # Paylasimli LOKAL gelistirme PostgreSQL'i.
 # Amac: yan projelerin hepsi TEK bir Postgres instance'ini paylassin.
-# Yeni proje gelince -> yeni PORT degil, bu instance'in icine yeni DATABASE ac
-# (bkz. docker/README.md "Yeni proje ekleme"). Portfolio projesine dokunmuyoruz.
+# Yeni proje gelince -> yeni PORT / yeni container degil, bu instance'in icine
+# yeni ROLE + yeni DATABASE ac (bkz. postgre-connection.md).
 #
-# Port: 5443  (portfolio-postgres 5439, eski pathexplorer 5442 -> +1 = 5443, bos).
+# Tum ayarlar .env'den okunur; .env yoksa asagidaki :- varsayilanlari kullanilir
+# (yani bu proje icin hicbir sey tanimlamadan da calisir).
+#   cp .env.example .env   ve gerekiyorsa degerleri degistir.
 #
 # ┌─ VERI GUVENLIGI ────────────────────────────────────────────────────────┐
 # │  docker compose down       -> durur, VERI KALIR   (bunu kullan)          │
@@ -11,26 +13,30 @@
 # └────────────────────────────────────────────────────────────────────────┘
 #
 # baslat:  docker compose up -d
-# psql:    docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer
+# psql:    docker exec -it ${PG_CONTAINER} psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
 
 services:
   postgres:
     image: postgres:16
-    container_name: dev-postgres
+    container_name: ${PG_CONTAINER:-dev-postgres}
     restart: unless-stopped
     environment:
-      POSTGRES_DB: pathexplorer
-      POSTGRES_USER: pathexplorer
-      POSTGRES_PASSWORD: pathexplorer
+      # Bu degerler SADECE volume ilk olusurken (ilk `up`) uygulanir.
+      # Sonradan degistirmek icin: yeni ROLE/DATABASE ac (postgre-connection.md).
+      POSTGRES_DB: ${POSTGRES_DB:-pathexplorer}
+      POSTGRES_USER: ${POSTGRES_USER:-pathexplorer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pathexplorer}
     ports:
-      - "5443:5432"
+      # host portu .env'den (PG_PORT), container icinde her zaman 5432.
+      - "${PG_PORT:-5443}:5432"
     volumes:
       - dev_pgdata:/var/lib/postgresql/data
       # initdb/*.sql SADECE volume ilk olusurken calisir. Sonradan proje
-      # eklerken elle uygula:  docker exec -i dev-postgres psql -U pathexplorer -d <db> < ...
+      # eklerken elle uygula:
+      #   docker exec -i ${PG_CONTAINER} psql -U <user> -d <db> < yol/schema.sql
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pathexplorer -d pathexplorer"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pathexplorer} -d ${POSTGRES_DB:-pathexplorer}"]
       interval: 5s
       timeout: 3s
       retries: 10

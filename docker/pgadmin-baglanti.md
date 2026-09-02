@@ -97,18 +97,22 @@ PATHEXPLORER_DB_PASSWORD=pathexplorer
 
 ## İleride yeni proje eklerken
 
-Aynı instance'a yeni **database** aç (yeni port kaldırma):
+Aynı instance'a **izole** yeni rol + database aç (yeni port yok). Tek komut:
 
+```powershell
+.\docker\db-provision.ps1 yeniproje s3cret
+```
 ```bash
-docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer -c \
-  "CREATE ROLE yeniproje LOGIN PASSWORD 'yeniproje';"
-docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer -c \
-  "CREATE DATABASE yeniproje OWNER yeniproje;"
-docker exec -i dev-postgres psql -U yeniproje -d yeniproje < yol/schema.sql
+./docker/db-provision.sh yeniproje s3cret
 ```
 
-pgAdmin'de aynı `local-dev` sunucusu altında yeni database olarak görünür
-(Databases → sağ tık → Refresh).
+Her proje sadece kendi database'ine bağlanır. pgAdmin'de bu yeni database'i
+görmek için onu kendi rolüyle ayrı bir sunucu olarak kaydet (Host `localhost`,
+Port `5443`, Maintenance DB = `yeniproje`, Username/Password = `yeniproje` rolü) —
+`local-dev` (pathexplorer) altında görünmez, çünkü `pathexplorer` rolünün o
+database'e erişimi yoktur.
+
+Detay: kökte **`postgre-connection.md`** (lokal) ve **`postgre-prod.md`** (prod).
 
 ## Veri güvenliği
 

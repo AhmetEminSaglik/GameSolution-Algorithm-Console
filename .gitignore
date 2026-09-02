@@ -33,6 +33,8 @@ build/
 .vscode/
 
 ### Env / secrets ###
+/.env
+!/.env.example
 portfolio-parent/**/.env
 !portfolio-parent/**/.env.example
 portfolio-parent/**/application.properties~

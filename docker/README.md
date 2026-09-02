@@ -46,21 +46,26 @@ Servers → sag tik → Register → Server
 
 ## Yeni proje ekleme (ileride)
 
-Container zaten ayaktaysa `initdb/*.sql` bir daha calismaz. Yeni projeyi elle ekle:
+Model: **her proje = kendi database'i + kendi rolu**, rol sadece kendi db'sine
+baglanir. Tek komut (idempotent):
 
+```powershell
+.\docker\db-provision.ps1 yeniproje            # parola = "yeniproje"
+.\docker\db-provision.ps1 yeniproje s3cret     # parola = "s3cret"
+```
 ```bash
-# 1) rol + database
-docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer -c \
-  "CREATE ROLE yeniproje LOGIN PASSWORD 'yeniproje';"
-docker exec -it dev-postgres psql -U pathexplorer -d pathexplorer -c \
-  "CREATE DATABASE yeniproje OWNER yeniproje;"
+./docker/db-provision.sh yeniproje
+```
 
-# 2) o projenin semasini yukle
+Script: izole rol (`NOSUPERUSER`), `OWNER` database, `REVOKE CONNECT ... FROM
+PUBLIC`, `public` schema'yi role verir; sonra baglanti string'lerini basar.
+
+Semayi yukle:
+```bash
 docker exec -i dev-postgres psql -U yeniproje -d yeniproje < yol/schema.sql
 ```
 
-`pathexplorer` kullanicisi bu instance'in superuser'i oldugu icin yeni
-rol/database olusturabilir.
+Detay: kokte **`postgre-connection.md`** (lokal) ve **`postgre-prod.md`** (prod).
 
 ## Sema ozeti (pathexplorer)
 
