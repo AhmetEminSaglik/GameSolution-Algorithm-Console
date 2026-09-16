@@ -2,9 +2,8 @@ package game.gamerepo;
 
 import errormessage.InvalidGameConfigException;
 import game.Game;
+import utility.ConsoleInput;
 import validation.SquareValidationGame;
-
-import java.util.Scanner;
 
 public class BuildGame {
 
@@ -85,7 +84,7 @@ public class BuildGame {
      */
     public int[] determineGridSize() {
         System.out.print("Grid boyutu (kare icin tek sayi, dikdortgen icin \"satir sutun\" ya da \"5x6\"): ");
-        String line = new Scanner(System.in).nextLine().trim().toLowerCase();
+        String line = ConsoleInput.readLine().trim().toLowerCase();
         String[] parts = line.split("[\\sx]+");
         int rows = Integer.parseInt(parts[0]);
         int cols = (parts.length > 1) ? Integer.parseInt(parts[1]) : rows;

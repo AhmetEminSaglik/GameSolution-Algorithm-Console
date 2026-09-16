@@ -3,16 +3,21 @@ package Main;
 import game.Game;
 import game.gamerepo.BuildGame;
 import game.gamerepo.player.Player;
+import game.gamerepo.player.PlayerType;
 import game.gamerepo.player.person.Person;
 import game.gamerepo.player.robot.Robot;
 import game.gamerepo.player.robot.solution.BaseSolution;
+import game.gamerepo.player.robot.solution.SolutionAlgorithm;
 import game.gamerepo.player.robot.solution.first.FirstSolution_Combination;
 import game.gamerepo.player.robot.solution.second.SecondSolution_CalculateForwardAvailableWays;
 import game.play.PlayGame;
 import game.play.input.person.PersonInput;
 import game.play.input.robot.RobotInput;
+import game.play.report.RunReport;
+import game.play.report.RunReportWriter;
 import persistence.CompositeSolutionSink;
 import persistence.DbConfig;
+import persistence.DbSaveMode;
 import persistence.JdbcSolutionSink;
 import persistence.NoOpSolutionSink;
 import persistence.SolutionSink;
@@ -23,17 +28,37 @@ import persistence.checkpoint.Algo2ResumeService;
 import persistence.checkpoint.CheckpointRecorder;
 import persistence.checkpoint.CheckpointSummary;
 import trace.Trace;
+import utility.ConsoleInput;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 
 public class Main {
 
     BaseSolution baseSolution;
 
+    /**
+     * Her calistirma bitince en bastan (Grid boyutu sorusundan) tekrar baslar; boylece
+     * arka arkaya birden fazla test/benchmark yapmak icin projeyi tekrar tekrar
+     * calistirmaya (IDE'den yeniden run etmeye) gerek kalmiyor. Her tur icin BuildGame,
+     * Game, Player vs. SIFIRDAN olusturuluyor (bkz. runOnce) -> onceki turdan hicbir
+     * state kalmaz, calisma aralarinda cakisma olmaz. Girdi biterse (EOF) sessizce cikar.
+     */
     public static void main(String[] args) throws InterruptedException {
+        while (true) {
+            try {
+                runOnce(args);
+            } catch (java.util.NoSuchElementException eof) {
+                System.out.println("Girdi kalmadi, cikiliyor.");
+                break;
+            }
+            System.out.println();
+            System.out.println("==================== YENI CALISMA ====================");
+        }
+    }
+
+    private static void runOnce(String[] args) throws InterruptedException {
         Main main = new Main();
 
         BuildGame buildGameModel = new BuildGame();
@@ -50,11 +75,12 @@ public class Main {
             return;
         }
 
-        String saveMode = readSaveMode(args);
+        DbSaveMode saveMode = readSaveMode(args);
         SolutionSink sink = createSolutionSink(saveMode);
         CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, main.baseSolution, game);
+        PlayGame playGame = new PlayGame(game, sink, checkpoint);
         try {
-            new PlayGame(game, sink, checkpoint).playGame();
+            playGame.playGame();
         } finally {
             checkpoint.close();
             sink.close();
@@ -66,7 +92,34 @@ public class Main {
 
         System.out.println("----------------");
 
+        appendRunReport(game, "Bastan Calistir", saveMode, playGame);
+    }
 
+    /**
+     * Bu calistirmanin ozetini {@link RunReport} DTO'suna doldurup {@link RunReportWriter}
+     * ile run-statistic-<map>.txt dosyasina ekler. Hangi mapte, hangi cozum algoritmasi,
+     * hangi player, hangi baslangic ve DB kayit modu ile, ne kadar surede kac cozum
+     * bulundugunu unutmamak icin.
+     */
+    private static void appendRunReport(Game game, String startLabel, DbSaveMode saveMode, PlayGame playGame) {
+        Player player = game.getPlayer();
+        SolutionAlgorithm algorithm = (player instanceof Robot robot)
+                ? SolutionAlgorithm.fromOrder(robot.getSolution().getSolutionCreatedOrder())
+                : SolutionAlgorithm.NONE;
+
+        RunReport report = new RunReport(
+                game.getModel().getRowCount() + "-" + game.getModel().getColCount(),
+                algorithm,
+                PlayerType.of(player),
+                startLabel,
+                saveMode,
+                player.getScore().getTotalGameFinishedScore(),
+                playGame.getElapsedTimeText(),
+                player.getScore().getCounterTotalBackStep(),
+                game.getRoundCounter(),
+                player.getScore().getCounterOfDummyBackMove()
+        );
+        new RunReportWriter().append(report);
     }
 
     /**
@@ -76,24 +129,24 @@ public class Main {
      *   checkpoint : cozum saklanmaz; state snapshot'i {@link #createCheckpointRecorder} ile yazilir.
      *   all        : flat + trie + checkpoint.
      */
-    static SolutionSink createSolutionSink(String mode) {
+    static SolutionSink createSolutionSink(DbSaveMode mode) {
         DbConfig cfg = DbConfig.load();
         switch (mode) {
-            case "flat":
+            case FLAT:
                 System.out.println("DB kaydi: FLAT  -> " + cfg.url());
                 return new JdbcSolutionSink(cfg);
-            case "trie":
+            case TRIE:
                 System.out.println("DB kaydi: TRIE  -> " + cfg.url());
                 return new TrieSolutionSink(cfg);
-            case "both":
+            case BOTH:
                 System.out.println("DB kaydi: FLAT + TRIE  -> " + cfg.url());
                 return new CompositeSolutionSink(java.util.List.of(
                         new JdbcSolutionSink(cfg), new TrieSolutionSink(cfg)));
-            case "all":
+            case ALL:
                 System.out.println("DB kaydi: FLAT + TRIE + CHECKPOINT  -> " + cfg.url());
                 return new CompositeSolutionSink(java.util.List.of(
                         new JdbcSolutionSink(cfg), new TrieSolutionSink(cfg)));
-            case "checkpoint":
+            case CHECKPOINT:
                 System.out.println("DB kaydi: CHECKPOINT  -> " + cfg.url());
                 return new NoOpSolutionSink();
             default:
@@ -110,9 +163,9 @@ public class Main {
      * Aralik: {@code checkpoint.interval.<R>x<C>} (orn. 5x5=1000, 6x6=10000), yoksa
      * {@code checkpoint.interval.default}. {@code PATHEXPLORER_CHECKPOINT_INTERVAL} hepsini ezer.
      */
-    static CheckpointRecorder createCheckpointRecorder(String mode, String[] args, BaseSolution solution, Game game) {
+    static CheckpointRecorder createCheckpointRecorder(DbSaveMode mode, String[] args, BaseSolution solution, Game game) {
         Algo2CheckpointConfig ccfg = Algo2CheckpointConfig.load();
-        boolean on = mode.equals("checkpoint") || mode.equals("all")
+        boolean on = mode == DbSaveMode.CHECKPOINT || mode == DbSaveMode.ALL
                 || hasArg(args, "--checkpoint") || ccfg.isEnabled();
         if (!on) {
             return CheckpointRecorder.NONE;
@@ -149,7 +202,7 @@ public class Main {
             return false;
         }
         System.out.println("Baslangic:  1) Bastan calistir   2) Checkpoint araligindan cozum goster");
-        return new Scanner(System.in).nextLine().trim().equals("2");
+        return ConsoleInput.readLine().trim().equals("2");
     }
 
     /** Checkpoint listesini numarali yazdirir. Bos ise false doner. */
@@ -198,7 +251,7 @@ public class Main {
             return;
         }
         System.out.print("Aralik (N-M / N / bos = hepsi): ");
-        String in = new Scanner(System.in).nextLine().trim();
+        String in = ConsoleInput.readLine().trim();
 
         int fromRow = 1;
         Integer toRow = null;   // null = sona kadar
@@ -239,6 +292,7 @@ public class Main {
             playGame.stopAfter(to);
         }
         playGame.playGame();
+        appendRunReport(game, "Checkpoint Araligindan Cozum Goster", DbSaveMode.NONE, playGame);
     }
 
     private static boolean hasArg(String[] args, String name) {
@@ -250,34 +304,34 @@ public class Main {
         return false;
     }
 
-    private static String readSaveMode(String[] args) {
+    private static DbSaveMode readSaveMode(String[] args) {
         for (String a : (args == null ? new String[0] : args)) {
             if (a.equals("--save-db")) {
-                return "flat";
+                return DbSaveMode.FLAT;
             }
             if (a.startsWith("--save=")) {
-                return a.substring("--save=".length()).toLowerCase();
+                return DbSaveMode.fromArg(a.substring("--save=".length()));
             }
         }
         if (DbConfig.isDbEnabled()) {
-            return "flat";
+            return DbSaveMode.FLAT;
         }
         // argüman yok → sor
         System.out.println("DB kayit modu sec:  0) yok   1) flat   2) trie   3) checkpoint   4) all");
-        String in = new Scanner(System.in).nextLine().trim();
+        String in = ConsoleInput.readLine().trim();
         return switch (in) {
-            case "1" -> "flat";
-            case "2" -> "trie";
-            case "3" -> "checkpoint";
-            case "4" -> "all";
-            default -> "none";
+            case "1" -> DbSaveMode.FLAT;
+            case "2" -> DbSaveMode.TRIE;
+            case "3" -> DbSaveMode.CHECKPOINT;
+            case "4" -> DbSaveMode.ALL;
+            default -> DbSaveMode.NONE;
         };
     }
 
     Player selectPlayer(Game game) {
         System.out.println("Select Player : \nPerson : 1 \n Robot : 2");
 
-        String input = new Scanner(System.in).nextLine();
+        String input = ConsoleInput.readLine();
         if (input.equals("1")) {
             Person person = new Person();
             person.setGame(game);
@@ -291,7 +345,7 @@ public class Main {
             System.out.println("Please select the solution algorithm : " +
                     "\n1-) First Solution : Combination" +
                     "\n2-) Second Solution : Calculate Forward Ways");
-            input = new Scanner(System.in).nextLine();
+            input = ConsoleInput.readLine();
 
             if(input.equals("1")){
                 baseSolution = new FirstSolution_Combination(game);
