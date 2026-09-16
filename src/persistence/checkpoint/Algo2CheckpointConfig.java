@@ -13,7 +13,7 @@ import java.util.Properties;
  *   checkpoint.interval.5x5       = 1000
  *   checkpoint.interval.6x6       = 10000
  *   checkpoint.interval.default   = 100000
- *   checkpoint.flushEvery         = 200      (kac checkpoint biriktirince DB'ye yazilsin)
+ *   checkpoint.flushEvery         = 1        (kac checkpoint biriktirince DB'ye yazilsin)
  *
  * Ortam degiskenleri:
  *   PATHEXPLORER_CHECKPOINT_ENABLED   (1/true)
@@ -22,7 +22,7 @@ import java.util.Properties;
 public final class Algo2CheckpointConfig {
 
     private static final int DEFAULT_INTERVAL = 100_000;
-    private static final int DEFAULT_FLUSH_EVERY = 200;
+    private static final int DEFAULT_FLUSH_EVERY = 1;
 
     private final Properties props;
     private final Integer intervalOverride;
