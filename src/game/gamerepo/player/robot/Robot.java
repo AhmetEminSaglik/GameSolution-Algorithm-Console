@@ -49,8 +49,8 @@ public class Robot extends Player {
     }
 
     private void initSolutionFiles() {
-        printableFileScore = new FileWriteProcess(getSolution().getSolutionFileName() + "_Completed");
-        printableFileTotalScoreCount = new FileWriteProcess(getSolution().getSolutionFileName() + "_EverySingleSquareTotalValue");
+        printableFileScore = new FileWriteProcess("FileScore", getSolution().getSolutionFileName() + "_Completed");
+        printableFileTotalScoreCount = new FileWriteProcess("FileTotalScoreCount", getSolution().getSolutionFileName() + "_EverySingleSquareTotalValue");
     }
 
     @Override
@@ -63,7 +63,7 @@ public class Robot extends Player {
 
     @Override
     public void updateVisitedDirection(boolean sealOrUnseal, int step, DirectionLocation location) {
-        assert (getStep() > 1) : getClass().getName() + " >>> ADIM SAYUISI " + getStep() + " GELDI";
+        assert (getStep() > 1) : getClass().getName() + " >>> ADIM SAYISI " + getStep() + " GELDI";
         location.setCompass(getGame().getPlayer().getCompass());
         getVisitedDirections()[step][location.getId()] = sealOrUnseal;
     }
