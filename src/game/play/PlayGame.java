@@ -32,6 +32,8 @@ public class PlayGame {
     private long resumeFromIndex = 0;
     /** > 0 ise: solutionIndex bu degere ulasinca dongu kirilir (checkpoint araligi cikti). */
     private long stopAfterIndex = 0;
+    /** saveGameResultToScore() sirasinda hesaplanan gecen sure metni (bkz. getElapsedTimeText). */
+    private String elapsedTimeText;
 
     public PlayGame(Game game) {
         this(game, new NoOpSolutionSink());
@@ -61,6 +63,11 @@ public class PlayGame {
     /** solutionIndex bu degere ulasinca donguyu kir (dahil). 0 = sinir yok. */
     public void stopAfter(long lastSolutionIndex) {
         this.stopAfterIndex = lastSolutionIndex;
+    }
+
+    /** saveGameResultToScore() sonrasi konsola basilan gecen sure metniyle birebir ayni deger (bkz. TestRunLog). */
+    public String getElapsedTimeText() {
+        return elapsedTimeText;
     }
 
     public void playGame() {
@@ -206,7 +213,8 @@ public class PlayGame {
     void saveGameResultToScore() {
         timeCalcuation = new TimeCalcuation();
         player.getScore().updatePlayedTime();
-        System.out.println("Elapsed time : " + timeCalcuation.getTotalPassedTime(player));
+        elapsedTimeText = timeCalcuation.getTotalPassedTime(player);
+        System.out.println("Elapsed time : " + elapsedTimeText);
         System.out.println("Total Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterTotalBackStep()));
         System.out.println("Total Step : " + getEasyReadyNumber(game.getRoundCounter()));
         System.out.println("Total Dummy Back Step)  : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove()));
@@ -253,7 +261,7 @@ public class PlayGame {
 
 
     void printGamelastStuation(Game game) {// todo: burasi printe ediliyordu. db'ye save edilecek. loglama icin burasi tekrar aktif edilebilir.
-        String textWillAppendToFile = "Finished totalGame : " + getEasyReadyNumber(player.getScore().getTotalGameFinishedScore()) + "\n";
+        /*String textWillAppendToFile = "Finished totalGame : " + getEasyReadyNumber(player.getScore().getTotalGameFinishedScore()) + "\n";
         textWillAppendToFile += "Total Step : " + getEasyReadyNumber(game.getRoundCounter()) + '\n' + "" +
                 "Total Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterTotalBackStep()) +
                 "\nTotal Dummy Back Step : " + getEasyReadyNumber(game.getPlayer().getScore().getCounterOfDummyBackMove())+
@@ -262,7 +270,7 @@ public class PlayGame {
 
         textWillAppendToFile += stringFormat.getStringFormatArray(game.getModel().getGameSquares());//  print game squares
         printToFile(textWillAppendToFile);
-    }
+    */}
 
     /** printGamelastStuation ciktisi -> "_Completed" dosyasi (getPrintableFileScore). */
     void printToFile(String text) {
