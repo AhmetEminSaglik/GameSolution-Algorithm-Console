@@ -62,3 +62,7 @@ tamamlananlar/
 *_Completed.txt
 *_EverySingleSquareTotalValue.txt
 2_5x5.txt
+
+# pg_dump backups: GitHub'in 100MB dosya sinirini asiyor (~280MB), asla commit'leme.
+# Yerelde rapor/backup/pgdump/ altinda kalir, gerekirse backup.sh ile yeniden uretilir.
+rapor/backup/pgdump/*.dump

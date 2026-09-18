@@ -1,0 +1,95 @@
+PathExplorer DB Backup - 2026-09-17 10:08 (TS=20260917_100845)
+================================================================
+
+Bu klasor, pathexplorer veritabaninin O ANKI tam halinin 3 farkli
+formatta disari aktarilmis kopyasi. Ucu de AYNI veriyi tasiyor,
+sadece kullanim amaci farkli.
+
+SABITLENEN NOKTA (ONEMLI):
+---------------------------
+7x7 cozucusu (Algoritma 2) ARKA PLANDA CALISIYORDU bu backup alinirken.
+solving_checkpoint TABLOSU HARIC butun tablolar (grid_map, solving_algorithm,
+solver_run, path_explorer_solution_5x5, path_explorer_solution_6x6) STATIK -
+onlara hicbir sey yazilmiyor, o yuzden pinlemeye gerek yok, ucu de zaten
+birebir ayni.
+
+solving_checkpoint ise saniyede/dakikada büyüyordu. Ilk aldigim pgdump,
+csv ve sql-insert'i AYRI AYRI komutlarla ürettigim icin (aralarinda birkac
+dakika gecti) ucu de FARKLI satir sayisinda kaldi (3654 / 3656 / 3659 satir,
+en son canli tabloda 3798'e cikmisti). Bunu fark edip DUZELTTIM:
+
+  PIN NOKTASI: solution_index <= 357.100.000  (3654 satir)
+
+  pgdump/  -> zaten bu noktada durmustu (ilk alinan format, en erken an)
+  csv/solving_checkpoint.csv           -> bu noktaya geriye sarildi
+  sql-insert/solving_checkpoint_insert.txt -> bu noktaya geriye sarildi
+
+  Nasil: solving_checkpoint INSERT-ONLY bir tablo (satirlar hic
+  guncellenmiyor/silinmiyor), o yuzden "WHERE solution_index <= 357100000"
+  filtresi ile CSV/SQL-insert'i pgdump'in gordugu ayni ana sabitlemek
+  guvenli ve kesin - yeni eklenen satirlar zaten bu filtreye hic girmiyor.
+
+  Diger 5 tablo icin boyle bir pinleme YOK (gerek yok, statikler).
+  Ileride tekrar backup alirsan ve checkpoint hala buyuyorsa, ayni
+  yontemi tekrarla: once pgdump al, pgdump'taki max(solution_index)'i
+  bul, CSV/SQL-insert'i o degere <= filtresiyle uret.
+
+pgdump/
+--------
+  pathexplorer_20260917_100845.dump
+
+  TAM veritabani yedegi (schema + TUM veri, tum tablolar/partition'lar
+  dahil). PostgreSQL'in kendi "custom format" (-Fc) formati: sikistirilmis,
+  binary, sadece pg_restore ile okunur - Excel/text editor ile ACMA.
+
+  Geri yuklemek icin (yeni/bos bir veritabanina):
+    docker exec -i dev-postgres pg_restore -U pathexplorer -d pathexplorer --clean --if-exists < pathexplorer_20260917_100845.dump
+
+  Bu, GERCEK backup'in. Bir sey giderse (yanlislikla DROP TABLE,
+  disk corruption, vs.) geri donus noktasi budur. Diger iki format
+  (csv/, sql-insert/) sadece "veriye bakmak/incelemek" icin, birebir
+  guvenilir geri yukleme icin degil.
+
+csv/
+-----
+  Her tablo icin ayri .csv dosyasi (Excel'de acilabilir - cift tikla
+  ya da Excel > Dosya > Ac). Virgulle ayrilmis duz metin, hicbir
+  programa ozel degil.
+
+    grid_map.csv                          6 satir
+    solving_algorithm.csv                 3 satir
+    solver_run.csv                        2 satir
+    solving_checkpoint.csv             3.654 satir  (solution_index <= 357.100.000 - yukarida bkz)
+    path_explorer_solution_5x5.csv    12.400 satir
+    path_explorer_solution_6x6.csv 8.241.282 satir  (~1.1 GB)
+
+  ONEMLI: path_explorer_solution_6x6.csv'yi Excel TAM ACAMAZ - Excel'in
+  sayfa basina satir siniri 1.048.576, bu dosyada 8.2 milyon satir var.
+  Excel sadece ilk ~1 milyonunu gosterir, "dosya kesildi" uyarisi verir.
+  Tum veriyi gormek icin: pgdump/ (pg_restore ile) ya da bu CSV'yi
+  Python/pandas gibi bir arac ile ac.
+
+  bytea kolonlar (path, visited_dirs, one_way_list - solving_checkpoint'te)
+  CSV'de "\x0003061b..." gibi hex metin olarak gorunur, bu normal -
+  binary veri duz metinde baska turlu gosterilemez.
+
+sql-insert/
+-----------
+  Her tablo icin, o tablodaki veriyi YENIDEN OLUSTURACAK duz SQL
+  INSERT komutlari (calistirilabilir kod, "birebir ayni" veri).
+
+    grid_map_insert.txt
+    solving_algorithm_insert.txt
+    solver_run_insert.txt
+    solving_checkpoint_insert.txt
+    path_explorer_solution_5x5_insert.txt
+
+  Calistirmak icin (bos bir DB'de, tablolar zaten schema olarak var
+  olmali - once pgdump'taki schema'yi ya da proje SQL migration'ini
+  uygula, SONRA bu INSERT'leri calistir):
+    docker exec -i dev-postgres psql -U pathexplorer -d pathexplorer < grid_map_insert.txt
+
+  path_explorer_solution_6x6 (8.241.282 satir) BURADA YOK - INSERT
+  metnine cevirince ~1 GB'lik dev bir .txt dosyasi cikardi, hem
+  uretmesi hem acmasi/calistirmasi pratik degil. O tablonun verisi
+  icin pgdump/ (tam, guvenilir) ya da csv/ (goruntuleme/analiz) kullan.

@@ -1,0 +1,33 @@
+--
+-- PostgreSQL database dump
+--
+
+
+-- Dumped from database version 16.15 (Debian 16.15-1.pgdg13+2)
+-- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: solving_algorithm; Type: TABLE DATA; Schema: public; Owner: pathexplorer
+--
+
+INSERT INTO public.solving_algorithm (id, code, name, description) VALUES (1, 'FirstSolution_Combination', 'Kombinasyon / duz DFS', 'Sezgisel yok. Her karede pusula yonleri sabit sirayla denenir (Kuzey, KD, Dogu, GD, Guney, GB, Bati, KB). Hedef kare bos (ziyaret edilmemis) ve o yon bu adimda daha once denenmemis ise oraya ilerlenir; hicbir yon uymazsa geri adim atilir. Tum cozum uzayini sirali gezer - tam ama yavas.');
+INSERT INTO public.solving_algorithm (id, code, name, description) VALUES (2, 'SecondSolution_CalculateForwardAvailableWays', 'Ileri bakisli - acik yol sayimi', 'Warnsdorff benzeri. Her aday yon icin bir sonraki kareden ulasilabilecek acik kare sayisi hesaplanir; yonler bu sayiya gore agirliklandirilir (WeightOfAvailableWay) - daha cok secenek birakan / cikmaza sokmayan hamle tercih edilir. Acik yolu 0 olan yon (cikmaz) elenir. Tek cikisli (one-way) kareler zorunlu koridor sayilir, RoadMemory''de saklanip tekrar oynatilir; ust uste 3 tek-yollu kare gorulurse dal cikmaz kabul edilip iptal edilir. exitSituation ile bulunan zorunlu cikis isaretlenir.');
+INSERT INTO public.solving_algorithm (id, code, name, description) VALUES (3, 'ThirdSolution_GoldenSquare', 'Altin kare (henuz yazilmadi)', 'Placeholder. Graf tabanli, ek ozelliklerle gelecek.');
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+

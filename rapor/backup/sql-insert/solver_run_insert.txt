@@ -1,0 +1,39 @@
+--
+-- PostgreSQL database dump
+--
+
+
+-- Dumped from database version 16.15 (Debian 16.15-1.pgdg13+2)
+-- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: solver_run; Type: TABLE DATA; Schema: public; Owner: pathexplorer
+--
+
+INSERT INTO public.solver_run (id, public_id, row_size, col_size, algorithm, total_solved, round_counter, total_back_steps, dummy_back_steps, elapsed_ms, status, started_at, finished_at, grid_map_id, save_mode) OVERRIDING SYSTEM VALUE VALUES (1, 'c7148bcb-0012-4232-8a9c-5f7e9741a56d', 5, 5, 'SecondSolution_CalculateForwardAvailableWays', 12400, 1023656, 511816, 83076, NULL, 'COMPLETED', '2026-09-16 13:53:03.959913+00', '2026-09-16 13:53:05.002077+00', NULL, 'flat');
+INSERT INTO public.solver_run (id, public_id, row_size, col_size, algorithm, total_solved, round_counter, total_back_steps, dummy_back_steps, elapsed_ms, status, started_at, finished_at, grid_map_id, save_mode) OVERRIDING SYSTEM VALUE VALUES (2, 'f84f5cdf-64fb-4612-b03c-9241f992fc8d', 6, 6, 'SecondSolution_CalculateForwardAvailableWays', 8250272, 1470818233, 735409099, 138336510, NULL, 'COMPLETED', '2026-09-16 13:54:10.628245+00', '2026-09-16 14:06:08.491587+00', NULL, 'flat');
+
+
+--
+-- Name: solver_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pathexplorer
+--
+
+SELECT pg_catalog.setval('public.solver_run_id_seq', 2, true);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+
