@@ -28,7 +28,7 @@ public final class Algo2ResumeService {
      * + RoadMemory + sayaclar). Ardindan PlayGame.resumeFrom({@code solutionIndex}) ile
      * oynatilir.
      *
-     * @return true = restore edildi; false = bulunamadi / version uyumsuz / hata (loglandi).
+     * @return true = restore edildi; false = bulunamadi / hata (loglandi).
      */
     public static boolean restoreInto(Game game, int algorithmId, long solutionIndex, DbConfig cfg) {
         int row = game.getModel().getRowCount();
@@ -40,11 +40,6 @@ public final class Algo2ResumeService {
                 return false;
             }
             Algo2CheckpointRow r = found.get();
-            if (r.algorithmVersion() != Algo2Snapshot.ALGORITHM_VERSION) {
-                System.out.println("[checkpoint] algorithm_version uyusmuyor ("
-                        + r.algorithmVersion() + " != " + Algo2Snapshot.ALGORITHM_VERSION + ").");
-                return false;
-            }
             Algo2StateRestorer.restore(game, r);
             return true;
         } catch (RuntimeException e) {

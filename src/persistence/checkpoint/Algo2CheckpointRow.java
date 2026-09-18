@@ -9,7 +9,6 @@ public record Algo2CheckpointRow(
         int rowSize,
         int colSize,
         int algorithmId,
-        int algorithmVersion,
         int intervalSize,
         int step,
         int dirCount,
@@ -23,7 +22,6 @@ public record Algo2CheckpointRow(
         int totalSolvedOverlong,
         long totalBackSteps,
         long dummyBackSteps,
-        boolean lockedBackLose,
-        int squareTotalSolved
+        boolean lockedBackLose
 ) {
 }

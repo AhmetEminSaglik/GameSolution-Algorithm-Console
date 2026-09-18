@@ -205,17 +205,23 @@ public class Main {
         return ConsoleInput.readLine().trim().equals("2");
     }
 
-    /** Checkpoint listesini numarali yazdirir. Bos ise false doner. */
-    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col) {
+    /**
+     * Checkpoint listesini "checkpoint no" (solution_index / interval) ile yazdirir -
+     * liste SIRASI degil, cunku aradaki bir checkpoint eksikse (bkz. gap doldurma)
+     * sira numaralari kayar ve N'in anlami degisir. Checkpoint no ise solution_index'e
+     * bagli SABIT bir kimlik: eksik olan numara listede gorunmeyerek bosluk gosterir.
+     * Bos ise false doner.
+     */
+    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col, int interval) {
         if (cps.isEmpty()) {
             System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok.");
             return false;
         }
-        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2):");
-        for (int i = 0; i < cps.size(); i++) {
-            CheckpointSummary s = cps.get(i);
-            System.out.printf("  %2d) #%-8d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
-                    i + 1, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
+        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint no = solution_index/" + interval + "):");
+        for (CheckpointSummary s : cps) {
+            long no = s.solutionIndex() / interval;
+            System.out.printf("  %3d) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
+                    no, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
                     s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
         }
         return true;
@@ -229,70 +235,95 @@ public class Main {
     /**
      * Checkpoint'leri listeler, kullanicidan aralik alir; {@code #from} checkpoint'ini
      * game'e restore edip cozucuyu {@link PlayGame} ile oradan oynatir, {@code #to}
-     * cozumune gelince durur. Cikti tamamen cozucunun kendi loglarindan +
-     * PlayGame'in kosu sonu istatistiginden gelir (bu metod bir sey yazdirmaz).
+     * cozumune gelince durur (checkpoint yazimi ACIK - bkz. asagi). Cikti tamamen
+     * cozucunun kendi loglarindan + PlayGame'in kosu sonu istatistiginden gelir.
      *
-     * Aralik girdisi (N, M = liste sira numaralari):
-     *   "N-M"  → N. checkpoint'in cozum index'inden M. checkpoint'in cozum index'ine.
-     *   "N" / "N-"  → N. checkpoint'ten sona kadar.
-     *   bos    → bastan sona.
+     * Aralik girdisi (N, M = CHECKPOINT NO = solution_index/interval, liste sirasi
+     * DEGIL - bkz. printCheckpointList):
+     *   "N-M"  → N. checkpoint'ten M. checkpoint'in solution_index'ine kadar.
+     *            M'nin DB'de ONCEDEN VAR OLMASI GEREKMEZ (henuz kesfedilmemis olabilir
+     *            ya da aradaki bir bosluk olabilir - resume calisirken doldurulur).
+     *   "N" / "N-"  → N. checkpoint'ten (cozucu dogal olarak bitene kadar) sona kadar.
+     *   bos    → listedeki EN KUCUK checkpoint'ten sona kadar.
+     * N'in DB'de GERCEKTEN VAR OLMASI SART (restore edilecek state'in kaynagi).
+     * Yoksa/gecersizse hata basilip liste TEKRAR gosterilir (tekrar denenebilir).
      */
     static void runCheckpointRange(Game game) {
         int row = game.getModel().getRowCount();
         int col = game.getModel().getColCount();
-        List<CheckpointSummary> cps;
-        try {
-            cps = loadCheckpointList(game);
-        } catch (RuntimeException e) {
-            System.err.println("[checkpoint][WARN] liste alinamadi: " + e.getMessage());
-            return;
-        }
-        if (!printCheckpointList(cps, row, col)) {
-            return;
-        }
-        System.out.print("Aralik (N-M / N / bos = hepsi): ");
-        String in = ConsoleInput.readLine().trim();
+        int interval = Algo2CheckpointConfig.load().intervalFor(row, col);
 
-        int fromRow = 1;
-        Integer toRow = null;   // null = sona kadar
-        try {
-            if (!in.isEmpty()) {
-                int dash = in.indexOf('-');
-                if (dash < 0) {
-                    fromRow = Integer.parseInt(in.trim());
+        while (true) {
+            List<CheckpointSummary> cps;
+            try {
+                cps = loadCheckpointList(game);
+            } catch (RuntimeException e) {
+                System.err.println("[checkpoint][WARN] liste alinamadi: " + e.getMessage());
+                return;
+            }
+            if (!printCheckpointList(cps, row, col, interval)) {
+                return;
+            }
+            System.out.print("Aralik (N-M / N / bos = hepsi, N/M = checkpoint no): ");
+            String in = ConsoleInput.readLine().trim();
+
+            long fromNo;
+            Long toNo = null;   // null = sona kadar
+            try {
+                if (in.isEmpty()) {
+                    fromNo = cps.get(0).solutionIndex() / interval;
                 } else {
-                    fromRow = Integer.parseInt(in.substring(0, dash).trim());
-                    String rest = in.substring(dash + 1).trim();
-                    if (!rest.isEmpty()) {
-                        toRow = Integer.parseInt(rest);
+                    int dash = in.indexOf('-');
+                    if (dash < 0) {
+                        fromNo = Long.parseLong(in.trim());
+                    } else {
+                        fromNo = Long.parseLong(in.substring(0, dash).trim());
+                        String rest = in.substring(dash + 1).trim();
+                        if (!rest.isEmpty()) {
+                            toNo = Long.parseLong(rest);
+                        }
                     }
                 }
+            } catch (NumberFormatException e) {
+                System.out.println("[checkpoint] gecersiz aralik: '" + in + "'. Tekrar dene.\n");
+                continue;
             }
-        } catch (NumberFormatException e) {
-            System.out.println("[checkpoint] gecersiz aralik.");
-            return;
-        }
-        if (fromRow < 1 || fromRow > cps.size()
-                || (toRow != null && (toRow < fromRow || toRow > cps.size()))) {
-            System.out.println("[checkpoint] sira no aralik disi.");
-            return;
-        }
 
-        long from = cps.get(fromRow - 1).solutionIndex();
-        long to = (toRow == null) ? 0 : cps.get(toRow - 1).solutionIndex();  // 0 = sona kadar
+            long from = fromNo * interval;
+            boolean fromExists = cps.stream().anyMatch(c -> c.solutionIndex() == from);
+            if (!fromExists) {
+                System.out.println("[checkpoint] #" + fromNo + " (solution_index=" + from + ") DB'de yok. Tekrar dene.\n");
+                continue;
+            }
+            long to = (toNo == null) ? 0 : toNo * interval;   // 0 = sona kadar; to'nun DB'de olmasi SART DEGIL
 
-        // #from checkpoint'ini restore et, cozucuyu oradan oynat, #to'da dur.
-        // Cikti tamamen cozucunun kendi loglarindan + PlayGame'in alttaki istatistiginden gelir.
-        if (!Algo2ResumeService.restoreInto(game, 2, from, DbConfig.load())) {
+            // #from checkpoint'ini restore et, cozucuyu oradan oynat, #to'da dur.
+            if (!Algo2ResumeService.restoreInto(game, 2, from, DbConfig.load())) {
+                System.out.println("[checkpoint] restore basarisiz. Tekrar dene.\n");
+                continue;
+            }
+
+            // Resume sirasinda da YENI checkpoint yazilir (kaldigi yerden "hic durmamis
+            // gibi" devam edebilmek icin). Ayni solution_index icin ayni state uretilirse
+            // (deterministik algoritma) tam-state UNIQUE constraint bunu sessizce atlar;
+            // farkli state uretilirse anomali olarak ayri satir eklenir (bkz.
+            // Algo2CheckpointWriter javadoc). Boylece aradaki bosluklar da doldurulur.
+            DbConfig cfg = DbConfig.load();
+            Algo2CheckpointConfig ccfg = Algo2CheckpointConfig.load();
+            CheckpointRecorder checkpoint = new Algo2CheckpointWriter(cfg, ccfg, row, col, 2);
+            PlayGame playGame = new PlayGame(game, new NoOpSolutionSink(), checkpoint);
+            playGame.resumeFrom(from);
+            if (to > 0) {
+                playGame.stopAfter(to);
+            }
+            try {
+                playGame.playGame();
+            } finally {
+                checkpoint.close();
+            }
+            appendRunReport(game, "Checkpoint Araligindan Devam", DbSaveMode.CHECKPOINT, playGame);
             return;
         }
-        PlayGame playGame = new PlayGame(game, new NoOpSolutionSink(), CheckpointRecorder.NONE);
-        playGame.resumeFrom(from);
-        if (to > 0) {
-            playGame.stopAfter(to);
-        }
-        playGame.playGame();
-        appendRunReport(game, "Checkpoint Araligindan Cozum Goster", DbSaveMode.NONE, playGame);
     }
 
     private static boolean hasArg(String[] args, String name) {

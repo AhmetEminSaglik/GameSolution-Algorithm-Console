@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS solving_checkpoint (
 
     grid_map_id       SMALLINT NOT NULL REFERENCES grid_map(id),
     algorithm_id      SMALLINT NOT NULL REFERENCES solving_algorithm(id),
-    algorithm_version SMALLINT NOT NULL,          -- karar mantigi surumu; degisince eski checkpoint gecersiz
     interval_size     INTEGER  NOT NULL,          -- bu kosuda kac cozumde bir alindi
 
     -- --- deterministik replay cekirdegi ---
@@ -32,6 +31,9 @@ CREATE TABLE IF NOT EXISTS solving_checkpoint (
 
     -- --- metrik (rapor surekliligi; replay dogrulugu icin sart degil) ---
     -- isimler solver_run ile ayni: total_back_steps, dummy_back_steps
+    -- total_solved constraint'te DEGIL (solution_index'le bire-bir orantili, ayirt
+    -- edicilik katmiyor) ama kolon olarak duruyor: resume sonrasi sayaclarin dogru
+    -- surdugunu (Algo2StateRestorer.restoreCounters) gozle kontrol etmek icin.
     round_counter          BIGINT  NOT NULL,
     round_counter_overlong INTEGER NOT NULL DEFAULT 0,   -- round_counter Long.MAX_VALUE'yi asinca +1 (round = overlong*MAX + round_counter)
     total_solved           BIGINT  NOT NULL,
@@ -39,13 +41,16 @@ CREATE TABLE IF NOT EXISTS solving_checkpoint (
     total_back_steps       BIGINT  NOT NULL,             -- Score.counterTotalBackStep
     dummy_back_steps       BIGINT  NOT NULL,             -- Score.counterOfDummyBackMove ("bosa" geri adim)
     locked_back_lose       BOOLEAN NOT NULL,             -- Score.lockedCounterOfMovingBackLose (dummy sayacinin kapisi)
-    square_total_solved    INTEGER NOT NULL,             -- Player.squareTotalSolvedValue (o anki baslangic karesinden bulunan)
 
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (checkpoint_id),
-    -- Ilerleme (harita + algoritma) bazinda tekil. Ayni checkpoint tekrar YAZILMAZ
-    -- (ON CONFLICT DO NOTHING). "Devam et" bu anahtardan okur.
-    UNIQUE (grid_map_id, algorithm_id, solution_index)
+    -- TAM STATE bazinda tekil (bkz. 05_solving_checkpoint_full_state_unique.sql).
+    -- Ayni solution_index icin ayni state tekrar YAZILMAZ (ON CONFLICT DO NOTHING);
+    -- checkpoint'ten resume edilip ayni aralik tekrar oynatildiginda FARKLI bir state
+    -- uretilirse (bug/non-determinism), bu tekillige TAKILMAZ ve ayri satir eklenir.
+    UNIQUE (solution_index, grid_map_id, algorithm_id, interval_size, step, path_len,
+            dir_count, path, visited_dirs, exit_situation, one_way_list,
+            round_counter, total_back_steps, dummy_back_steps, locked_back_lose)
 );
 
 -- audit: bir satiri ilk hangi calisma yazdi

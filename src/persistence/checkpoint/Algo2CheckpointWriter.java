@@ -23,19 +23,33 @@ import java.util.UUID;
  *   <li>{@code close} / JVM shutdown → kalan buffer + interval'e denk gelmeyen SON snapshot yazilir.</li>
  * </ul>
  *
- * Tekillik: {@code (grid_map_id, algorithm_id, solution_index)}. Ayni ilerleme
- * noktasi tekrar YAZILMAZ. DB hatalari cozucuyu DURDURMAZ - loglanip devam edilir.
+ * Tekillik: TAM STATE bazinda ({@code solution_index, grid_map_id, algorithm_id,
+ * interval_size, step, path_len, dir_count, path, visited_dirs, exit_situation,
+ * one_way_list, round_counter, total_back_steps, dummy_back_steps, locked_back_lose}
+ * - bkz. {@code docker/initdb/05_solving_checkpoint_full_state_unique.sql}). Ayni
+ * solution_index icin ayni state tekrar YAZILMAZ (ON CONFLICT DO NOTHING); ama
+ * checkpoint'ten resume edilip ayni aralik tekrar oynatildiginda FARKLI bir state
+ * uretilirse (bug/non-determinism), bu tekillige TAKILMAZ ve ayrı bir satir olarak
+ * eklenir - yani anomali sessizce kaybolmaz. DB hatalari cozucuyu DURDURMAZ -
+ * loglanip devam edilir.
+ *
+ * {@code total_solved} kolonu duruyor (resume sonrasi sayaclarin dogru surdugunu
+ * gozle kontrol etmek icin) ama constraint'te DEGIL - solution_index'le zaten
+ * bire-bir orantili oldugu icin ayirt edicilik katmiyor. {@code algorithm_version}
+ * ve {@code square_total_solved} tamamen kaldirildi (bkz. proje notlari).
  */
 public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     private static final String INSERT = """
             INSERT INTO solving_checkpoint
-              (solving_run_id, solution_index, grid_map_id, algorithm_id, algorithm_version, interval_size,
+              (solving_run_id, solution_index, grid_map_id, algorithm_id, interval_size,
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
-               total_back_steps, dummy_back_steps, locked_back_lose, square_total_solved)
-            VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?)
-            ON CONFLICT (grid_map_id, algorithm_id, solution_index) DO NOTHING
+               total_back_steps, dummy_back_steps, locked_back_lose)
+            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?)
+            ON CONFLICT (solution_index, grid_map_id, algorithm_id, interval_size,
+                         step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
+                         round_counter, total_back_steps, dummy_back_steps, locked_back_lose) DO NOTHING
             """;
 
     private final HikariDataSource dataSource;
@@ -166,7 +180,6 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         ps.setLong(i++, pending.solutionIndex());
         ps.setInt(i++, gridMapId);
         ps.setInt(i++, algorithmId);
-        ps.setShort(i++, Algo2Snapshot.ALGORITHM_VERSION);
         ps.setInt(i++, interval);
 
         ps.setInt(i++, s.step());
@@ -184,8 +197,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
         ps.setLong(i++, s.totalBackStep());
         ps.setLong(i++, s.dummyBackMove());
-        ps.setBoolean(i++, s.lockedBackLose());
-        ps.setInt(i, s.squareTotalSolved());
+        ps.setBoolean(i, s.lockedBackLose());
     }
 
     private static void logWarn(String msg) {

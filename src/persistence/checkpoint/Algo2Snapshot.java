@@ -23,9 +23,6 @@ import java.util.List;
  */
 public final class Algo2Snapshot {
 
-    /** Algoritma 2 karar mantiginin surumu. Mantik degisince ARTIR (eski checkpoint'ler gecersiz olur). */
-    public static final short ALGORITHM_VERSION = 1;
-
     private final int rowSize;
     private final int colSize;
     private final int step;
@@ -42,7 +39,6 @@ public final class Algo2Snapshot {
     private final long totalBackStep;
     private final long dummyBackMove;
     private final boolean lockedBackLose;
-    private final int squareTotalSolved;
 
     private Algo2Snapshot(Game game) {
         Player player = game.getPlayer();
@@ -71,7 +67,6 @@ public final class Algo2Snapshot {
         this.totalBackStep = player.getScore().getCounterTotalBackStep();
         this.dummyBackMove = player.getScore().getCounterOfDummyBackMove();
         this.lockedBackLose = player.getScore().isLockedCounterOfMovingBackLose();
-        this.squareTotalSolved = player.getSquareTotalSolvedValue();
     }
 
     /** Cozum bulundugu anda cagir (tahta dolu, step = row*col). */
@@ -142,5 +137,4 @@ public final class Algo2Snapshot {
     public long totalBackStep() { return totalBackStep; }
     public long dummyBackMove() { return dummyBackMove; }
     public boolean lockedBackLose() { return lockedBackLose; }
-    public int squareTotalSolved() { return squareTotalSolved; }
 }

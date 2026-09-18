@@ -19,11 +19,10 @@ import java.util.Optional;
 final class Algo2CheckpointLoader implements AutoCloseable {
 
     private static final String SELECT_COLS = """
-            c.solution_index, g.row_size, g.col_size, c.algorithm_id, c.algorithm_version,
+            c.solution_index, g.row_size, g.col_size, c.algorithm_id,
             c.interval_size, c.step, c.dir_count, c.path, c.visited_dirs, c.exit_situation,
             c.one_way_list, c.round_counter, c.round_counter_overlong, c.total_solved,
-            c.total_solved_overlong, c.total_back_steps, c.dummy_back_steps, c.locked_back_lose,
-            c.square_total_solved
+            c.total_solved_overlong, c.total_back_steps, c.dummy_back_steps, c.locked_back_lose
             """;
     private static final String FROM_WHERE = """
              FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
@@ -46,7 +45,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
     List<CheckpointSummary> listSummaries(int row, int col, int algo) {
         String sql = """
                 SELECT c.solution_index, c.step, c.round_counter, c.total_solved,
-                       c.total_back_steps, c.dummy_back_steps, c.square_total_solved, c.created_at
+                       c.total_back_steps, c.dummy_back_steps, c.created_at
                   FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
                  WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
                  ORDER BY c.solution_index ASC
@@ -61,7 +60,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                 while (rs.next()) {
                     out.add(new CheckpointSummary(
                             rs.getLong(1), rs.getInt(2), rs.getLong(3), rs.getLong(4),
-                            rs.getLong(5), rs.getLong(6), rs.getInt(7), rs.getTimestamp(8)));
+                            rs.getLong(5), rs.getLong(6), rs.getTimestamp(7)));
                 }
             }
         } catch (SQLException e) {
@@ -133,7 +132,6 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                 rs.getInt("row_size"),
                 rs.getInt("col_size"),
                 rs.getInt("algorithm_id"),
-                rs.getInt("algorithm_version"),
                 rs.getInt("interval_size"),
                 rs.getInt("step"),
                 rs.getInt("dir_count"),
@@ -147,8 +145,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                 rs.getInt("total_solved_overlong"),
                 rs.getLong("total_back_steps"),
                 rs.getLong("dummy_back_steps"),
-                rs.getBoolean("locked_back_lose"),
-                rs.getInt("square_total_solved"));
+                rs.getBoolean("locked_back_lose"));
     }
 
     @Override

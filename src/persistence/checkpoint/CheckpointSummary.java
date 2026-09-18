@@ -12,7 +12,6 @@ public record CheckpointSummary(
         long totalSolved,
         long totalBackSteps,
         long dummyBackSteps,
-        int squareTotalSolved,
         Timestamp createdAt
 ) {
 }

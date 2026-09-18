@@ -84,7 +84,6 @@ final class Algo2StateRestorer {
         player.getScore().restoreCounters(
                 row.totalSolved(), row.totalSolvedOverlong(),
                 row.totalBackSteps(), row.dummyBackSteps(), row.lockedBackLose());
-        player.restoreSquareTotalSolvedValue(row.squareTotalSolved());
     }
 
     /** int count, sonra her nav: int step, int oneWayValue, int compulsoryDirId(-1=null), byte exitLocatedHere. */
