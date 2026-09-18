@@ -30,10 +30,17 @@ public class RobotGameOver implements IGameOver {
     }
 
 
+    /**
+     * Kare simetrisi optimizasyonu: baslangic kareleri artik TUM tahtayi degil,
+     * sadece "temel bolgeyi" (0 <= y <= x <= half) geziyor (bkz.
+     * Move.changeStartLocationSpecialMovement). Bu bolgenin SON karesi (half, half) -
+     * (rowCount-1, colCount-1) DEGIL, oyuncu oraya artik hic gitmiyor.
+     */
     boolean isRobotFinishedAllLocations() {
         Location robotLocation = game.getPlayer().getLocation();
-        return robotLocation.getX() == rowCount - 1 &&
-                robotLocation.getY() == colCount - 1;
+        int half = (rowCount - 1) / 2;
+        return robotLocation.getX() == half &&
+                robotLocation.getY() == half;
     }
 
     boolean allDirectionsAreVisitedAtStep1() {

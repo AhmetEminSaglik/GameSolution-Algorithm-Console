@@ -60,21 +60,27 @@ public abstract class Move implements IMove { // ICalculateMove
         updateValuesInGameModel.updatePlayerStepValue();
     }
 
+    /**
+     * Kare simetrisi optimizasyonu: NxN bir tahtada 8 simetri (4 donme + 4 yansima)
+     * altinda esdeger olan baslangic kareleri TEKRAR hesaplanmaz. Sadece "temel bolge"
+     * (0 <= y <= x <= half, half = (rowCount-1)/2) gezilir - orn. 7x7'de 49 yerine 10
+     * kare. Diger 39 karenin sonucu, bu 10 kareden simetriyle (agirliklandirarak)
+     * turetilir (bkz. proje notlari - toplam hesaplama ayri bir adim).
+     */
     @Override
     public void changeStartLocationSpecialMovement() {
         appendFileSquareTotalSolvedValue();
         int locationX = game.getPlayer().getLocation().getX();
         int locationY = game.getPlayer().getLocation().getY();
+        int half = (rowCount - 1) / 2;
 
         locationX++;
-        if (locationX >= rowCount) {
-            locationX = 0;
+        if (locationX > half) {
             locationY++;
-
+            locationX = locationY;
         }
 
-
-        if (locationY < colCount) {
+        if (locationY <= half) {
 
             try {
 
@@ -90,7 +96,7 @@ public abstract class Move implements IMove { // ICalculateMove
 
             }
         } else {
-            ErrorMessage.appearWarnings(getClass(), "Y siniri asti - baslangic karesi daha fazla ilerletilemedi");
+            ErrorMessage.appearWarnings(getClass(), "Temel bolge tukendi - baslangic karesi daha fazla ilerletilemedi");
         }
     }
 
