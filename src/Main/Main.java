@@ -27,6 +27,7 @@ import persistence.checkpoint.Algo2CheckpointWriter;
 import persistence.checkpoint.Algo2ResumeService;
 import persistence.checkpoint.CheckpointRecorder;
 import persistence.checkpoint.CheckpointSummary;
+import print.EasylyReadNumber;
 import trace.Trace;
 import utility.ConsoleInput;
 
@@ -34,7 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 
 
-public class Main {
+public class Main { // 7x7 eksikler: 5078-7072
 
     BaseSolution baseSolution;
 
@@ -210,21 +211,68 @@ public class Main {
      * liste SIRASI degil, cunku aradaki bir checkpoint eksikse (bkz. gap doldurma)
      * sira numaralari kayar ve N'in anlami degisir. Checkpoint no ise solution_index'e
      * bagli SABIT bir kimlik: eksik olan numara listede gorunmeyerek bosluk gosterir.
+     *
+     * {@code missingOnly=false}: TUMU tek tek basilir (eskisi gibi).
+     * {@code missingOnly=true}: sadece her GERCEK boslugun iki yanindaki (var olan)
+     * sinir checkpoint'leri + ilk/son checkpoint basilir; aralarindaki uzun ardisik
+     * (boslugu olmayan) bolgeler "N ara checkpoint gizlendi" diye kisaltilir - binlerce
+     * satirlik gecmiste TUM gercek bosluklari tek bakista gormek icin.
+     *
      * Bos ise false doner.
      */
-    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col, int interval) {
+    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col, int interval, boolean missingOnly) {
         if (cps.isEmpty()) {
             System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok.");
             return false;
         }
-        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint no = solution_index/" + interval + "):");
-        for (CheckpointSummary s : cps) {
-            long no = s.solutionIndex() / interval;
-            System.out.printf("  %3d) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
-                    no, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
-                    s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
+        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint no = solution_index/" + interval
+                + (missingOnly ? ", SADECE EKSIKLER" : "") + "):");
+
+        if (!missingOnly) {
+            Long prevNo = null;
+            for (CheckpointSummary s : cps) {
+                long no = s.solutionIndex() / interval;
+                if (prevNo != null && no != prevNo + 1) {
+                    long missing = no - prevNo - 1;
+                    System.out.println("      ... (" + missing + " checkpoint eksik: #" + (prevNo + 1) + "-#" + (no - 1) + ") ...");
+                }
+                printCheckpointLine(s, interval);
+                prevNo = no;
+            }
+            return true;
+        }
+
+        int n = cps.size();
+        int i = 0;
+        while (i < n) {
+            int j = i;
+            while (j + 1 < n && (cps.get(j + 1).solutionIndex() / interval) == (cps.get(j).solutionIndex() / interval) + 1) {
+                j++;
+            }
+            // cps[i..j] ardisik (bosluksuz) bir blok - sadece basi + (varsa) sonu basilir.
+            printCheckpointLine(cps.get(i), interval);
+            if (j > i) {
+                if (j > i + 1) {
+                    System.out.println("      (" + (j - i - 1) + " ara checkpoint gizlendi, hepsi ardisik) ");
+                }
+                printCheckpointLine(cps.get(j), interval);
+            }
+            if (j + 1 < n) {
+                long curNo = cps.get(j).solutionIndex() / interval;
+                long nextNo = cps.get(j + 1).solutionIndex() / interval;
+                long missing = nextNo - curNo - 1;
+                System.out.println("      ... (" + missing + " checkpoint EKSIK: #" + (curNo + 1) + "-#" + (nextNo - 1) + ") ...");
+            }
+            i = j + 1;
         }
         return true;
+    }
+
+    private static void printCheckpointLine(CheckpointSummary s, int interval) {
+        long no = s.solutionIndex() / interval;
+        System.out.printf("  %3d) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
+                no, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
+                s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
     }
 
     private static List<CheckpointSummary> loadCheckpointList(Game game) {
@@ -261,7 +309,9 @@ public class Main {
                 System.err.println("[checkpoint][WARN] liste alinamadi: " + e.getMessage());
                 return;
             }
-            if (!printCheckpointList(cps, row, col, interval)) {
+            System.out.print("Liste:  1) Hepsini goster   2) Sadece eksikleri goster: ");
+            boolean missingOnly = ConsoleInput.readLine().trim().equals("2");
+            if (!printCheckpointList(cps, row, col, interval, missingOnly)) {
                 return;
             }
             System.out.print("Aralik (N-M / N / bos = hepsi, N/M = checkpoint no): ");
@@ -303,6 +353,14 @@ public class Main {
                 continue;
             }
 
+            // "Current session" (bu oturumda) delta'lari icin restore hemen sonrasi
+            // baslangic degerleri - DB'ye/dosyaya YAZILMAZ, sadece konsola basilir.
+            Player player = game.getPlayer();
+            long startTotalSolved = player.getScore().getTotalGameFinishedScore();
+            long startBackStep = player.getScore().getCounterTotalBackStep();
+            long startRoundCounter = game.getRoundCounter();
+            long startDummyBackStep = player.getScore().getCounterOfDummyBackMove();
+
             // Resume sirasinda da YENI checkpoint yazilir (kaldigi yerden "hic durmamis
             // gibi" devam edebilmek icin). Ayni solution_index icin ayni state uretilirse
             // (deterministik algoritma) tam-state UNIQUE constraint bunu sessizce atlar;
@@ -321,6 +379,17 @@ public class Main {
             } finally {
                 checkpoint.close();
             }
+            long currentTotalSolved = player.getScore().getTotalGameFinishedScore() - startTotalSolved;
+            long currentBackStep = player.getScore().getCounterTotalBackStep() - startBackStep;
+            long currentStep = game.getRoundCounter() - startRoundCounter;
+            long currentDummyBackStep = player.getScore().getCounterOfDummyBackMove() - startDummyBackStep;
+            System.out.println();
+            System.out.println("---- Bu oturumda (current session, DB'ye kaydedilmez) ----");
+            System.out.println("Current Total Solved     : " + new EasylyReadNumber().getReadableNumberInStringFormat(currentTotalSolved));
+            System.out.println("Current Total Step       : " + new EasylyReadNumber().getReadableNumberInStringFormat(currentStep));
+            System.out.println("Current Total Back Step  : " + new EasylyReadNumber().getReadableNumberInStringFormat(currentBackStep));
+            System.out.println("Current Dummy Back Step  : " + new EasylyReadNumber().getReadableNumberInStringFormat(currentDummyBackStep));
+
             appendRunReport(game, "Checkpoint Araligindan Devam", DbSaveMode.CHECKPOINT, playGame);
             return;
         }
