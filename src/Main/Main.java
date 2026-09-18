@@ -71,12 +71,15 @@ public class Main { // 7x7 eksikler: 5078-7072
         buildGameModel.createVisitedArea();
 
         // Algoritma 2: bastan calistir mi, yoksa checkpoint araligindan devam mi?
-        if (wantsCheckpointList(args, main.baseSolution)) {
-            runCheckpointRange(game);   // #from checkpoint'ten oynat, #to'da dur
+        // Hangi yol secilirse secilsin, DB kayit modu HER ZAMAN soruluyor (tutarlilik icin).
+        boolean checkpointRange = wantsCheckpointList(args, main.baseSolution);
+        DbSaveMode saveMode = readSaveMode(args);
+
+        if (checkpointRange) {
+            runCheckpointRange(game, saveMode, args, main.baseSolution);   // #from checkpoint'ten oynat, #to'da dur
             return;
         }
 
-        DbSaveMode saveMode = readSaveMode(args);
         SolutionSink sink = createSolutionSink(saveMode);
         CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, main.baseSolution, game);
         PlayGame playGame = new PlayGame(game, sink, checkpoint);
@@ -296,7 +299,7 @@ public class Main { // 7x7 eksikler: 5078-7072
      * N'in DB'de GERCEKTEN VAR OLMASI SART (restore edilecek state'in kaynagi).
      * Yoksa/gecersizse hata basilip liste TEKRAR gosterilir (tekrar denenebilir).
      */
-    static void runCheckpointRange(Game game) {
+    static void runCheckpointRange(Game game, DbSaveMode saveMode, String[] args, BaseSolution baseSolution) {
         int row = game.getModel().getRowCount();
         int col = game.getModel().getColCount();
         int interval = Algo2CheckpointConfig.load().intervalFor(row, col);
@@ -366,10 +369,13 @@ public class Main { // 7x7 eksikler: 5078-7072
             // (deterministik algoritma) tam-state UNIQUE constraint bunu sessizce atlar;
             // farkli state uretilirse anomali olarak ayri satir eklenir (bkz.
             // Algo2CheckpointWriter javadoc). Boylece aradaki bosluklar da doldurulur.
-            DbConfig cfg = DbConfig.load();
-            Algo2CheckpointConfig ccfg = Algo2CheckpointConfig.load();
-            CheckpointRecorder checkpoint = new Algo2CheckpointWriter(cfg, ccfg, row, col, 2);
-            PlayGame playGame = new PlayGame(game, new NoOpSolutionSink(), checkpoint);
+            // Artik "bastan calistir" ile AYNI DB kayit modu mekanizmasi: saveMode=yok
+            // secilirse resume sirasinda hicbir sey yazilmaz; checkpoint/all secilirse
+            // boslukalar doldurulur; flat/trie secilirse bu araliktaki cozumler de
+            // ayrica tek tek kaydedilir.
+            SolutionSink sink = createSolutionSink(saveMode);
+            CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, baseSolution, game);
+            PlayGame playGame = new PlayGame(game, sink, checkpoint);
             playGame.resumeFrom(from);
             if (to > 0) {
                 playGame.stopAfter(to);
@@ -378,6 +384,7 @@ public class Main { // 7x7 eksikler: 5078-7072
                 playGame.playGame();
             } finally {
                 checkpoint.close();
+                sink.close();
             }
             long currentTotalSolved = player.getScore().getTotalGameFinishedScore() - startTotalSolved;
             long currentBackStep = player.getScore().getCounterTotalBackStep() - startBackStep;
@@ -390,7 +397,7 @@ public class Main { // 7x7 eksikler: 5078-7072
             System.out.println("Current Total Back Step  : " + new EasylyReadNumber().getReadableNumberInStringFormat(currentBackStep));
             System.out.println("Current Dummy Back Step  : " + new EasylyReadNumber().getReadableNumberInStringFormat(currentDummyBackStep));
 
-            appendRunReport(game, "Checkpoint Araligindan Devam", DbSaveMode.CHECKPOINT, playGame);
+            appendRunReport(game, "Checkpoint Araligindan Devam", saveMode, playGame);
             return;
         }
     }
