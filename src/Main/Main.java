@@ -221,6 +221,15 @@ public class Main { // 7x7 eksikler: 5078-7072
      * (boslugu olmayan) bolgeler "N ara checkpoint gizlendi" diye kisaltilir - binlerce
      * satirlik gecmiste TUM gercek bosluklari tek bakista gormek icin.
      *
+     * ONEMLI: Algo2CheckpointWriter, oturum kapanirken interval'e denk gelmese bile
+     * SON snapshot'i da yazar (bkz. persistLastIfNeeded) - yani solution_index HER
+     * ZAMAN interval'in tam kati olmayabilir (orn. 451760). Boyle bir "ara-durak"
+     * satiri no=solution_index/interval hesabinda GERCEK bir checkpoint'in numarasiyla
+     * CAKISABILIR (451760/100000=4, tipki 400000/100000=4 gibi) - bu da anlamsiz
+     * negatif "eksik" sayilarina yol acar. Bu yuzden ara-durak satirlari (solution_index
+     * interval'e tam bolunmeyenler) checkpoint NO SIRALAMASINA hic KATILMAZ; ayri, ozel
+     * bir etiketle gosterilir.
+     *
      * Bos ise false doner.
      */
     private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col, int interval, boolean missingOnly) {
@@ -231,9 +240,18 @@ public class Main { // 7x7 eksikler: 5078-7072
         System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint no = solution_index/" + interval
                 + (missingOnly ? ", SADECE EKSIKLER" : "") + "):");
 
+        List<CheckpointSummary> onGrid = cps.stream()
+                .filter(s -> s.solutionIndex() % interval == 0)
+                .toList();
+        int offGridCount = cps.size() - onGrid.size();
+
         if (!missingOnly) {
             Long prevNo = null;
             for (CheckpointSummary s : cps) {
+                if (s.solutionIndex() % interval != 0) {
+                    printAraDurakLine(s);
+                    continue;
+                }
                 long no = s.solutionIndex() / interval;
                 if (prevNo != null && no != prevNo + 1) {
                     long missing = no - prevNo - 1;
@@ -245,24 +263,27 @@ public class Main { // 7x7 eksikler: 5078-7072
             return true;
         }
 
-        int n = cps.size();
+        if (offGridCount > 0) {
+            System.out.println("      (" + offGridCount + " ara-durak checkpoint bu gorunumde gizli - \"Hepsini goster\" ile gorebilirsin)");
+        }
+        int n = onGrid.size();
         int i = 0;
         while (i < n) {
             int j = i;
-            while (j + 1 < n && (cps.get(j + 1).solutionIndex() / interval) == (cps.get(j).solutionIndex() / interval) + 1) {
+            while (j + 1 < n && (onGrid.get(j + 1).solutionIndex() / interval) == (onGrid.get(j).solutionIndex() / interval) + 1) {
                 j++;
             }
-            // cps[i..j] ardisik (bosluksuz) bir blok - sadece basi + (varsa) sonu basilir.
-            printCheckpointLine(cps.get(i), interval);
+            // onGrid[i..j] ardisik (bosluksuz) bir blok - sadece basi + (varsa) sonu basilir.
+            printCheckpointLine(onGrid.get(i), interval);
             if (j > i) {
                 if (j > i + 1) {
                     System.out.println("      (" + (j - i - 1) + " ara checkpoint gizlendi, hepsi ardisik) ");
                 }
-                printCheckpointLine(cps.get(j), interval);
+                printCheckpointLine(onGrid.get(j), interval);
             }
             if (j + 1 < n) {
-                long curNo = cps.get(j).solutionIndex() / interval;
-                long nextNo = cps.get(j + 1).solutionIndex() / interval;
+                long curNo = onGrid.get(j).solutionIndex() / interval;
+                long nextNo = onGrid.get(j + 1).solutionIndex() / interval;
                 long missing = nextNo - curNo - 1;
                 System.out.println("      ... (" + missing + " checkpoint EKSIK: #" + (curNo + 1) + "-#" + (nextNo - 1) + ") ...");
             }
@@ -275,6 +296,13 @@ public class Main { // 7x7 eksikler: 5078-7072
         long no = s.solutionIndex() / interval;
         System.out.printf("  %3d) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
                 no, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
+                s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
+    }
+
+    /** Interval'e tam bolunmeyen ("ara-durak"/kapanista yazilmis son snapshot) satir - checkpoint no yok. */
+    private static void printAraDurakLine(CheckpointSummary s) {
+        System.out.printf("  (ara-durak) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
+                s.solutionIndex(), s.roundCounter(), s.totalSolved(),
                 s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
     }
 
