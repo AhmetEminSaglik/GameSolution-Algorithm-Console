@@ -81,13 +81,23 @@ public class BuildGame {
      *   "5"      -> 5x5 (kare)
      *   "5 6"    -> 5 satir 6 sutun
      *   "5x6"    -> 5 satir 6 sutun
+     * Bos/gecersiz girdi (orn. kazara fazladan Enter) programi COKERTMEZ -
+     * hata basilip tekrar sorulur (EOF ise ConsoleInput.readLine() kendi
+     * NoSuchElementException'ini firlatir, bu Main'in ust seviye "girdi kalmadi"
+     * yakalamasina gider - burada YUTULMAZ).
      */
     public int[] determineGridSize() {
-        System.out.print("Grid boyutu (kare icin tek sayi, dikdortgen icin \"satir sutun\" ya da \"5x6\"): ");
-        String line = ConsoleInput.readLine().trim().toLowerCase();
-        String[] parts = line.split("[\\sx]+");
-        int rows = Integer.parseInt(parts[0]);
-        int cols = (parts.length > 1) ? Integer.parseInt(parts[1]) : rows;
-        return new int[]{rows, cols};
+        while (true) {
+            System.out.print("Grid boyutu (kare icin tek sayi, dikdortgen icin \"satir sutun\" ya da \"5x6\"): ");
+            String line = ConsoleInput.readLine().trim().toLowerCase();
+            String[] parts = line.split("[\\sx]+");
+            try {
+                int rows = Integer.parseInt(parts[0]);
+                int cols = (parts.length > 1) ? Integer.parseInt(parts[1]) : rows;
+                return new int[]{rows, cols};
+            } catch (NumberFormatException e) {
+                System.out.println("[hata] gecersiz grid boyutu: '" + line + "'. Tekrar dene.");
+            }
+        }
     }
 }
