@@ -179,6 +179,25 @@ saklanmalı.
 
 `mvn -q -o compile` ile derleme doğrulandı (hata yok).
 
+### 4.1. ON CONFLICT DO NOTHING'e düşen (zaten var olan) satırlar da artık loglanıyor
+
+`flush()` başarıyla commit olduktan sonra `printSkippedDiagnostics(ps, buffer)`
+çağrılır. INSERT'e eklenen `RETURNING solution_index`, sadece GERÇEKTEN
+eklenen satırlar için değer döner (Postgres: `DO NOTHING`'e düşen satırlar
+`RETURNING` çıktısında hiç görünmez). `getGeneratedKeys()` ile dönen kümede
+OLMAYAN her `Pending` satırı "DB'de zaten TAM AYNI STATE ile vardı, atlandı"
+demektir — bu bir hata değildir, `System.out`'a `[checkpoint][SKIP]` etiketiyle
+ve `printPendingDetail` ile aynı tam-veri formatında basılır (path/visited_dirs
+/one_way_list dahil), böylece resume edilen state ile DB'deki satır elle
+birebir kıyaslanabilir. JDBC batch update-count dizisine bakılmadı çünkü
+`reWriteBatchedInserts=true` altında bu sayılar satır bazında güvenilir değil;
+`RETURNING` + `getGeneratedKeys()` bundan bağımsız, doğru sonuç verir.
+
+**Doğrulama (2026-09-21):** 7x7/algo2 checkpoint 101-104 (zaten DB'de var,
+skip edildi) ve 105-107 (silinip yeniden yazıldı) için hem `[SKIP]` logu hem
+de yeniden yazılan satırlar, DB'deki (veya silmeden önceki) gerçek veriyle
+path/visited_dirs/one_way_list dahil byte-byte birebir eşleşti — fark yok.
+
 ## 5. Bu kıyaslamayı tekrar nasıl yaparsın
 
 ```sql

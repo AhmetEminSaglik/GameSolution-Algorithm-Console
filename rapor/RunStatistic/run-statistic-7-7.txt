@@ -1,0 +1,182 @@
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 700_000
+Elapsed time : 0:0:51:580
+Total Back Step : 156_765_562
+Total Step : 313_531_172
+Total Dummy Back Step)  : 29_750_044
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 508_000_000
+Elapsed time : 0:2:59:919
+Total Back Step : 104_359_182_453
+Total Step : 208_718_364_955
+Total Dummy Back Step)  : 18_752_395_096
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 600_000
+Elapsed time : 0:0:42:122
+Total Back Step : 132_753_268
+Total Step : 265_506_584
+Total Dummy Back Step)  : 25_270_080
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 700_000
+Elapsed time : 0:1:28:646
+Total Back Step : 156_765_562
+Total Step : 313_531_172
+Total Dummy Back Step)  : 29_750_044
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 800_000
+Elapsed time : 0:1:53:213
+Total Back Step : 178_287_932
+Total Step : 356_575_912
+Total Dummy Back Step)  : 33_903_429
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 600_000
+Elapsed time : 0:1:28:917
+Total Back Step : 132_753_268
+Total Step : 265_506_584
+Total Dummy Back Step)  : 25_270_080
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 500_000
+Elapsed time : 0:1:2:94
+Total Back Step : 101_294_687
+Total Step : 202_589_422
+Total Dummy Back Step)  : 19_242_634
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 400_000
+Elapsed time : 0:0:47:100
+Total Back Step : 87_152_873
+Total Step : 174_305_794
+Total Dummy Back Step)  : 16_640_507
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 10_700_000
+Elapsed time : 0:1:28:994
+Total Back Step : 2_126_971_445
+Total Step : 4_253_942_938
+Total Dummy Back Step)  : 391_414_361
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 700_000
+Elapsed time : 0:0:56:944
+Total Back Step : 156_765_562
+Total Step : 313_531_172
+Total Dummy Back Step)  : 29_750_044
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 900_000
+Elapsed time : 0:0:22:760
+Total Back Step : 197_429_101
+Total Step : 394_858_250
+Total Dummy Back Step)  : 37_597_145
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 10_900_000
+Elapsed time : 0:0:36:38
+Total Back Step : 2_184_605_629
+Total Step : 4_369_211_306
+Total Dummy Back Step)  : 402_087_119
+
+----------------------------------------
+
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 300_000
+Elapsed time : 0:0:39:194
+Total Back Step : 67_693_026
+Total Step : 135_386_100
+Total Dummy Back Step)  : 13_013_278
+
+----------------------------------------
+
