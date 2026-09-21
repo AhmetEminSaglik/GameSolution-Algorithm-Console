@@ -66,3 +66,7 @@ tamamlananlar/
 # pg_dump backups: GitHub'in 100MB dosya sinirini asiyor (~280MB), asla commit'leme.
 # Yerelde rapor/backup/pgdump/ altinda kalir, gerekirse backup.sh ile yeniden uretilir.
 rapor/backup/pgdump/*.dump
+
+# Claude Code local config + git worktrees: repo'ya asla girmemeli (worktree'yi
+# gitlink olarak stage'lemek repo'yu bozar, bkz. .claude/worktrees/* olayi).
+.claude/
