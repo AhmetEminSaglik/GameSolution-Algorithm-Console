@@ -71,6 +71,10 @@ public class Main { // 7x7 eksikler: 5078-7072
         System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
         System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+        // HikariCP kendi ic havuz loglarini (Starting/Added connection/Shutdown...) INFO
+        // seviyesinde basar - bunlar zararsiz ama gurultu. Sadece bunlari sustur, bizim
+        // kendi loglarimiz (persistence.checkpoint.*) defaultLogLevel=info'da kalsin.
+        System.setProperty("org.slf4j.simpleLogger.log.com.zaxxer.hikari", "warn");
     }
 
     private static void runOnce(String[] args) throws InterruptedException {
