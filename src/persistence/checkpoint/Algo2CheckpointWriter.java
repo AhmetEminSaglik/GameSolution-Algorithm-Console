@@ -3,14 +3,20 @@ package persistence.checkpoint;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import game.Game;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import persistence.DbConfig;
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -40,6 +46,8 @@ import java.util.UUID;
  */
 public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Algo2CheckpointWriter.class);
+
     private static final String INSERT = """
             INSERT INTO solving_checkpoint
               (solving_run_id, solution_index, grid_map_id, algorithm_id, interval_size,
@@ -50,6 +58,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
             ON CONFLICT (solution_index, grid_map_id, algorithm_id, interval_size,
                          step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                          round_counter, total_back_steps, dummy_back_steps, locked_back_lose) DO NOTHING
+            RETURNING solution_index
             """;
 
     private final HikariDataSource dataSource;
@@ -155,22 +164,169 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         }
         try (Connection c = dataSource.getConnection()) {
             c.setAutoCommit(false);
-            try (PreparedStatement ps = c.prepareStatement(INSERT)) {
+            try (PreparedStatement ps = c.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
                 for (Pending pending : buffer) {
                     bind(ps, pending);
                     ps.addBatch();
                 }
                 ps.executeBatch();
                 c.commit();
+                try {
+                    printSkippedDiagnostics(ps, buffer);
+                } catch (SQLException diagEx) {
+                    logWarn("atlanan (zaten var olan) satirlar okunamadi - veri kaybi yok, sadece log basilamadi: "
+                            + diagEx.getMessage());
+                }
             } catch (SQLException e) {
                 c.rollback();
                 throw e;
             }
         } catch (SQLException | RuntimeException e) {
             logWarn("solving_checkpoint batch yazilamadi (" + buffer.size() + " satir atlandi): " + e.getMessage());
+            printFailureDiagnostics(e, buffer);
         } finally {
             buffer.clear();
         }
+    }
+
+    /**
+     * ON CONFLICT DO NOTHING nedeniyle atlanan (DB'de TAM AYNI STATE ile zaten var olan)
+     * satirlarin tam verisini konsola basar - bu bir HATA DEGIL, deterministik kiyaslama
+     * icindir (bkz. compare-solution-checkpoint.md paragraf 5): checkpoint'ten resume edilip
+     * ayni aralik tekrar oynatildiginda uretilen state ile DB'deki satirin BIREBIR ayni olup
+     * olmadigi elle kiyaslanabilsin diye.
+     *
+     * RETURNING solution_index sadece GERCEKTEN eklenen satirlar icin deger dondurur
+     * (Postgres: DO NOTHING'e dusen satirlar RETURNING ciktisinda hic gorunmez); bu yuzden
+     * getGeneratedKeys() ile donen kumede OLMAYAN her pending satir "zaten vardi, atlandi"
+     * demektir - JDBC batch update-count dizisine (reWriteBatchedInserts=true altinda
+     * guvenilir degil) bagli kalmadan dogru sonuc verir.
+     */
+    private void printSkippedDiagnostics(PreparedStatement ps, List<Pending> attempted) throws SQLException {
+        Set<Long> inserted = new HashSet<>();
+        try (ResultSet keys = ps.getGeneratedKeys()) {
+            while (keys.next()) {
+                inserted.add(keys.getLong(1));
+            }
+        }
+        List<Pending> skipped = new ArrayList<>();
+        for (Pending pending : attempted) {
+            if (!inserted.contains(pending.solutionIndex())) {
+                skipped.add(pending);
+            }
+        }
+        if (skipped.isEmpty()) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("[SKIP] ").append(skipped.size())
+                .append(" satir DB'de TAM AYNI STATE ile zaten vardi (ON CONFLICT DO NOTHING) - ")
+                .append("deterministik kiyaslama icin tam veri:");
+        int i = 1;
+        for (Pending pending : skipped) {
+            appendPendingDetail(sb, i++, skipped.size(), pending, "zaten var - atlandi");
+        }
+        LOG.info(sb.toString());
+    }
+
+    /**
+     * DB'ye YAZILAMAYAN satirlarin tam verisini konsola basar - compare-solution-checkpoint.md'de
+     * anlatilan "DB disinda kalan veriyi elle kiyasla" akisi icin. Sira: 1) hata mesaji (yukarida
+     * {@link #logWarn} ile zaten basildi), 2) SQLException zinciri (gercek sebep - constraint adi
+     * genelde burada, ozellikle BatchUpdateException.getNextException()'da), 3) her basarisiz
+     * satirin TUM alanlari (solution_index, grid_map_id, algorithm_id, interval_size, step,
+     * path_len, dir_count, path, visited_dirs, exit_situation, one_way_list, round_counter,
+     * total_solved, total_back_steps, dummy_back_steps, locked_back_lose).
+     */
+    private void printFailureDiagnostics(Exception e, List<Pending> failed) {
+        StringBuilder sb = new StringBuilder();
+        if (e instanceof SQLException top) {
+            sb.append("[ERROR] sebep zinciri (SQLState / ErrorCode - gercek Postgres nedeni genelde son halkada):");
+            SQLException cur = top;
+            int depth = 0;
+            while (cur != null) {
+                sb.append("\n  ").append(depth).append(") ").append(cur.getClass().getSimpleName())
+                        .append(" SQLState=").append(cur.getSQLState())
+                        .append(" ErrorCode=").append(cur.getErrorCode())
+                        .append(" : ").append(cur.getMessage());
+                cur = cur.getNextException();
+                depth++;
+            }
+        } else {
+            sb.append("[ERROR] sebep: ").append(e.getClass().getSimpleName()).append(" : ").append(e.getMessage());
+        }
+
+        sb.append("\n[DATA] DB'ye kaydedilemeyen ").append(failed.size())
+                .append(" satirin tam verisi (DB'deki karsiligiyla elle kiyaslamak icin - bkz. compare-solution-checkpoint.md):");
+        int i = 1;
+        for (Pending pending : failed) {
+            appendPendingDetail(sb, i++, failed.size(), pending, "kaydedilemeyen satir");
+        }
+        LOG.error(sb.toString(), e);
+    }
+
+    private void appendPendingDetail(StringBuilder sb, int index, int total, Pending pending, String label) {
+        Algo2Snapshot s = pending.snap();
+        sb.append("\n  ---- ").append(label).append(' ').append(index).append('/').append(total).append(" ----");
+        sb.append("\n    solution_index   = ").append(pending.solutionIndex());
+        sb.append("\n    grid_map_id      = ").append(gridMapId).append("  (").append(s.rowSize()).append('x').append(s.colSize()).append(')');
+        sb.append("\n    algorithm_id     = ").append(algorithmId);
+        sb.append("\n    interval_size    = ").append(interval);
+        sb.append("\n    step             = ").append(s.step());
+        sb.append("\n    path_len         = ").append(s.step());
+        sb.append("\n    dir_count        = ").append(s.dirCount());
+        sb.append("\n    path             = ").append(decodePath(s));
+        sb.append("\n    visited_dirs     = ").append(toHex(s.visitedDirs())).append("  (").append(countSetBits(s.visitedDirs())).append(" bit set / ").append(s.step() * s.dirCount()).append(" toplam)");
+        sb.append("\n    exit_situation   = ").append(s.exitSituation());
+        sb.append("\n    one_way_list     = ").append(decodeOneWayList(s.oneWayList()));
+        sb.append("\n    round_counter    = ").append(s.roundCounter()).append("  (overlong=").append(s.roundCounterOverlong()).append(')');
+        sb.append("\n    total_solved     = ").append(s.totalSolved()).append("  (overlong=").append(s.totalSolvedOverlong()).append(")  [supheli - unique constraint'e DAHIL DEGIL]");
+        sb.append("\n    total_back_steps = ").append(s.totalBackStep());
+        sb.append("\n    dummy_back_steps = ").append(s.dummyBackMove());
+        sb.append("\n    locked_back_lose = ").append(s.lockedBackLose());
+    }
+
+    /** path[k] = (k+1). adimin hucre indeksi (x*colSize+y) -> okunabilir (x,y) dizisi. */
+    private static String decodePath(Algo2Snapshot s) {
+        byte[] path = s.path();
+        int cols = s.colSize();
+        StringBuilder sb = new StringBuilder("[");
+        for (int k = 0; k < s.step() && k < path.length; k++) {
+            int cell = path[k] & 0xFF;
+            if (k > 0) sb.append(',');
+            sb.append('(').append(cell / cols).append(',').append(cell % cols).append(')');
+        }
+        return sb.append(']').toString();
+    }
+
+    /** packOneWayList formati: count:int, sonra her navigasyon icin step/oneWayValue/compulsoryDirId/exitLocatedHere. */
+    private static String decodeOneWayList(byte[] raw) {
+        ByteBuffer buf = ByteBuffer.wrap(raw);
+        int count = buf.getInt();
+        StringBuilder sb = new StringBuilder("count=").append(count);
+        for (int i = 0; i < count; i++) {
+            int step = buf.getInt();
+            int oneWayValue = buf.getInt();
+            int compulsoryDirId = buf.getInt();
+            byte exitLocatedHere = buf.get();
+            sb.append(" | [step=").append(step)
+                    .append(" oneWayValue=").append(oneWayValue)
+                    .append(" compulsoryDirId=").append(compulsoryDirId)
+                    .append(" exitLocatedHere=").append(exitLocatedHere).append(']');
+        }
+        return sb.toString();
+    }
+
+    private static String toHex(byte[] b) {
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte x : b) sb.append(String.format("%02x", x));
+        return sb.toString();
+    }
+
+    private static int countSetBits(byte[] b) {
+        int n = 0;
+        for (byte x : b) n += Integer.bitCount(x & 0xFF);
+        return n;
     }
 
     private void bind(PreparedStatement ps, Pending pending) throws SQLException {
@@ -201,7 +357,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     }
 
     private static void logWarn(String msg) {
-        System.err.println("[checkpoint][WARN] " + msg);
+        LOG.warn(msg);
     }
 
     @Override

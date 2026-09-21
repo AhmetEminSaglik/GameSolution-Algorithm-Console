@@ -91,7 +91,8 @@ ORDER BY c.solution_index;
 
 | kolon | ne |
 |---|---|
-| `checkpoint_id` | UUID, satır kimliği (PK, `gen_random_uuid()`). |
+| `checkpoint_uuid` | UUID, satır kimliği (PK, `gen_random_uuid()`). Eskiden `checkpoint_id` idi (bkz. `06_solving_checkpoint_ids_and_checkpoint_no.sql`). |
+| `checkpoint_no` | `solution_index/interval_size`, hesaplanmış kolon (`GENERATED ALWAYS ... STORED`). Her satır KENDİ `interval_size`'ına göre hesaplanır; ileride interval değişse bile eski satırlar bozulmaz. (Ayrıca eklenen okunabilir int `checkpoint_id` kolonu `07_solving_checkpoint_drop_checkpoint_id.sql` ile geri alındı - ihtiyaç netleşince tekrar değerlendirilecek.) |
 | `solving_run_id` | UUID, bu satırı **hangi çalışma yazdı** (audit). Sorgu anahtarı değil. |
 | `solution_index` | "Bu state `#solution_index`'i yeni üretti." |
 | `grid_map_id` | → `grid_map(id)`. Harita buradan; `row_size`/`col_size` yok. |

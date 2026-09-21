@@ -32,7 +32,7 @@
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
         </dependency>
-        <!-- HikariCP slf4j-api ister. api + nop AYNI surum olmali; yoksa
+        <!-- HikariCP slf4j-api ister. api + binding AYNI surum olmali; yoksa
              "Failed to load StaticLoggerBinder" uyarisi. api'yi transitif
              1.7.x yerine acikca 2.0.13'e sabitle (direct dep transitif'i ezer). -->
         <dependency>
@@ -40,9 +40,13 @@
             <artifactId>slf4j-api</artifactId>
             <version>2.0.13</version>
         </dependency>
+        <!-- slf4j-simple: konsola zaman damgasi + logger (class) adi + seviye basan
+             hazir SLF4J binding'i. Spring yok (core Java), o yuzden logback/log4j2
+             yerine bagimlilik/konfigurasyon dosyasi gerektirmeyen bu tercih edildi.
+             Format Main.main()'de System.setProperty ile ayarlanir. -->
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
+            <artifactId>slf4j-simple</artifactId>
             <version>2.0.13</version>
         </dependency>
 
