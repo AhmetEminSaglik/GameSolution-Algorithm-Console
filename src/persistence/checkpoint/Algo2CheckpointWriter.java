@@ -3,9 +3,10 @@ package persistence.checkpoint;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import game.Game;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import persistence.DbConfig;
 
-import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -44,6 +45,8 @@ import java.util.UUID;
  * ve {@code square_total_solved} tamamen kaldirildi (bkz. proje notlari).
  */
 public final class Algo2CheckpointWriter implements CheckpointRecorder {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Algo2CheckpointWriter.class);
 
     private static final String INSERT = """
             INSERT INTO solving_checkpoint
@@ -215,13 +218,15 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         if (skipped.isEmpty()) {
             return;
         }
-        System.out.println("[checkpoint][SKIP] " + skipped.size()
-                + " satir DB'de TAM AYNI STATE ile zaten vardi (ON CONFLICT DO NOTHING) - "
-                + "deterministik kiyaslama icin tam veri:");
+        StringBuilder sb = new StringBuilder();
+        sb.append("[SKIP] ").append(skipped.size())
+                .append(" satir DB'de TAM AYNI STATE ile zaten vardi (ON CONFLICT DO NOTHING) - ")
+                .append("deterministik kiyaslama icin tam veri:");
         int i = 1;
         for (Pending pending : skipped) {
-            printPendingDetail(i++, skipped.size(), pending, System.out, "zaten var - atlandi");
+            appendPendingDetail(sb, i++, skipped.size(), pending, "zaten var - atlandi");
         }
+        LOG.info(sb.toString());
     }
 
     /**
@@ -234,48 +239,51 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
      * total_solved, total_back_steps, dummy_back_steps, locked_back_lose).
      */
     private void printFailureDiagnostics(Exception e, List<Pending> failed) {
+        StringBuilder sb = new StringBuilder();
         if (e instanceof SQLException top) {
-            System.err.println("[checkpoint][ERROR] sebep zinciri (SQLState / ErrorCode - gercek Postgres nedeni genelde son halkada):");
+            sb.append("[ERROR] sebep zinciri (SQLState / ErrorCode - gercek Postgres nedeni genelde son halkada):");
             SQLException cur = top;
             int depth = 0;
             while (cur != null) {
-                System.err.println("[checkpoint][ERROR]   " + depth + ") " + cur.getClass().getSimpleName()
-                        + " SQLState=" + cur.getSQLState() + " ErrorCode=" + cur.getErrorCode()
-                        + " : " + cur.getMessage());
+                sb.append("\n  ").append(depth).append(") ").append(cur.getClass().getSimpleName())
+                        .append(" SQLState=").append(cur.getSQLState())
+                        .append(" ErrorCode=").append(cur.getErrorCode())
+                        .append(" : ").append(cur.getMessage());
                 cur = cur.getNextException();
                 depth++;
             }
         } else {
-            System.err.println("[checkpoint][ERROR] sebep: " + e.getClass().getSimpleName() + " : " + e.getMessage());
+            sb.append("[ERROR] sebep: ").append(e.getClass().getSimpleName()).append(" : ").append(e.getMessage());
         }
 
-        System.err.println("[checkpoint][DATA] DB'ye kaydedilemeyen " + failed.size()
-                + " satirin tam verisi (DB'deki karsiligiyla elle kiyaslamak icin - bkz. compare-solution-checkpoint.md):");
+        sb.append("\n[DATA] DB'ye kaydedilemeyen ").append(failed.size())
+                .append(" satirin tam verisi (DB'deki karsiligiyla elle kiyaslamak icin - bkz. compare-solution-checkpoint.md):");
         int i = 1;
         for (Pending pending : failed) {
-            printPendingDetail(i++, failed.size(), pending, System.err, "kaydedilemeyen satir");
+            appendPendingDetail(sb, i++, failed.size(), pending, "kaydedilemeyen satir");
         }
+        LOG.error(sb.toString(), e);
     }
 
-    private void printPendingDetail(int index, int total, Pending pending, PrintStream out, String label) {
+    private void appendPendingDetail(StringBuilder sb, int index, int total, Pending pending, String label) {
         Algo2Snapshot s = pending.snap();
-        out.println("  ---- " + label + " " + index + "/" + total + " ----");
-        out.println("    solution_index   = " + pending.solutionIndex());
-        out.println("    grid_map_id      = " + gridMapId + "  (" + s.rowSize() + "x" + s.colSize() + ")");
-        out.println("    algorithm_id     = " + algorithmId);
-        out.println("    interval_size    = " + interval);
-        out.println("    step             = " + s.step());
-        out.println("    path_len         = " + s.step());
-        out.println("    dir_count        = " + s.dirCount());
-        out.println("    path             = " + decodePath(s));
-        out.println("    visited_dirs     = " + toHex(s.visitedDirs()) + "  (" + countSetBits(s.visitedDirs()) + " bit set / " + (s.step() * s.dirCount()) + " toplam)");
-        out.println("    exit_situation   = " + s.exitSituation());
-        out.println("    one_way_list     = " + decodeOneWayList(s.oneWayList()));
-        out.println("    round_counter    = " + s.roundCounter() + "  (overlong=" + s.roundCounterOverlong() + ")");
-        out.println("    total_solved     = " + s.totalSolved() + "  (overlong=" + s.totalSolvedOverlong() + ")  [supheli - unique constraint'e DAHIL DEGIL]");
-        out.println("    total_back_steps = " + s.totalBackStep());
-        out.println("    dummy_back_steps = " + s.dummyBackMove());
-        out.println("    locked_back_lose = " + s.lockedBackLose());
+        sb.append("\n  ---- ").append(label).append(' ').append(index).append('/').append(total).append(" ----");
+        sb.append("\n    solution_index   = ").append(pending.solutionIndex());
+        sb.append("\n    grid_map_id      = ").append(gridMapId).append("  (").append(s.rowSize()).append('x').append(s.colSize()).append(')');
+        sb.append("\n    algorithm_id     = ").append(algorithmId);
+        sb.append("\n    interval_size    = ").append(interval);
+        sb.append("\n    step             = ").append(s.step());
+        sb.append("\n    path_len         = ").append(s.step());
+        sb.append("\n    dir_count        = ").append(s.dirCount());
+        sb.append("\n    path             = ").append(decodePath(s));
+        sb.append("\n    visited_dirs     = ").append(toHex(s.visitedDirs())).append("  (").append(countSetBits(s.visitedDirs())).append(" bit set / ").append(s.step() * s.dirCount()).append(" toplam)");
+        sb.append("\n    exit_situation   = ").append(s.exitSituation());
+        sb.append("\n    one_way_list     = ").append(decodeOneWayList(s.oneWayList()));
+        sb.append("\n    round_counter    = ").append(s.roundCounter()).append("  (overlong=").append(s.roundCounterOverlong()).append(')');
+        sb.append("\n    total_solved     = ").append(s.totalSolved()).append("  (overlong=").append(s.totalSolvedOverlong()).append(")  [supheli - unique constraint'e DAHIL DEGIL]");
+        sb.append("\n    total_back_steps = ").append(s.totalBackStep());
+        sb.append("\n    dummy_back_steps = ").append(s.dummyBackMove());
+        sb.append("\n    locked_back_lose = ").append(s.lockedBackLose());
     }
 
     /** path[k] = (k+1). adimin hucre indeksi (x*colSize+y) -> okunabilir (x,y) dizisi. */
@@ -349,7 +357,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     }
 
     private static void logWarn(String msg) {
-        System.err.println("[checkpoint][WARN] " + msg);
+        LOG.warn(msg);
     }
 
     @Override

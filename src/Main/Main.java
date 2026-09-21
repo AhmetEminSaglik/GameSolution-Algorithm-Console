@@ -47,6 +47,7 @@ public class Main { // 7x7 eksikler: 5078-7072
      * state kalmaz, calisma aralarinda cakisma olmaz. Girdi biterse (EOF) sessizce cikar.
      */
     public static void main(String[] args) throws InterruptedException {
+        configureLogging();
         while (true) {
             try {
                 runOnce(args);
@@ -57,6 +58,19 @@ public class Main { // 7x7 eksikler: 5078-7072
             System.out.println();
             System.out.println("==================== YENI CALISMA ====================");
         }
+    }
+
+    /**
+     * slf4j-simple'in konsol formatini ayarlar (zaman damgasi + kisa class adi + seviye).
+     * Herhangi bir Logger ilk kez alinmadan ONCE calismali (SimpleLogger ayarlari lazy
+     * okur) - main()'in ilk satiri olmasi bunu garantiler.
+     */
+    private static void configureLogging() {
+        System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
+        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss.SSS");
+        System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+        System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
     }
 
     private static void runOnce(String[] args) throws InterruptedException {
