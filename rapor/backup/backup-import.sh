@@ -73,20 +73,31 @@ if [ ! -e "${FILES[0]}" ]; then
   exit 1
 fi
 
+# Dosya -> tablo eslemesi. CSV'lerde grid bazli ayrilmis dosyalar
+# (<tablo>_<R>x<C>.csv, orn. solving_checkpoint_7x7.csv) ayni tabloya gider;
+# ama path_explorer_solution_6x6 gibi adi zaten NxM ile biten gercek tablolar
+# once birebir isimle aranir. TABLE_FILES[tablo] = o tabloya ait dosyalar.
+declare -A TABLE_FILES=()
 TABLES=()
 for f in "${FILES[@]}"; do
   base="$(basename "$f")"
   if [ "$SRC" = "csv" ]; then
-    TABLES+=("${base%.csv}")
+    t="${base%.csv}"
+    if [ -z "$(psql_c "SELECT 1 FROM information_schema.tables WHERE table_name='${t}';")" ] \
+       && [[ "$t" =~ ^(.+)_[0-9]+x[0-9]+$ ]]; then
+      t="${BASH_REMATCH[1]}"
+    fi
   else
-    TABLES+=("${base%_insert.txt}")
+    t="${base%_insert.txt}"
   fi
+  [ -z "${TABLE_FILES[$t]+x}" ] && TABLES+=("$t")
+  TABLE_FILES[$t]+="${f}"$'\n'
 done
 
 echo ""
 echo "Su tablolar import edilecek (${SRC}):"
 for t in "${TABLES[@]}"; do
-  echo "  - $t"
+  echo "  - $t  <- $(echo -n "${TABLE_FILES[$t]}" | xargs -d '\n' -n1 basename | paste -sd, -)"
 done
 
 echo ""
@@ -151,9 +162,12 @@ docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c "TRUNCATE TABLE ${JOI
 
 for t in "${ORDERED_TABLES[@]}"; do
   if [ "$SRC" = "csv" ]; then
-    echo "[import] ${t}: CSV'den yukleniyor..."
-    docker exec -i "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-      "COPY ${t} FROM STDIN WITH CSV HEADER" < "${BACKUP_DIR}/csv/${t}.csv"
+    while read -r f; do
+      [ -z "$f" ] && continue
+      echo "[import] ${t}: $(basename "$f") yukleniyor..."
+      docker exec -i "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
+        "COPY ${t} FROM STDIN WITH CSV HEADER" < "$f"
+    done <<< "${TABLE_FILES[$t]}"
   else
     echo "[import] ${t}: SQL-insert'ten yukleniyor..."
     docker exec -i "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" < "${BACKUP_DIR}/sql-insert/${t}_insert.txt" > /dev/null

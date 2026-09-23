@@ -1,0 +1,117 @@
+Tahmini 7x7 Toplam Cozum Sayisi (EKSTRAPOLASYON - GERCEK DEGIL)
+================================================================
+Tarih: 2026-09-22
+Kaynak: unique-area-calculation.md carpan tablosu + rapor/FileTotalScoreCount/
+        Solution-2-5x5, Solution-2-6x6 (TAM), Solution-2-7x7 (KISMI, 4/10 wedge)
+
+ONEMLI: Bu dosyadaki 7x7 toplami bir TAHMINDIR, olcum degildir. Sadece 2 gercek
+anchor noktasi (5x5, 6x6) ve 7x7'nin 4/10 tamamlanmis wedge hucresi var. Kalan
+6 hucre buyume orantisiyla TAHMIN edildi - koseli parantez ile isaretli olanlar
+gercek DEGIL.
+
+----------------------------------------------------------------
+1) BUYUME MODELI
+
+Bilinen toplamlar:
+  5x5 (25 kare) = 12.400
+  6x6 (36 kare) = 8.250.272
+
+Model: Toplam(kare_sayisi) = Toplam(25) x buyume^(kare_sayisi-25)  [kare basina
+sabit ustel buyume varsayimi - "ivmeli artis" hipotezi]
+
+buyume = (Toplam(36) / Toplam(25)) ^ (1/(36-25))
+       = (8.250.272 / 12.400) ^ (1/11)
+       = 665,34 ^ (1/11)
+       = 1,8057   (her +1 kare icin ~1,81x carpan)
+
+7x7 = 49 kare -> ekstrapolasyon:
+  Toplam(49) = Toplam(36) x buyume^(49-36)
+             = 8.250.272 x 1,8057^13
+             = 8.250.272 x ~2169,4
+             = ~17.898.140.000   (~17,9 milyar)
+
+Bu, YUKARIDAN-ASAGI (toplam bazinda) tahmin.
+
+----------------------------------------------------------------
+2) ASAGIDAN-YUKARI CAPRAZ KONTROL (hucre bazinda)
+
+7x7'nin ilk 4 wedge hucresi GERCEK veriyle biliniyor (row y=0 tam):
+  (0,0) = 468.698.008   (GERCEK)
+  (1,0) = 233.127.829   (GERCEK)
+  (2,0) =  30.197.874   (GERCEK)
+  (3,0) =  45.107.348   (GERCEK)
+
+Kalan 6 hucre icin: 6x6'daki esdeger koordinatlarin (1,1)/(2,1)/(2,2) degerine,
+yukaridaki toplam buyume carpani (~2169,4x) uygulanarak TAHMIN uretildi;
+(3,1)/(3,2)/(3,3) icin 6x6'da esdegeri olmadigindan, 7x7'nin KENDI bilinen
+y=0 satirindaki x=2 -> x=3 sicramasi (45.107.348/30.197.874 = 1,494x) ve 5x5'in
+tek-N merkeze yakinsama orani (352/400 = 0,88x) analoji yoluyla ZINCIRLEME
+tahmin edildi - bu ucu ZAYIF/ikinci derece tahmindir, digerlerinden daha az
+guvenilir.
+
+  (1,1) = [~817.600.000]  (TAHMIN: 6x6(1,1)=376.864 x 2169,4)
+  (2,1) = [~388.650.000]  (TAHMIN: 6x6(2,1)=179.154 x 2169,4)
+  (3,1) = [~580.850.000]  (TAHMIN: (2,1)tahmin x 1,494 - zayif)
+  (2,2) = [~220.490.000]  (TAHMIN: 6x6(2,2)=101.642 x 2169,4)
+  (3,2) = [~329.500.000]  (TAHMIN: (2,2)tahmin x 1,494 - zayif)
+  (3,3) = [~290.000.000]  (TAHMIN: (3,2)tahmin x 0,88 - zayif, MERKEZ hucre)
+
+Carpanlarla (unique-area-calculation.md, 7x7 half=3) agirlikli toplam:
+
+  (0,0) x4  = 1.874.792.032
+  (1,0) x8  = 1.865.022.632
+  (2,0) x8  =   241.582.992
+  (3,0) x4  =   180.429.392
+  (1,1) x4  = 3.270.400.000
+  (2,1) x8  = 3.109.200.000
+  (3,1) x4  = 2.323.400.000
+  (2,2) x4  =   881.960.000
+  (3,2) x4  = 1.318.000.000
+  (3,3) x1  =   290.000.000
+  ------------------------------
+  TOPLAM   = ~15.354.787.048   (~15,4 milyar)
+
+----------------------------------------------------------------
+3) SONUC: IKI YONTEM DE AYNI BUYUKLUK MERTEBESINDE
+
+  Yukaridan-asagi (toplam ekstrapolasyonu) : ~17,9 milyar
+  Asagidan-yukari (hucre bazinda tahmin)   : ~15,4 milyar
+
+  TAHMINI 7x7 TOPLAM ARALIGI: ~15 - 18 milyar cozum
+
+Bu iki bagimsiz yontemin ayni buyuklukteki (10 milyar mertebesi) sonuca
+varmasi cesaret verici, ama ikisi de sadece 2-3 gercek anchor noktasina
+dayaniyor - kesin deger degil. Eski proje notundaki (PERSISTENCE.md) "7x7 ~2
+milyar" tahmini bundan ~8-9 kat KUCUK kalmis - o tahmin bu analizden ONCE,
+gercek veri yokken yapilmis kaba bir tahminmis.
+
+Gercek ilerleme (bu yazi itibariyla, checkpoint DB): total_solved=805.100.000
+- bu, tahmini toplamin (15-18 milyar) sadece ~%4-5'i - yani 7x7 koşusu
+  ekstrapolasyona gore hala cok erken asamada.
+
+----------------------------------------------------------------
+4) ORAN TABLOSU (x = (0,0) hucresi, digerleri x'in kati)
+
+  GERCEK veri (dosyadan, kesin):
+    (0,0) = 468.698.008         -> 1,00x
+    (1,0) = 233.127.829         -> 0,50x
+    (2,0) =  30.197.874         -> 0,06x
+    (3,0) =  45.107.348         -> 0,10x
+
+  TAHMIN (6x6 analojisi x toplam buyume carpani, orta guven):
+    (1,1) = [~817.600.000]      -> [~1,74x]
+    (2,1) = [~388.650.000]      -> [~0,83x]
+    (2,2) = [~220.490.000]      -> [~0,47x]
+
+  TAHMIN (zincirleme oruntu benzetmesi, zayif guven):
+    (3,1) = [~580.850.000]      -> [~1,24x]
+    (3,2) = [~329.500.000]      -> [~0,70x]
+    (3,3) = [~290.000.000]      -> [~0,62x]  (MERKEZ hucre)
+
+----------------------------------------------------------------
+NOT: (1,0) gercek verisi 6x6/5x5'teki "kosegen yakin" hucreye gore ORANSAL
+olarak beklenenden COK dusuk cikti (0,50x - 5x5'te 0,99x, 6x6'da 0,94x idi).
+Yani 7x7'de koseden 1 adim ic-komsuya gecince oran BUYUK dusus gosteriyor -
+bu da hucre-bazli buyume oraninin grid boyutuna gore SABIT olmadigini,
+dolayisiyla yukaridaki TAHMIN satirlarinin (esp. (3,1)/(3,2)/(3,3)) hatasinin
+büyük olabilecegini gosteriyor. Gercek sayi ancak koşu tamamlaninca bilinecek.
