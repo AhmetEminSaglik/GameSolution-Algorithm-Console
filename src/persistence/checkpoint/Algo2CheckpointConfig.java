@@ -88,7 +88,8 @@ public final class Algo2CheckpointConfig {
             return null;
         }
         try {
-            return Integer.parseInt(s.trim());
+            // 1_000_000 gibi okunabilir yazima izin ver (Integer.parseInt '_' kabul etmez).
+            return Integer.parseInt(s.trim().replace("_", ""));
         } catch (NumberFormatException e) {
             return null;
         }

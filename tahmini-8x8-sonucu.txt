@@ -1,0 +1,123 @@
+Tahmini 8x8 Toplam Cozum Sayisi (EKSTRAPOLASYON - GERCEK DEGIL)
+================================================================
+Tarih: 2026-09-24
+Kaynak: unique-area-calculation.md carpan tablosu + rapor/FileTotalScoreCount/
+        Solution-2-5x5, Solution-2-6x6, Solution-2-7x7 (UCU DE TAM)
+
+ONEMLI: Bu dosyadaki 8x8 toplami bir TAHMINDIR, olcum degildir. 8x8 icin henuz
+hic gercek veri yok (ne FileTotalScoreCount dosyasi ne checkpoint). Tum hucreler
+koseli parantezle isaretli = TAHMIN.
+
+----------------------------------------------------------------
+0) BILINEN TOPLAMLARIN DOGRULAMASI (wedge x carpan)
+
+  5x5 (25 kare) =            12.400   (bilinen gercek ile birebir ✓)
+  6x6 (36 kare) =         8.250.272   (DB son solution_index ile birebir ✓)
+  7x7 (49 kare) =     7.322.035.424   (dosyadaki 10 wedge hucresinden)
+
+  Not: 7x7 wedge toplami (1.378.848.333) DB'deki son solution_index
+  (1.605.783.214) ile eslesmiyor; kullanicinin istegiyle dosyadaki degerler
+  esas alindi.
+
+----------------------------------------------------------------
+1) BUYUME MODELI (YUKARIDAN-ASAGI, 3 noktali regresyon)
+
+Model: Toplam(N) = A x buyume^(N²)   ->   ln(Toplam) = ln(A) + N² x ln(buyume)
+5x5, 6x6, 7x7'nin UCU ile en kucuk kareler fit:
+
+  buyume = 1,7380   (her +1 kare icin ~1,74x carpan)
+  A      = 0,014326
+
+  Fit kalitesi (model / gercek):
+    5x5 : 14.370        / 12.400        (model %16 fazla)
+    6x6 : 6.283.000     / 8.250.272     (model %24 eksik)
+    7x7 : 8.296.000.000 / 7.322.035.424 (model %13 fazla)
+
+8x8 = 64 kare:
+  Toplam(64) = 0,014326 x 1,7380^64
+             = ~33.091.000.000.000   (~33,1 TRILYON)
+  7x7 -> 8x8 carpani: ~4.519x
+
+Iki noktali gecis egimleri (kare basina buyume):
+  5x5 -> 6x6 : 1,8057
+  6x6 -> 7x7 : 1,6857    <- egim YAVASLIYOR
+
+Alternatif senaryolar (ayni veri, farkli varsayim):
+  a) son gecisin egimi (1,6857) aynen devam  : ~18,5 trilyon
+  b) egimdeki yavaslama lineer devam (1,5558) : ~5,5 trilyon
+  c) 3 noktali regresyon (ana tahmin)          : ~33,1 trilyon
+
+----------------------------------------------------------------
+2) ASAGIDAN-YUKARI CAPRAZ KONTROL (hucre bazinda)
+
+8x8 wedge'i (half=3) 7x7 ile ayni 10 koordinat. Carpanlar FARKLI (N cift):
+(3,0)/(3,1)/(3,2) 7x7'de x4 iken 8x8'de x8; (3,3) x1 iken x4.
+
+- 5x5/6x6/7x7'nin ucunde de olan 6 hucre ((0,0),(1,0),(2,0),(1,1),(2,1),(2,2)):
+  her hucre KENDI 3 noktasiyla ayri regresyon -> 64 kareye ekstrapolasyon
+  (orta guven - toplam modelinden bagimsiz).
+- Sadece 7x7'de olan 4 hucre ((3,0),(3,1),(3,2),(3,3)): 7x7 degeri x toplam
+  carpani (4.519x) (zayif guven - 7x7'de bunlar merkez eksen/merkez, 8x8'de
+  merkeze komsu 2x2 blok civari; geometrik rolleri ayni degil).
+
+  Hucre  Carp  Tahmin                     Yontem
+  (0,0)  x4    [~2.410.868.000.000]       hucre-regresyon, buyume 1,766
+  (1,0)  x8    [~  835.791.000.000]       hucre-regresyon, buyume 1,715
+  (2,0)  x8    [~   34.035.000.000]       hucre-regresyon, buyume 1,573
+  (3,0)  x8    [~  203.857.000.000]       7x7 x 4.519 (zayif)
+  (1,1)  x4    [~  387.091.000.000]       hucre-regresyon, buyume 1,682
+  (2,1)  x8    [~1.253.047.000.000]       hucre-regresyon, buyume 1,753
+  (3,1)  x8    [~   28.967.000.000]       7x7 x 4.519 (zayif)
+  (2,2)  x4    [~   13.158.000.000]       hucre-regresyon, buyume 1,552
+  (3,2)  x8    [~  267.721.000.000]       7x7 x 4.519 (zayif)
+  (3,3)  x4    [~  565.727.000.000]       7x7 x 4.519 (zayif)
+  -------------------------------------
+  TOPLAM (Σ tahmin x carpan) = ~34.495.000.000.000   (~34,5 TRILYON)
+
+----------------------------------------------------------------
+3) SONUC
+
+  Yukaridan-asagi (3 noktali toplam regresyonu) : ~33,1 trilyon
+  Asagidan-yukari (hucre bazinda regresyon)     : ~34,5 trilyon
+
+  Iki yontem ayni mertebede (fark ~%4). Ancak buyume egimi 5->6->7 boyunca
+  yavasladigi icin (1,806 -> 1,686), regresyon buyuk ihtimalle UST sinira
+  yakin. Makul aralik:
+
+  TAHMINI 8x8 TOPLAM ARALIGI: ~5 - 35 trilyon  (merkez tahmin ~18-33 trilyon)
+  8x8 wedge (10 kare, kosulacak kisim) = toplam / ~5,7  ->  ~1 - 6 trilyon cozum
+  (asagidan-yukari tabloda wedge toplami ~6,0 trilyon)
+
+  Sure kabasi: 7x7 wedge'i (~1,4-1,6 milyar cozum) ~8 gunde bitti
+  (2026-09-16 -> 09-24); 8x8 wedge'i bunun ~600-4.000 kati -> ayni hizla
+  YILLAR mertebesi.
+
+----------------------------------------------------------------
+4) ORAN TABLOSU (x = (0,0) hucresi, digerleri x'in kati)
+
+  TAHMIN (hucre regresyonu, orta guven):
+    (0,0) -> 1,00x
+    (1,0) -> [~0,35x]
+    (2,0) -> [~0,01x]
+    (1,1) -> [~0,16x]
+    (2,1) -> [~0,52x]
+    (2,2) -> [~0,01x]
+
+  TAHMIN (7x7 x toplam carpani, zayif guven):
+    (3,0) -> [~0,08x]
+    (3,1) -> [~0,01x]
+    (3,2) -> [~0,11x]
+    (3,3) -> [~0,23x]
+
+----------------------------------------------------------------
+UYARI: Hucre bazinda buyume orani grid boyutuna gore SABIT DEGIL - 5x5'te
+hucreler birbirine cok yakin (352-552), 7x7'de 6,4 milyon ile 468 milyon
+arasinda ~70 kat fark var. Hucre-regresyonu sadece 3 noktaya dayaniyor ve
+(2,0)/(2,2) gibi hucreler 5x5'te merkez eksen/merkezdi, 8x8'de degil. Bu
+yuzden hucre tahminleri kaba; toplam icin mertebe (10 trilyon civari) daha
+anlamli. Gercek sayi ancak 8x8 kosusu ilerledikce (FileTotalScoreCount'a
+ilk hucreler dustukce) netlesir - ilk hucre (0,0) bitince bu dosyayi onunla
+guncelle.
+
+Eski notlar (PERSISTENCE.md, todo-checklist.md) "7x7 ~2 milyar" diyor; gercek
+7x7 toplami bunun ~3,7 kati (7,3 milyar).
