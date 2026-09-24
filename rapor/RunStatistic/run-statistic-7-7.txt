@@ -180,3 +180,17 @@ Total Dummy Back Step)  : 13_013_278
 
 ----------------------------------------
 
+Map: 7-7
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Checkpoint Araligindan Devam
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 1_605_783_214
+Elapsed time : 16:16:36:631
+Total Back Step : 461_094_281_339
+Total Step : 922_188_562_687
+Total Dummy Back Step)  : 85_325_440_706
+
+----------------------------------------
+
