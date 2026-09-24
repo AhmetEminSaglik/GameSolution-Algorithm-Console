@@ -100,6 +100,14 @@ while read -r T; do
         > "$OUT_DIR/csv/${T}_${GSIZE}.csv"
       echo "  - ${T}_${GSIZE}.csv"
     done <<< "$GRIDS"
+    # grid_map_id'si bos (NULL) satirlar hicbir grid dosyasina girmez -> <tablo>.csv
+    # (orn. solver_run'daki eski kayitlar; yoksa CSV yedeginden sessizce dusuyorlar).
+    if [ "$(psql_c "SELECT EXISTS (SELECT 1 FROM ${T} WHERE grid_map_id IS NULL);")" = "t" ]; then
+      docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
+        "COPY (SELECT t.* FROM ${FROM} WHERE t.grid_map_id IS NULL) TO STDOUT WITH CSV HEADER" \
+        > "$OUT_DIR/csv/${T}.csv"
+      echo "  - ${T}.csv (grid_map_id bos)"
+    fi
   else
     docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
       "COPY (SELECT t.* FROM ${FROM}) TO STDOUT WITH CSV HEADER" \
