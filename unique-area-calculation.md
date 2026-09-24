@@ -60,20 +60,54 @@ Kontrol: 4+8+8+4+8+4 = **36** = 6²
 
 ## 7x7 (half = 3)
 
-| # | (x,y) | Carpan | Aciklama |
-|---|-------|--------|----------|
-| 1  | (0,0) | **x4** | kosegen (kose) |
-| 2  | (1,0) | **x8** | genel konum |
-| 3  | (2,0) | **x8** | genel konum |
-| 4  | (3,0) | **x4** | x=half |
-| 5  | (1,1) | **x4** | kosegen |
-| 6  | (2,1) | **x8** | genel konum |
-| 7  | (3,1) | **x4** | x=half |
-| 8  | (2,2) | **x4** | kosegen |
-| 9  | (3,2) | **x4** | x=half |
-| 10 | (3,3) | **x1** | TAM MERKEZ |
+Harita: ayni harfli kareler ayni sonucu verir (bir harfin tahtada kac kez
+gectigi = o harfin carpani). `(0,0)` sol-alt, x saga, y yukari.
+
+```
+y=6 │ A  B  C  D  C  B  A
+y=5 │ B  E  F  G  F  E  B
+y=4 │ C  F  H  I  H  F  C
+y=3 │ D  G  I  J  I  G  D
+y=2 │ C  F  H  I  H  F  C
+y=1 │ B  E  F  G  F  E  B
+y=0 │ A  B  C  D  C  B  A
+    └─────────────────────
+      0  1  2  3  4  5  6   (x)
+```
+
+| # | Harf | (x,y) | Carpan | Aciklama |
+|---|------|-------|--------|----------|
+| 1  | A | (0,0) | **x4** | kosegen (kose) |
+| 2  | B | (1,0) | **x8** | genel konum |
+| 3  | C | (2,0) | **x8** | genel konum |
+| 4  | D | (3,0) | **x4** | x=half |
+| 5  | E | (1,1) | **x4** | kosegen |
+| 6  | F | (2,1) | **x8** | genel konum |
+| 7  | G | (3,1) | **x4** | x=half |
+| 8  | H | (2,2) | **x4** | kosegen |
+| 9  | I | (3,2) | **x4** | x=half |
+| 10 | J | (3,3) | **x1** | TAM MERKEZ |
 
 Kontrol: 4+8+8+4+4+8+4+4+4+1 = **49** = 7²
+
+**Gercek sonuc (7x7, Algoritma 2):**
+kaynak `rapor/FileTotalScoreCount/Solution-2-7x7_EverySingleSquareTotalValue.txt`
+
+```
+A (0,0) = 468_698_008 × 4 = 1_874_792_032
+B (1,0) = 233_127_829 × 8 = 1_865_022_632
+C (2,0) =  30_197_874 × 8 =   241_582_992
+D (3,0) =  45_107_348 × 4 =   180_429_392
+E (1,1) = 114_606_142 × 4 =   458_424_568
+F (2,1) = 282_218_332 × 8 = 2_257_746_656
+G (3,1) =   6_409_586 × 4 =    25_638_344
+H (2,2) =  14_066_652 × 4 =    56_266_608
+I (3,2) =  59_238_546 × 4 =   236_954_184
+J (3,3) = 125_178_016 × 1 =   125_178_016
+-------------------------------------------
+Wedge toplami (10 kare)  = 1_378_848_333
+7x7 TOPLAM               = 7_322_035_424
+```
 
 ## 8x8 (half = 3, N cift → merkez hucre yok)
 
