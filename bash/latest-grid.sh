@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
-# En guncel checkpoint'i (solving_checkpoint, path_len'e gore) DB'den cekip
-# oyun tahtasi gibi |NN| formatinda cizer. Kullanim:
-#   bash bash/latest-grid.sh          -> varsayilan 7x7 (path_len=49)
-#   bash bash/latest-grid.sh 36       -> 6x6 (path_len=36)
-#   bash bash/latest-grid.sh 25       -> 5x5 (path_len=25)
+# En guncel checkpoint'i (solving_checkpoint, secilen grid'de, tam dolu path)
+# DB'den cekip oyun tahtasi gibi |NN| formatinda cizer. Kullanim:
+#   bash bash/latest-grid.sh          -> GRID ortam degiskeni (menu.bat verir), yoksa 7x7
+#   bash bash/latest-grid.sh 6x6      -> 6x6
+#   bash bash/latest-grid.sh 5        -> 5x5
 set -euo pipefail
 
-PATH_LEN="${1:-49}"
+SIZE_IN="$(echo "${1:-${GRID:-7x7}}" | tr 'X' 'x' | tr -d ' \r')"
+if [[ "$SIZE_IN" == *x* ]]; then
+  ROW_SIZE="${SIZE_IN%%x*}"
+  COL_SIZE="${SIZE_IN##*x}"
+else
+  ROW_SIZE="$SIZE_IN"
+  COL_SIZE="$SIZE_IN"
+fi
+PATH_LEN=$((ROW_SIZE * COL_SIZE))
 CONTAINER="${PG_CONTAINER:-dev-postgres}"
 PG_USER="${PG_USER:-pathexplorer}"
 PG_DB="${PG_DB:-pathexplorer}"
+
+FILTER="gm.row_size = ${ROW_SIZE} AND gm.col_size = ${COL_SIZE} AND sc.path_len = ${PATH_LEN}"
 
 QUERY="
 WITH latest AS (
   SELECT sc.solution_index, sc.path, sc.path_len, gm.col_size, gm.row_size
   FROM solving_checkpoint sc JOIN grid_map gm ON gm.id = sc.grid_map_id
-  WHERE sc.path_len = ${PATH_LEN}
+  WHERE ${FILTER}
   ORDER BY sc.solution_index DESC
   LIMIT 1
 ),
@@ -28,20 +38,16 @@ SELECT y,
 FROM cells GROUP BY y ORDER BY y DESC;
 "
 
-INFO=$(docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -c "
-SELECT sc.solution_index, gm.row_size, gm.col_size
+SOLUTION_INDEX=$(docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -c "
+SELECT sc.solution_index
 FROM solving_checkpoint sc JOIN grid_map gm ON gm.id = sc.grid_map_id
-WHERE sc.path_len = ${PATH_LEN}
+WHERE ${FILTER}
 ORDER BY sc.solution_index DESC LIMIT 1;")
 
-if [ -z "$INFO" ]; then
-  echo "[latest-grid] path_len=${PATH_LEN} icin solving_checkpoint'te kayit yok."
+if [ -z "$SOLUTION_INDEX" ]; then
+  echo "[latest-grid] ${ROW_SIZE}x${COL_SIZE} icin solving_checkpoint'te kayit yok."
   exit 1
 fi
-
-SOLUTION_INDEX=$(echo "$INFO" | cut -d'|' -f1)
-ROW_SIZE=$(echo "$INFO" | cut -d'|' -f2)
-COL_SIZE=$(echo "$INFO" | cut -d'|' -f3)
 
 echo "En guncel cozum: solution_index = ${SOLUTION_INDEX}  (${ROW_SIZE}x${COL_SIZE})"
 echo ""
