@@ -75,7 +75,7 @@
 - `backup-import.sh` grid'li CSV dosya adlarini dogru tabloya esliyor.
 - Git'e girmeyenler: `csv/path_explorer_solution_6x6.csv` (~1.1GB), `pgdump/`.
 
-## bash/menu.bat (DB araclari menusu) — COMMITLENMEDI
+## bash/menu.bat (DB araclari menusu)
 - Basliga secili grid yaziliyor (`PathExplorer DB Araclari  7x7`).
 - 4) Grid map degistir → `bash/select-grid.sh`, secim `bash/.selected-grid`'de
   (gitignore'da). Secim yoksa 1/3'e girince BIR KEZ soruluyor.
@@ -86,7 +86,8 @@
   `bash/checkpoint-range-extract.sh`, yeni `bash/select-grid.sh`.
 
 ## Acik isler / sonraki adimlar
-1. menu.bat degisikliklerini kullanici denedikten sonra commit + push.
+1. menu.bat degisiklikleri commitlendi; kullanici gercek konsolda uctan uca
+   deneyecek (ozellikle grid secili degilken 1/3'e girince sorma adimi).
 2. 8x8 (0,0) bitince `tahmini-8x8-sonucu.txt`'yi gercek degerle guncelle
    (`/grid-solution-forecast` skill'i var).
 3. ~3 ay sonra 8x8 checkpoint CSV'sinin git boyutu (100MB) meselesi.
