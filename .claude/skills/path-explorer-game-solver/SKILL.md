@@ -120,6 +120,13 @@ FROM solving_checkpoint WHERE grid_map_id=:g GROUP BY 1 ORDER BY 2;
 - `backup-import.sh` grid'li dosya adlarini tabloya esler (adi zaten NxM ile
   biten gercek tablolar - `path_explorer_solution_6x6` - once birebir aranir).
 - Git disi: `csv/path_explorer_solution_*.csv` (6x6 ~1.1GB), `pgdump/*.dump`.
+- **"Backup'lari commitle" kurali (KESIN, kullanici tekrar soylemek istemiyor):**
+  pgdump/ ve `path_explorer_solution_6x6.csv` ASLA commit'e girmez; genel olarak
+  100 MB (GitHub siniri) ustu hicbir dosya girmez. Commit'ten once stage'deki
+  dosyalarin boyutunu kontrol et (90 MB ustu → cikar + kullaniciya soyle).
+  Geri kalan her sey (csv, sql-insert, script) girer. Soru sorma, direkt yap.
+- Backup kosarken `git status` alinirsa yari yazilmis dosyalar "silinmis"
+  gorunebilir - backup'in bittiginden emin ol (dosya zamanlarina bak).
 
 ## 7. bash/ araclari
 - `menu.bat`: basliga secili grid yazar; 1) en guncel cozum 2) tum checkpoint
