@@ -69,10 +69,15 @@ rapor/backup/pgdump/*.dump
 
 # Claude Code local config + git worktrees: repo'ya asla girmemeli (worktree'yi
 # gitlink olarak stage'lemek repo'yu bozar, bkz. .claude/worktrees/* olayi).
-.claude/
+.claude/*
+# Proje skill'leri repo'da: baska PC'de de ayni bilgiyle devam edilebilsin.
+!.claude/skills/
 
 # rapor/backup/csv altindaki buyuk dump/arsiv dosyalari: GitHub 100MB sinirini
 # katlanarak asiyor (path_explorer_solution_6x6.csv ~1.1GB), asla commit'leme.
 rapor/backup/csv/*.zip
 rapor/backup/csv/*.rar
 rapor/backup/csv/path_explorer_solution_*.csv
+
+# menu.bat secili grid (yerel tercih)
+bash/.selected-grid
