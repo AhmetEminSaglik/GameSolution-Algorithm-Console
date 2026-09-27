@@ -140,7 +140,7 @@ done
 # bagimli (child) tablolar. Once hepsini TEK bir TRUNCATE ile birlikte
 # temizlemek (CASCADE'in ayri ayri, sirasi gelmemis tablolari bosaltip
 # yariminda birakma riskini onler), sonra bu sirayla yeniden doldurmak icin.
-PARENT_ORDER=(grid_map solving_algorithm solver_run)
+PARENT_ORDER=(grid_map solving_algorithm checkpoint_version solver_run)
 ORDERED_TABLES=()
 for p in "${PARENT_ORDER[@]}"; do
   for t in "${EXISTING_TABLES[@]}"; do
@@ -165,8 +165,11 @@ for t in "${ORDERED_TABLES[@]}"; do
     while read -r f; do
       [ -z "$f" ] && continue
       echo "[import] ${t}: $(basename "$f") yukleniyor..."
+      # Kolon listesi CSV basligindan: generated kolon (checkpoint_no) olmayan
+      # yeni yedekler, tablo kolon sirasindan bagimsiz dogru eslesir.
+      HEADER_COLS=$(head -1 "$f" | tr -d '\r')
       docker exec -i "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-        "COPY ${t} FROM STDIN WITH CSV HEADER" < "$f"
+        "COPY ${t} (${HEADER_COLS}) FROM STDIN WITH CSV HEADER" < "$f"
     done <<< "${TABLE_FILES[$t]}"
   else
     echo "[import] ${t}: SQL-insert'ten yukleniyor..."

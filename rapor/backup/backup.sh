@@ -62,6 +62,13 @@ if psql_c "SELECT 1 FROM information_schema.tables WHERE table_name='solving_che
   echo "[backup] solving_checkpoint pin noktasi (run -> solution_index <=): ${PIN_VALUES:-yok}"
 fi
 
+# Tablonun yazilabilir kolonlari ("t.a, t.b, ..."): generated kolonlar (orn.
+# solving_checkpoint.checkpoint_no) HARIC - geri yuklemede onlara yazilamaz, DB
+# kendisi hesaplar. Yeni eklenen kolonlar (checkpoint_version vb.) otomatik gelir.
+col_list() {
+  psql_c "SELECT string_agg('t.' || quote_ident(attname), ', ' ORDER BY attnum) FROM pg_attribute WHERE attrelid = 'public.$1'::regclass AND attnum > 0 AND NOT attisdropped AND attgenerated = '';"
+}
+
 # Tablo icin satir secen FROM ifadesi (solving_checkpoint ise pin'li).
 table_from() {
   if [ "$1" = "solving_checkpoint" ]; then
@@ -89,6 +96,7 @@ rm -f "$OUT_DIR/csv/"*.csv
 while read -r T; do
   [ -z "$T" ] && continue
   FROM=$(table_from "$T")
+  COLS=$(col_list "$T")
   HAS_GRID=$(psql_c "SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='${T}' AND column_name='grid_map_id';")
   if [ -n "$HAS_GRID" ]; then
     # Her grid icin ayri dosya: <tablo>_<row>x<col>.csv
@@ -96,7 +104,7 @@ while read -r T; do
     while read -r GID GSIZE; do
       [ -z "$GID" ] && continue
       docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-        "COPY (SELECT t.* FROM ${FROM} WHERE t.grid_map_id = ${GID}) TO STDOUT WITH CSV HEADER" \
+        "COPY (SELECT ${COLS} FROM ${FROM} WHERE t.grid_map_id = ${GID}) TO STDOUT WITH CSV HEADER" \
         > "$OUT_DIR/csv/${T}_${GSIZE}.csv"
       echo "  - ${T}_${GSIZE}.csv"
     done <<< "$GRIDS"
@@ -104,13 +112,13 @@ while read -r T; do
     # (orn. solver_run'daki eski kayitlar; yoksa CSV yedeginden sessizce dusuyorlar).
     if [ "$(psql_c "SELECT EXISTS (SELECT 1 FROM ${T} WHERE grid_map_id IS NULL);")" = "t" ]; then
       docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-        "COPY (SELECT t.* FROM ${FROM} WHERE t.grid_map_id IS NULL) TO STDOUT WITH CSV HEADER" \
+        "COPY (SELECT ${COLS} FROM ${FROM} WHERE t.grid_map_id IS NULL) TO STDOUT WITH CSV HEADER" \
         > "$OUT_DIR/csv/${T}.csv"
       echo "  - ${T}.csv (grid_map_id bos)"
     fi
   else
     docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-      "COPY (SELECT t.* FROM ${FROM}) TO STDOUT WITH CSV HEADER" \
+      "COPY (SELECT ${COLS} FROM ${FROM}) TO STDOUT WITH CSV HEADER" \
       > "$OUT_DIR/csv/${T}.csv"
     echo "  - ${T}.csv"
   fi
@@ -127,7 +135,7 @@ while read -r T; do
   if [ "$T" = "solving_checkpoint" ]; then
     PIN_TABLE="solving_checkpoint_pin_tmp"
     docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-      "DROP TABLE IF EXISTS ${PIN_TABLE}; CREATE TABLE ${PIN_TABLE} AS SELECT t.* FROM $(table_from solving_checkpoint);" > /dev/null
+      "DROP TABLE IF EXISTS ${PIN_TABLE}; CREATE TABLE ${PIN_TABLE} AS SELECT $(col_list solving_checkpoint) FROM $(table_from solving_checkpoint);" > /dev/null
     docker exec "$CONTAINER" pg_dump -U "$PG_USER" -d "$PG_DB" -t "$PIN_TABLE" --data-only --inserts --column-inserts \
       | sed "s/${PIN_TABLE}/solving_checkpoint/g" \
       | grep -vF '\restrict' | grep -vF '\unrestrict' \
