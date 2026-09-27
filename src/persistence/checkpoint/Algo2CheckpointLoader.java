@@ -72,6 +72,34 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         return out;
     }
 
+    /** Tum checkpoint surumleri + her birinde bu harita/algoritma icin satir sayisi (surum filtresi YOK). */
+    List<CheckpointVersionInfo> versions(int row, int col, int algo) {
+        String sql = """
+                SELECT v.id, v.description, count(c.solution_index)
+                  FROM checkpoint_version v
+                  LEFT JOIN (solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
+                                AND g.row_size = ? AND g.col_size = ?)
+                         ON c.checkpoint_version = v.id AND c.algorithm_id = ?
+                 GROUP BY v.id, v.description
+                 ORDER BY v.id
+                """;
+        List<CheckpointVersionInfo> out = new ArrayList<>();
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, row);
+            ps.setInt(2, col);
+            ps.setInt(3, algo);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new CheckpointVersionInfo(rs.getInt(1), rs.getString(2), rs.getLong(3)));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("checkpoint surumleri alinamadi: " + e.getMessage(), e);
+        }
+        return out;
+    }
+
     long count(int row, int col, int algo) {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(

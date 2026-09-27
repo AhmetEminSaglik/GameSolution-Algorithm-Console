@@ -27,6 +27,7 @@ import persistence.checkpoint.Algo2CheckpointWriter;
 import persistence.checkpoint.Algo2ResumeService;
 import persistence.checkpoint.CheckpointRecorder;
 import persistence.checkpoint.CheckpointSummary;
+import persistence.checkpoint.CheckpointVersionInfo;
 import print.EasylyReadNumber;
 import trace.Trace;
 import utility.ConsoleInput;
@@ -186,6 +187,12 @@ public class Main { // 7x7 eksikler: 5078-7072
      * {@code checkpoint.interval.default}. {@code PATHEXPLORER_CHECKPOINT_INTERVAL} hepsini ezer.
      */
     static CheckpointRecorder createCheckpointRecorder(DbSaveMode mode, String[] args, BaseSolution solution, Game game) {
+        return createCheckpointRecorder(mode, args, solution, game, null);
+    }
+
+    /** {@code checkpointVersion}: null = db.properties checkpoint.version; checkpoint'ten devamda secilen surum. */
+    static CheckpointRecorder createCheckpointRecorder(DbSaveMode mode, String[] args, BaseSolution solution, Game game,
+                                                       Integer checkpointVersion) {
         Algo2CheckpointConfig ccfg = Algo2CheckpointConfig.load();
         boolean on = mode == DbSaveMode.CHECKPOINT || mode == DbSaveMode.ALL
                 || hasArg(args, "--checkpoint") || ccfg.isEnabled();
@@ -199,7 +206,8 @@ public class Main { // 7x7 eksikler: 5078-7072
         }
         DbConfig cfg = DbConfig.load();
         Algo2CheckpointWriter writer = new Algo2CheckpointWriter(
-                cfg, ccfg, game.getModel().getRowCount(), game.getModel().getColCount(), order);
+                cfg, ccfg, game.getModel().getRowCount(), game.getModel().getColCount(), order,
+                checkpointVersion == null ? ccfg.checkpointVersion() : checkpointVersion);
         System.out.println("Checkpoint: ACIK  run=" + writer.solvingRunId() + "  checkpoint_version=" + writer.checkpointVersion()
                 + "  her " + writer.interval() + " cozumde bir  -> " + cfg.url());
         return writer;
@@ -250,12 +258,12 @@ public class Main { // 7x7 eksikler: 5078-7072
      *
      * Bos ise false doner.
      */
-    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col, int interval, boolean missingOnly) {
+    private static boolean printCheckpointList(List<CheckpointSummary> cps, int row, int col, int interval, int checkpointVersion, boolean missingOnly) {
         if (cps.isEmpty()) {
-            System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok.");
+            System.out.println("[checkpoint] " + row + "x" + col + " algo2 checkpoint_version=" + checkpointVersion + " icin kayit yok.");
             return false;
         }
-        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint_version=" + Algo2CheckpointConfig.load().checkpointVersion()
+        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint_version=" + checkpointVersion
                 + ", checkpoint no = solution_index/" + interval
                 + (missingOnly ? ", SADECE EKSIKLER" : "") + "):");
 
@@ -325,9 +333,45 @@ public class Main { // 7x7 eksikler: 5078-7072
                 s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
     }
 
-    private static List<CheckpointSummary> loadCheckpointList(Game game) {
+    /**
+     * Checkpoint'ten devam: hangi checkpoint_version'in kayitlarindan devam edilecek?
+     * Surumler aciklama + bu grid'deki satir sayisiyla listelenir; bos girdi =
+     * db.properties checkpoint.version. Devamda yazilan yeni checkpoint'ler de secilen
+     * surumle yazilir (surumler karismaz). Liste alinamazsa -1.
+     */
+    private static int selectCheckpointVersion(int row, int col) {
+        List<CheckpointVersionInfo> versions;
+        try {
+            versions = Algo2ResumeService.versions(row, col, 2, DbConfig.load());
+        } catch (RuntimeException e) {
+            System.err.println("[checkpoint][WARN] surumler alinamadi: " + e.getMessage());
+            return -1;
+        }
+        int defaultVersion = Algo2CheckpointConfig.load().checkpointVersion();
+        System.out.println("Checkpoint version sec (" + row + "x" + col + "):");
+        for (CheckpointVersionInfo v : versions) {
+            System.out.println("  " + v.id() + ") " + v.rowCount() + " kayit  - " + v.description());
+        }
+        while (true) {
+            System.out.print("Version (bos = " + defaultVersion + "): ");
+            String in = ConsoleInput.readLine().trim();
+            if (in.isEmpty()) {
+                return defaultVersion;
+            }
+            try {
+                int chosen = Integer.parseInt(in);
+                if (versions.stream().anyMatch(v -> v.id() == chosen)) {
+                    return chosen;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+            System.out.println("[checkpoint] gecersiz version: '" + in + "'. Tekrar dene.");
+        }
+    }
+
+    private static List<CheckpointSummary> loadCheckpointList(Game game, int checkpointVersion) {
         return Algo2ResumeService.list(game.getModel().getRowCount(),
-                game.getModel().getColCount(), 2, DbConfig.load());
+                game.getModel().getColCount(), 2, checkpointVersion, DbConfig.load());
     }
 
     /**
@@ -350,18 +394,22 @@ public class Main { // 7x7 eksikler: 5078-7072
         int row = game.getModel().getRowCount();
         int col = game.getModel().getColCount();
         int interval = Algo2CheckpointConfig.load().intervalFor(row, col);
+        int checkpointVersion = selectCheckpointVersion(row, col);
+        if (checkpointVersion < 0) {
+            return;
+        }
 
         while (true) {
             List<CheckpointSummary> cps;
             try {
-                cps = loadCheckpointList(game);
+                cps = loadCheckpointList(game, checkpointVersion);
             } catch (RuntimeException e) {
                 System.err.println("[checkpoint][WARN] liste alinamadi: " + e.getMessage());
                 return;
             }
             System.out.print("Liste:  1) Hepsini goster   2) Sadece eksikleri goster: ");
             boolean missingOnly = ConsoleInput.readLine().trim().equals("2");
-            if (!printCheckpointList(cps, row, col, interval, missingOnly)) {
+            if (!printCheckpointList(cps, row, col, interval, checkpointVersion, missingOnly)) {
                 return;
             }
             System.out.print("Aralik (N-M / N / bos = hepsi, N/M = checkpoint no): ");
@@ -398,7 +446,7 @@ public class Main { // 7x7 eksikler: 5078-7072
             long to = (toNo == null) ? 0 : toNo * interval;   // 0 = sona kadar; to'nun DB'de olmasi SART DEGIL
 
             // #from checkpoint'ini restore et, cozucuyu oradan oynat, #to'da dur.
-            if (!Algo2ResumeService.restoreInto(game, 2, from, DbConfig.load())) {
+            if (!Algo2ResumeService.restoreInto(game, 2, checkpointVersion, from, DbConfig.load())) {
                 System.out.println("[checkpoint] restore basarisiz. Tekrar dene.\n");
                 continue;
             }
@@ -421,7 +469,7 @@ public class Main { // 7x7 eksikler: 5078-7072
             // boslukalar doldurulur; flat/trie secilirse bu araliktaki cozumler de
             // ayrica tek tek kaydedilir.
             SolutionSink sink = createSolutionSink(saveMode);
-            CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, baseSolution, game);
+            CheckpointRecorder checkpoint = createCheckpointRecorder(saveMode, args, baseSolution, game, checkpointVersion);
             PlayGame playGame = new PlayGame(game, sink, checkpoint);
             playGame.resumeFrom(from);
             if (to > 0) {

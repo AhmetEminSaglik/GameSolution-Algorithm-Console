@@ -89,10 +89,16 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     public Algo2CheckpointWriter(DbConfig cfg, Algo2CheckpointConfig ccfg,
                                  int rowSize, int colSize, int algorithmId) {
+        this(cfg, ccfg, rowSize, colSize, algorithmId, ccfg.checkpointVersion());
+    }
+
+    /** {@code checkpointVersion}: checkpoint'ten devam ederken secilen surum (db.properties'i ezer). */
+    public Algo2CheckpointWriter(DbConfig cfg, Algo2CheckpointConfig ccfg,
+                                 int rowSize, int colSize, int algorithmId, int checkpointVersion) {
         this.interval = Math.max(1, ccfg.intervalFor(rowSize, colSize));
         this.flushEvery = Math.max(1, ccfg.flushEvery());
         this.algorithmId = algorithmId;
-        this.checkpointVersion = ccfg.checkpointVersion();
+        this.checkpointVersion = checkpointVersion;
 
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(cfg.url());

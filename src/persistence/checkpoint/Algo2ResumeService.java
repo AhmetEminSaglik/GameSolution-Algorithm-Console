@@ -16,9 +16,16 @@ public final class Algo2ResumeService {
     private Algo2ResumeService() {
     }
 
-    /** Bu harita + algoritma icin tum checkpoint ozetleri (solution_index artan). */
-    public static List<CheckpointSummary> list(int rowSize, int colSize, int algorithmId, DbConfig cfg) {
+    /** Tum checkpoint surumleri + bu harita/algoritma icin her surumdeki satir sayisi. */
+    public static List<CheckpointVersionInfo> versions(int rowSize, int colSize, int algorithmId, DbConfig cfg) {
         try (Algo2CheckpointLoader loader = new Algo2CheckpointLoader(cfg, Algo2CheckpointConfig.load().checkpointVersion())) {
+            return loader.versions(rowSize, colSize, algorithmId);
+        }
+    }
+
+    /** Bu harita + algoritma + checkpoint surumu icin tum checkpoint ozetleri (solution_index artan). */
+    public static List<CheckpointSummary> list(int rowSize, int colSize, int algorithmId, int checkpointVersion, DbConfig cfg) {
+        try (Algo2CheckpointLoader loader = new Algo2CheckpointLoader(cfg, checkpointVersion)) {
             return loader.listSummaries(rowSize, colSize, algorithmId);
         }
     }
@@ -30,10 +37,10 @@ public final class Algo2ResumeService {
      *
      * @return true = restore edildi; false = bulunamadi / hata (loglandi).
      */
-    public static boolean restoreInto(Game game, int algorithmId, long solutionIndex, DbConfig cfg) {
+    public static boolean restoreInto(Game game, int algorithmId, int checkpointVersion, long solutionIndex, DbConfig cfg) {
         int row = game.getModel().getRowCount();
         int col = game.getModel().getColCount();
-        try (Algo2CheckpointLoader loader = new Algo2CheckpointLoader(cfg, Algo2CheckpointConfig.load().checkpointVersion())) {
+        try (Algo2CheckpointLoader loader = new Algo2CheckpointLoader(cfg, checkpointVersion)) {
             Optional<Algo2CheckpointRow> found = loader.exact(row, col, algorithmId, solutionIndex);
             if (found.isEmpty()) {
                 System.out.println("[checkpoint] #" + solutionIndex + " bulunamadi.");
