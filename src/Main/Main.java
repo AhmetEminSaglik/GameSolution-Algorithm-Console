@@ -200,7 +200,7 @@ public class Main { // 7x7 eksikler: 5078-7072
         DbConfig cfg = DbConfig.load();
         Algo2CheckpointWriter writer = new Algo2CheckpointWriter(
                 cfg, ccfg, game.getModel().getRowCount(), game.getModel().getColCount(), order);
-        System.out.println("Checkpoint: ACIK  run=" + writer.solvingRunId()
+        System.out.println("Checkpoint: ACIK  run=" + writer.solvingRunId() + "  checkpoint_version=" + writer.checkpointVersion()
                 + "  her " + writer.interval() + " cozumde bir  -> " + cfg.url());
         return writer;
     }
@@ -255,7 +255,8 @@ public class Main { // 7x7 eksikler: 5078-7072
             System.out.println("[checkpoint] " + row + "x" + col + " algo2 icin kayit yok.");
             return false;
         }
-        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint no = solution_index/" + interval
+        System.out.println("Checkpoint'ler (" + row + "x" + col + " algo2, checkpoint_version=" + Algo2CheckpointConfig.load().checkpointVersion()
+                + ", checkpoint no = solution_index/" + interval
                 + (missingOnly ? ", SADECE EKSIKLER" : "") + "):");
 
         List<CheckpointSummary> onGrid = cps.stream()

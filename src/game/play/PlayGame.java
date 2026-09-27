@@ -139,7 +139,7 @@ public class PlayGame {
 
         int locationX = game.getPlayer().getLocation().getX();
         int locationY = game.getPlayer().getLocation().getY();
-        int squareTotalSolvedValue = game.getPlayer().getSquareTotalSolvedValue();
+        long squareTotalSolvedValue = game.getPlayer().getSquareTotalSolvedValue();
 
 
         String scoreValue = new EasylyReadNumber().getReadableNumberInStringFormat(squareTotalSolvedValue);

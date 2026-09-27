@@ -19,7 +19,7 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
     protected PrintAble printableFileTotalScoreCount;
     protected boolean printAbleEveryStep;
 
-    protected int squareTotalSolvedValue = 0;
+    protected long squareTotalSolvedValue = 0;
     protected Game game;
     private boolean visitedDirections[][];
     TimeKeeper timeKeeper;
@@ -141,7 +141,7 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
         this.name = name;
     }
 
-    public int getSquareTotalSolvedValue() {
+    public long getSquareTotalSolvedValue() {
         return squareTotalSolvedValue;
     }
 
@@ -153,8 +153,17 @@ public abstract class Player implements UpdateableVistedDirection, PrintableEver
         squareTotalSolvedValue = 0;
     }
 
+    /** Checkpoint'ten devam ederken: bu karede daha once bulunmus cozum sayisi (bkz. Algo2ResumeService). */
+    public void setSquareTotalSolvedValue(long squareTotalSolvedValue) {
+        this.squareTotalSolvedValue = squareTotalSolvedValue;
+    }
+
     public PrintAble getPrintableFileScore() {
         return printableFileScore;
+    }
+
+    public void setPrintableFileScore(PrintAble printableFileScore) {
+        this.printableFileScore = printableFileScore;
     }
 
     public PrintAble getPrintableFileTotalScoreCount() {

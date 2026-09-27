@@ -27,11 +27,15 @@ final class Algo2CheckpointLoader implements AutoCloseable {
     private static final String FROM_WHERE = """
              FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
              WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
+               AND c.checkpoint_version = ?
             """;
 
     private final HikariDataSource dataSource;
+    private final int checkpointVersion;
 
-    Algo2CheckpointLoader(DbConfig cfg) {
+    /** {@code checkpointVersion}: sadece bu checkpoint_version'in satirlari okunur. */
+    Algo2CheckpointLoader(DbConfig cfg, int checkpointVersion) {
+        this.checkpointVersion = checkpointVersion;
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(cfg.url());
         hc.setUsername(cfg.user());
@@ -48,14 +52,13 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                        c.total_back_steps, c.dummy_back_steps, c.created_at
                   FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
                  WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
+                   AND c.checkpoint_version = ?
                  ORDER BY c.solution_index ASC
                 """;
         List<CheckpointSummary> out = new ArrayList<>();
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, row);
-            ps.setInt(2, col);
-            ps.setInt(3, algo);
+            bindBase(ps, row, col, algo);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(new CheckpointSummary(
@@ -73,10 +76,9 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(
                      "SELECT count(*) FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id"
-                             + " WHERE g.row_size=? AND g.col_size=? AND c.algorithm_id=?")) {
-            ps.setInt(1, row);
-            ps.setInt(2, col);
-            ps.setInt(3, algo);
+                             + " WHERE g.row_size=? AND g.col_size=? AND c.algorithm_id=?"
+                             + " AND c.checkpoint_version = ?")) {
+            bindBase(ps, row, col, algo);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getLong(1);
@@ -104,6 +106,52 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                 + " AND c.solution_index > ? ORDER BY c.solution_index ASC LIMIT 1", row, col, algo, after);
     }
 
+    /**
+     * {@code before}'dan kucuk olup baslangic karesi ({@code get_byte(path,0)})
+     * {@code startCell}'den FARKLI olan en buyuk solution_index = onceki karelerin
+     * toplam cozum sayisi. Yoksa 0 (ilk kare).
+     */
+    long lastIndexBeforeStartCell(int row, int col, int algo, long before, int startCell) {
+        String sql = "SELECT COALESCE(max(c.solution_index), 0)" + FROM_WHERE
+                + " AND c.solution_index < ? AND get_byte(c.path, 0) <> ?";
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            int p = bindBase(ps, row, col, algo);
+            ps.setLong(p++, before);
+            ps.setInt(p, startCell);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("kare siniri okunamadi: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Baslangic karesine gore ardisik checkpoint bloklari, solution_index sirasiyla:
+     * her eleman {cell, min solution_index, max solution_index, satir sayisi}.
+     */
+    List<long[]> startCellBlocks(int row, int col, int algo) {
+        String sql = "WITH c AS (SELECT c.solution_index si, get_byte(c.path, 0) cell" + FROM_WHERE + "),"
+                + " g AS (SELECT *, row_number() OVER (ORDER BY si)"
+                + " - row_number() OVER (PARTITION BY cell ORDER BY si) grp FROM c)"
+                + " SELECT cell, min(si), max(si), count(*) FROM g GROUP BY cell, grp ORDER BY min(si)";
+        List<long[]> out = new ArrayList<>();
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            bindBase(ps, row, col, algo);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new long[]{rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4)});
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("kare bloklari okunamadi: " + e.getMessage(), e);
+        }
+        return out;
+    }
+
     Optional<Algo2CheckpointRow> exact(int row, int col, int algo, long index) {
         return queryOne("SELECT " + SELECT_COLS + FROM_WHERE
                 + " AND c.solution_index = ?", row, col, algo, index);
@@ -112,11 +160,9 @@ final class Algo2CheckpointLoader implements AutoCloseable {
     private Optional<Algo2CheckpointRow> queryOne(String sql, int row, int col, int algo, Long idx) {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, row);
-            ps.setInt(2, col);
-            ps.setInt(3, algo);
+            int p = bindBase(ps, row, col, algo);
             if (idx != null) {
-                ps.setLong(4, idx);
+                ps.setLong(p, idx);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? Optional.of(map(rs)) : Optional.empty();
@@ -124,6 +170,15 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         } catch (SQLException e) {
             throw new IllegalStateException("checkpoint okunamadi: " + e.getMessage(), e);
         }
+    }
+
+    /** row, col, algo, checkpoint_version parametrelerini baglar; siradaki parametre indeksini dondurur. */
+    private int bindBase(PreparedStatement ps, int row, int col, int algo) throws SQLException {
+        ps.setInt(1, row);
+        ps.setInt(2, col);
+        ps.setInt(3, algo);
+        ps.setShort(4, (short) checkpointVersion);
+        return 5;
     }
 
     private static Algo2CheckpointRow map(ResultSet rs) throws SQLException {

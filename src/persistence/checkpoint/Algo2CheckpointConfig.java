@@ -14,6 +14,7 @@ import java.util.Properties;
  *   checkpoint.interval.6x6       = 10000
  *   checkpoint.interval.default   = 100000
  *   checkpoint.flushEvery         = 1        (kac checkpoint biriktirince DB'ye yazilsin)
+ *   checkpoint.version            = 2        (satirlara checkpoint_version; bkz. checkpoint_version tablosu)
  *
  * Ortam degiskenleri:
  *   PATHEXPLORER_CHECKPOINT_ENABLED   (1/true)
@@ -23,6 +24,7 @@ public final class Algo2CheckpointConfig {
 
     private static final int DEFAULT_INTERVAL = 100_000;
     private static final int DEFAULT_FLUSH_EVERY = 1;
+    private static final int DEFAULT_CHECKPOINT_VERSION = 2;
 
     private final Properties props;
     private final Integer intervalOverride;
@@ -81,6 +83,11 @@ public final class Algo2CheckpointConfig {
 
     public int flushEvery() {
         return flushEvery;
+    }
+
+    /** {@code checkpoint.version}: yeni satirlara yazilan ve okunan checkpoint_version (bkz. checkpoint_version tablosu). */
+    public int checkpointVersion() {
+        return parseInt(props.getProperty("checkpoint.version"), DEFAULT_CHECKPOINT_VERSION);
     }
 
     private static Integer parseNullableInt(String s) {

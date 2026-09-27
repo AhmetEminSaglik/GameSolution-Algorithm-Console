@@ -85,6 +85,23 @@
 - Degisen: `.gitignore`, `bash/menu.bat`, `bash/latest-grid.sh`,
   `bash/checkpoint-range-extract.sh`, yeni `bash/select-grid.sh`.
 
+## 2026-09-27: kare sayaci bug'i + checkpoint_version (7x7 bastan kosulacak)
+- Bug: resume'da kare sayaci (FileTotalScoreCount "[x][y] = N") 0'dan basliyordu
+  + `int`'ti (2,1 milyarda tasar). Duzeltildi: `long`; restore'da
+  `sayac = solution_index - onceki karelerin son solution_index'i`.
+- Writer: ilk lokasyon (baslangic karesi) degisince onceki karenin SON cozumu de
+  yazilir → kare basina cozum sayisi DB'den tam cikar.
+- `checkpoint_version` tablosu (id + description) + `solving_checkpoint.checkpoint_version`
+  (FK, NOT NULL, tekillik kuralinda) + `first_location` ("x-y"). Eski satirlar = 1,
+  yeni kosular = 2 (db.properties `checkpoint.version=2`). Loader sadece guncel surumu okur.
+  Migration `docker/initdb/08_solving_checkpoint_version.sql` 2026-09-27 UYGULANDI
+  (8x8 1.573M civarinda durduruldu; 16.228 satir = surum 1).
+- Kullanici karari: 7x7'yi surum 2 ile bastan kosacak, bitince 8x8. Eski veriden
+  sinir cikarma "zahmetli" diye birakildi.
+- `Algo2SquareBoundaryFinder <N> [surum]` (varsayilan 1): eski kayitlarda kare
+  gecisini replay ile bulur. 7x7 (0,0) = 468.698.008 (dosyayla birebir) dogrulandi;
+  gerisi kosulmadi.
+
 ## Acik isler / sonraki adimlar
 1. menu.bat degisiklikleri commitlendi; kullanici gercek konsolda uctan uca
    deneyecek (ozellikle grid secili degilken 1/3'e girince sorma adimi).

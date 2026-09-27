@@ -27,7 +27,13 @@ import java.util.UUID;
  *   <li>{@code maybeRecord} → solutionIndex, interval'in kati ise state'i buffer'a alir.</li>
  *   <li>buffer {@code flushEvery}'ye ulasinca tek batch commit (ON CONFLICT DO NOTHING).</li>
  *   <li>{@code close} / JVM shutdown → kalan buffer + interval'e denk gelmeyen SON snapshot yazilir.</li>
+ *   <li>Baslangic karesi (1. adim) degisince onceki karenin SON cozumu da yazilir -
+ *       kare basina cozum sayisi DB'den tam hesaplanabilsin diye.</li>
  * </ul>
+ *
+ * Her satira {@code checkpoint_version} (db.properties {@code checkpoint.version}) ve
+ * {@code first_location} ("x-y") yazilir; checkpoint_version tekillik kuralinda da var
+ * (bkz. docker/initdb/08_solving_checkpoint_version.sql).
  *
  * Tekillik: TAM STATE bazinda ({@code solution_index, grid_map_id, algorithm_id,
  * interval_size, step, path_len, dir_count, path, visited_dirs, exit_situation,
@@ -53,9 +59,9 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
               (solving_run_id, solution_index, grid_map_id, algorithm_id, interval_size,
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
-               total_back_steps, dummy_back_steps, locked_back_lose)
-            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?)
-            ON CONFLICT (solution_index, grid_map_id, algorithm_id, interval_size,
+               total_back_steps, dummy_back_steps, locked_back_lose, checkpoint_version, first_location)
+            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?)
+            ON CONFLICT (checkpoint_version, solution_index, grid_map_id, algorithm_id, interval_size,
                          step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                          round_counter, total_back_steps, dummy_back_steps, locked_back_lose) DO NOTHING
             RETURNING solution_index
@@ -66,6 +72,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     private final int interval;
     private final int flushEvery;
     private final int algorithmId;
+    private final int checkpointVersion;
     private int gridMapId = -1;
     private boolean disabled = false;
 
@@ -85,6 +92,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         this.interval = Math.max(1, ccfg.intervalFor(rowSize, colSize));
         this.flushEvery = Math.max(1, ccfg.flushEvery());
         this.algorithmId = algorithmId;
+        this.checkpointVersion = ccfg.checkpointVersion();
 
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(cfg.url());
@@ -113,6 +121,10 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         return interval;
     }
 
+    public int checkpointVersion() {
+        return checkpointVersion;
+    }
+
     private int resolveGridMapId(int rowSize, int colSize) {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(
@@ -138,6 +150,12 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
             return;
         }
         Pending pending = new Pending(solutionIndex, Algo2Snapshot.capture(game));
+        // Baslangic karesi degistiyse onceki karenin SON cozumunu de yaz: resume'da
+        // kare sayaci bu sinirdan hesaplanir (bkz. Algo2ResumeService.restoreSquareCounter).
+        if (lastPending != null && !lastPendingStored
+                && (lastPending.snap().path()[0] != pending.snap().path()[0])) {
+            buffer.add(lastPending);
+        }
         lastPending = pending;
         lastPendingStored = false;
         if (solutionIndex % interval == 0) {
@@ -271,6 +289,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         sb.append("\n    solution_index   = ").append(pending.solutionIndex());
         sb.append("\n    grid_map_id      = ").append(gridMapId).append("  (").append(s.rowSize()).append('x').append(s.colSize()).append(')');
         sb.append("\n    algorithm_id     = ").append(algorithmId);
+        sb.append("\n    checkpoint_version = ").append(checkpointVersion);
         sb.append("\n    interval_size    = ").append(interval);
         sb.append("\n    step             = ").append(s.step());
         sb.append("\n    path_len         = ").append(s.step());
@@ -353,7 +372,11 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
         ps.setLong(i++, s.totalBackStep());
         ps.setLong(i++, s.dummyBackMove());
-        ps.setBoolean(i, s.lockedBackLose());
+        ps.setBoolean(i++, s.lockedBackLose());
+
+        ps.setShort(i++, (short) checkpointVersion);
+        int firstCell = s.path()[0] & 0xFF;
+        ps.setString(i, (firstCell / s.colSize()) + "-" + (firstCell % s.colSize()));
     }
 
     private static void logWarn(String msg) {
