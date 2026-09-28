@@ -12,6 +12,7 @@ public record CheckpointSummary(
         long totalSolved,
         long totalBackSteps,
         long dummyBackSteps,
-        Timestamp createdAt
+        Timestamp createdAt,
+        Long elapsedMs          // onceki kayittan bu kayda cozme suresi; eski satirlarda null
 ) {
 }

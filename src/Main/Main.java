@@ -287,6 +287,7 @@ public class Main { // 7x7 eksikler: 5078-7072
                 printCheckpointLine(s, interval);
                 prevNo = no;
             }
+            printElapsedTotal(cps);
             return true;
         }
 
@@ -316,21 +317,48 @@ public class Main { // 7x7 eksikler: 5078-7072
             }
             i = j + 1;
         }
+        printElapsedTotal(cps);
         return true;
     }
 
     private static void printCheckpointLine(CheckpointSummary s, int interval) {
         long no = s.solutionIndex() / interval;
-        System.out.printf("  %3d) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
+        System.out.printf("  %3d) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  elapsed=%-12s  %s%n",
                 no, s.solutionIndex(), s.roundCounter(), s.totalSolved(),
-                s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
+                s.totalBackSteps(), s.dummyBackSteps(), formatElapsed(s.elapsedMs()), s.createdAt());
+    }
+
+    /** elapsed (ms) → "HH:MM:SS.mmm", gun varsa "Nd HH:MM:SS.mmm"; null (eski satir) → "-". */
+    private static String formatElapsed(Long ms) {
+        if (ms == null) {
+            return "-";
+        }
+        long d = ms / 86_400_000, h = ms / 3_600_000 % 24, m = ms / 60_000 % 60, sec = ms / 1000 % 60, milli = ms % 1000;
+        String hms = String.format("%02d:%02d:%02d.%03d", h, m, sec, milli);
+        return d > 0 ? d + "d " + hms : hms;
+    }
+
+    /** Listelenen satirlarin elapsed toplami (restart arasi bekleme haric gercek cozme suresi). */
+    private static void printElapsedTotal(List<CheckpointSummary> cps) {
+        long total = 0;
+        int withElapsed = 0;
+        for (CheckpointSummary s : cps) {
+            if (s.elapsedMs() != null) {
+                total += s.elapsedMs();
+                withElapsed++;
+            }
+        }
+        if (withElapsed > 0) {
+            System.out.println("  Toplam elapsed: " + formatElapsed(total) + "  (" + withElapsed + "/" + cps.size()
+                    + " satirda elapsed var; eski satirlar dahil degil)");
+        }
     }
 
     /** Interval'e tam bolunmeyen ("ara-durak"/kapanista yazilmis son snapshot) satir - checkpoint no yok. */
     private static void printAraDurakLine(CheckpointSummary s) {
-        System.out.printf("  (ara-durak) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  %s%n",
+        System.out.printf("  (ara-durak) solution_index=%-10d  round=%-12d  total_solved=%-8d  back=%-10d  dummy=%-9d  elapsed=%-12s  %s%n",
                 s.solutionIndex(), s.roundCounter(), s.totalSolved(),
-                s.totalBackSteps(), s.dummyBackSteps(), s.createdAt());
+                s.totalBackSteps(), s.dummyBackSteps(), formatElapsed(s.elapsedMs()), s.createdAt());
     }
 
     /**

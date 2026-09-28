@@ -49,7 +49,8 @@ final class Algo2CheckpointLoader implements AutoCloseable {
     List<CheckpointSummary> listSummaries(int row, int col, int algo) {
         String sql = """
                 SELECT c.solution_index, c.step, c.round_counter, c.total_solved,
-                       c.total_back_steps, c.dummy_back_steps, c.created_at
+                       c.total_back_steps, c.dummy_back_steps, c.created_at,
+                       (extract(epoch FROM c.elapsed) * 1000)::bigint AS elapsed_ms
                   FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
                  WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
                    AND c.checkpoint_version = ?
@@ -63,7 +64,8 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                 while (rs.next()) {
                     out.add(new CheckpointSummary(
                             rs.getLong(1), rs.getInt(2), rs.getLong(3), rs.getLong(4),
-                            rs.getLong(5), rs.getLong(6), rs.getTimestamp(7)));
+                            rs.getLong(5), rs.getLong(6), rs.getTimestamp(7),
+                            rs.getObject(8, Long.class)));
                 }
             }
         } catch (SQLException e) {

@@ -29,6 +29,8 @@ import java.util.UUID;
  *   <li>{@code close} / JVM shutdown → kalan buffer + interval'e denk gelmeyen SON snapshot yazilir.</li>
  *   <li>Baslangic karesi (1. adim) degisince onceki karenin SON cozumu da yazilir -
  *       kare basina cozum sayisi DB'den tam hesaplanabilsin diye.</li>
+ *   <li>{@code elapsed}: onceki kayittan bu kayda kadar gecen cozme suresi; her kayitta
+ *       sifirlanir, restart arasi bekleme dahil degil (bkz. 09_solving_checkpoint_elapsed.sql).</li>
  * </ul>
  *
  * Her satira {@code checkpoint_version} (db.properties {@code checkpoint.version}) ve
@@ -59,8 +61,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
               (solving_run_id, solution_index, grid_map_id, algorithm_id, interval_size,
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
-               total_back_steps, dummy_back_steps, locked_back_lose, checkpoint_version, first_location)
-            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?)
+               total_back_steps, dummy_back_steps, locked_back_lose, checkpoint_version, first_location, elapsed)
+            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?, make_interval(secs => ?))
             ON CONFLICT (checkpoint_version, solution_index, grid_map_id, algorithm_id, interval_size,
                          step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                          round_counter, total_back_steps, dummy_back_steps, locked_back_lose) DO NOTHING
@@ -85,7 +87,17 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     private Pending lastPending;
     private boolean lastPendingStored = false;
 
-    private record Pending(long solutionIndex, Algo2Snapshot snap) { }
+    // elapsed: bir onceki kayittan bu kayda kadar SADECE bu process'te gecen cozme
+    // suresi. Her kayitta sifirlanir; process yeniden baslayinca ilk cozumden sayilir
+    // (restart arasindaki bekleme created_at farkina girer ama elapsed'e girmez).
+    private long lastSavedNanos = -1;
+
+    /** {@code nanos}: cozumun bulundugu an (System.nanoTime); {@code elapsedNanos}: buffer'a alinirken hesaplanir. */
+    private record Pending(long solutionIndex, Algo2Snapshot snap, long nanos, long elapsedNanos) {
+        Pending withElapsed(long e) {
+            return new Pending(solutionIndex, snap, nanos, e);
+        }
+    }
 
     public Algo2CheckpointWriter(DbConfig cfg, Algo2CheckpointConfig ccfg,
                                  int rowSize, int colSize, int algorithmId) {
@@ -155,17 +167,21 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         if (disabled) {
             return;
         }
-        Pending pending = new Pending(solutionIndex, Algo2Snapshot.capture(game));
+        long now = System.nanoTime();
+        if (lastSavedNanos < 0) {
+            lastSavedNanos = now;   // bu process'in ilk cozumu: sayac buradan baslar
+        }
+        Pending pending = new Pending(solutionIndex, Algo2Snapshot.capture(game), now, 0);
         // Baslangic karesi degistiyse onceki karenin SON cozumunu de yaz: resume'da
         // kare sayaci bu sinirdan hesaplanir (bkz. Algo2ResumeService.restoreSquareCounter).
         if (lastPending != null && !lastPendingStored
                 && (lastPending.snap().path()[0] != pending.snap().path()[0])) {
-            buffer.add(lastPending);
+            store(lastPending);
         }
         lastPending = pending;
         lastPendingStored = false;
         if (solutionIndex % interval == 0) {
-            buffer.add(pending);
+            store(pending);
             lastPendingStored = true;
             if (buffer.size() >= flushEvery) {
                 flush();
@@ -173,10 +189,16 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         }
     }
 
+    /** Buffer'a alir; elapsed = onceki kayittan bu cozume kadar gecen sure, sonra sifirlanir. */
+    private void store(Pending pending) {
+        buffer.add(pending.withElapsed(pending.nanos() - lastSavedNanos));
+        lastSavedNanos = pending.nanos();
+    }
+
     /** Interval'e denk gelmediyse son cozumun snapshot'ini da yaz. */
     private void persistLastIfNeeded() {
         if (!disabled && lastPending != null && !lastPendingStored) {
-            buffer.add(lastPending);
+            store(lastPending);
             lastPendingStored = true;
         }
     }
@@ -309,6 +331,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         sb.append("\n    total_back_steps = ").append(s.totalBackStep());
         sb.append("\n    dummy_back_steps = ").append(s.dummyBackMove());
         sb.append("\n    locked_back_lose = ").append(s.lockedBackLose());
+        sb.append("\n    elapsed          = ").append(pending.elapsedNanos() / 1_000_000).append(" ms");
     }
 
     /** path[k] = (k+1). adimin hucre indeksi (x*colSize+y) -> okunabilir (x,y) dizisi. */
@@ -382,7 +405,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
         ps.setShort(i++, (short) checkpointVersion);
         int firstCell = s.path()[0] & 0xFF;
-        ps.setString(i, (firstCell / s.colSize()) + "-" + (firstCell % s.colSize()));
+        ps.setString(i++, (firstCell / s.colSize()) + "-" + (firstCell % s.colSize()));
+        ps.setDouble(i, pending.elapsedNanos() / 1e9);
     }
 
     private static void logWarn(String msg) {
