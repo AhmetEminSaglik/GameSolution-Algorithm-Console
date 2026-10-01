@@ -102,6 +102,18 @@
   gecisini replay ile bulur. 7x7 (0,0) = 468.698.008 (dosyayla birebir) dogrulandi;
   gerisi kosulmadi.
 
+## 2026-09-28/29: checkpoint elapsed
+- `solving_checkpoint.elapsed` (interval): onceki kayittan bu kayda cozme suresi,
+  her kayitta sifirlanir, restart arasi bekleme haric. Migration
+  `09_solving_checkpoint_elapsed.sql` UYGULANDI. Checkpoint listesi satir basina
+  elapsed + toplam gosterir. Commit `e55c7d7`.
+- `created_at` `+00` = UTC (Postgres TimeZone); Java listesi yerel saati basar. Degistirme.
+- `round_counter` = toplam adim (her dongu turu bir hamle); ileri = round - back.
+  Sayaclar long/BIGINT, tasma riski yok. 7x7 v1 ve v2 ayni solution_index'te
+  birebir ayni sayaclar → deterministik.
+- IntelliJ restart'inda eski java.exe sahipsiz kalip DB'ye yazmaya devam edebiliyor;
+  yeni run ayni state'leri uretip [SKIP] basar (zararsiz). Once eski process'i kapat.
+
 ## Acik isler / sonraki adimlar
 1. menu.bat degisiklikleri commitlendi; kullanici gercek konsolda uctan uca
    deneyecek (ozellikle grid secili degilken 1/3'e girince sorma adimi).
