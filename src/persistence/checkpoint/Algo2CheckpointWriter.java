@@ -6,6 +6,7 @@ import game.Game;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import persistence.DbConfig;
+import persistence.MachineInfo;
 import persistence.RunMapType;
 
 import java.nio.ByteBuffer;
@@ -63,8 +64,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
                total_back_steps, dummy_back_steps, locked_back_lose, checkpoint_version, first_location, elapsed,
-               run_map_type_id)
-            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?, make_interval(secs => ?), ?)
+               run_map_type_id, machine_id)
+            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?, make_interval(secs => ?), ?, ?)
             ON CONFLICT (checkpoint_version, run_map_type_id, solution_index, grid_map_id, algorithm_id, interval_size,
                          step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                          round_counter, total_back_steps, dummy_back_steps, locked_back_lose) DO NOTHING
@@ -79,6 +80,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     private final int checkpointVersion;
     private int gridMapId = -1;
     private int runMapTypeId = -1;
+    private Integer machineId;
+    private boolean completed = false;
     private boolean disabled = false;
 
     private final List<Pending> buffer = new ArrayList<>();
@@ -126,6 +129,11 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         try {
             this.gridMapId = resolveGridMapId(rowSize, colSize);
             this.runMapTypeId = resolveRunMapTypeId();
+            try (Connection c = dataSource.getConnection()) {
+                this.machineId = MachineInfo.resolve(c);
+            } catch (SQLException e) {
+                logWarn("machine_id cozulemedi - bos yazilacak: " + e.getMessage());
+            }
         } catch (RuntimeException e) {
             disabled = true;
             logWarn("checkpoint devre disi - " + e.getMessage());
@@ -421,11 +429,46 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         int firstCell = s.path()[0] & 0xFF;
         ps.setString(i++, (firstCell / s.colSize()) + "-" + (firstCell % s.colSize()));
         ps.setDouble(i++, pending.elapsedNanos() / 1e9);
-        ps.setShort(i, (short) runMapTypeId);
+        ps.setShort(i++, (short) runMapTypeId);
+        if (machineId == null) ps.setNull(i, java.sql.Types.SMALLINT); else ps.setShort(i, machineId.shortValue());
     }
 
     private static void logWarn(String msg) {
         LOG.warn(msg);
+    }
+
+    @Override
+    public void markCompleted() {
+        completed = true;
+    }
+
+    /**
+     * Tum baslangic kareleri bitti: run_result istatistigi hesaplanir
+     * (refresh_run_result) ve bu hesaplamanin satiri COMPLETED yapilir. Hata
+     * cozucuyu etkilemez, sadece loglanir; rapor sonradan menuden de hesaplanabilir.
+     */
+    private void saveRunResult() {
+        try (Connection c = dataSource.getConnection()) {
+            try (PreparedStatement ps = c.prepareStatement("SELECT refresh_run_result(?::smallint)")) {
+                ps.setInt(1, gridMapId);
+                ps.execute();
+            }
+            try (PreparedStatement ps = c.prepareStatement("""
+                    UPDATE run_result SET status = 'COMPLETED'
+                     WHERE save_mode = 'checkpoint' AND grid_map_id = ? AND algorithm_id = ?
+                       AND checkpoint_version = ? AND run_map_type_id = ?
+                    """)) {
+                ps.setInt(1, gridMapId);
+                ps.setInt(2, algorithmId);
+                ps.setInt(3, checkpointVersion);
+                ps.setInt(4, runMapTypeId);
+                ps.executeUpdate();
+            }
+            LOG.info("run_result kaydedildi (COMPLETED): grid_map_id=" + gridMapId
+                    + " checkpoint_version=" + checkpointVersion + " tarama=" + RunMapType.selected());
+        } catch (SQLException e) {
+            logWarn("run_result kaydedilemedi (sonra menuden hesaplanabilir): " + e.getMessage());
+        }
     }
 
     @Override
@@ -437,6 +480,9 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         try {
             persistLastIfNeeded();
             flush();
+            if (completed && !disabled) {
+                saveRunResult();
+            }
         } catch (RuntimeException e) {
             logWarn("kapanista: " + e.getMessage());
         }

@@ -64,12 +64,13 @@ public final class JdbcSolutionSink implements SolutionSink {
     @Override
     public void beginRun(RunInfo info) {
         String sql = """
-                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode, run_map_type_id)
-                VALUES (?,?,?,?, 'RUNNING', ?, 'flat', ?)
+                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode, run_map_type_id, machine_id)
+                VALUES (?,?,?,?, 'RUNNING', ?, 'flat', ?, ?)
                 """;
         try (Connection c = dataSource.getConnection()) {
             gridMapId = GridMapIds.resolve(c, info.rowCount(), info.colCount());
             int runMapTypeId = RunMapType.selected().resolve(c);
+            Integer machineId = MachineInfo.resolve(c);
             try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setObject(1, UUID.randomUUID());
                 ps.setInt(2, info.rowCount());
@@ -77,6 +78,7 @@ public final class JdbcSolutionSink implements SolutionSink {
                 ps.setString(4, info.algorithm());
                 ps.setInt(5, gridMapId);
                 ps.setInt(6, runMapTypeId);
+                if (machineId == null) ps.setNull(7, java.sql.Types.SMALLINT); else ps.setInt(7, machineId);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     keys.next();
@@ -150,6 +152,7 @@ public final class JdbcSolutionSink implements SolutionSink {
             ps.setLong(5, runId);
             ps.executeUpdate();
             runFinished = true;
+            RunResults.refresh(c, gridMapId);
         } catch (SQLException e) {
             throw new IllegalStateException("solver_run guncellenemedi: " + e.getMessage(), e);
         }

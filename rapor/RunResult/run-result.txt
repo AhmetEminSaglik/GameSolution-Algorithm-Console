@@ -1,0 +1,120 @@
+Sonuc istatistigi - 2026-10-02 16:39  (grid: 7x7)
+
+ guncellenen hesaplama 
+-----------------------
+                     2
+(1 row)
+
+=== Hesaplamalar ===
+-[ RECORD 1 ]----+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+id               | 1
+grid             | 7x7
+algoritma        | SecondSolution_CalculateForwardAvailableWays
+surum            | 1
+tarama           | UNIQUE
+kayit            | checkpoint
+status           | COMPLETED
+bilgisayar       | Kasa (masaustu) / Windows / 13th Gen Intel(R) Core(TM) i7-13700 / 32 GB DDR5
+gezilen_cozum    | 1,605,783,214
+toplam_cozum     | 8,642,783,214
+toplam_adim      | 922,188,543,525
+baslangic        | 2026-09-16 17:41
+bitis            | 2026-09-24 06:41
+duvar_saati      | 7 days 12:59:55.27604
+cozme_suresi     | 110:27:08.246424
+bosluk           | 70:32:47.029616
+yeniden_baslatma | 14
+olculmeyen_satir | 15
+cozum_sn         | 4038.40
+adim_sn          | 2319222.92
+en_kisa_aralik   | 00:00:02.848248
+en_uzun_aralik   | 14:46:37.035893
+notlar           | v1 (2026-09-16..24): kare gecisleri kaydedilmedigi ve resume'da kare sayaci sifirlandigi icin kare dokumu ve total_solutions YAKLASIK. Dogru deger v2 satirinda.
+-[ RECORD 2 ]----+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+id               | 2
+grid             | 7x7
+algoritma        | SecondSolution_CalculateForwardAvailableWays
+surum            | 2
+tarama           | UNIQUE
+kayit            | checkpoint
+status           | COMPLETED
+bilgisayar       | Kasa (masaustu) / Windows / 13th Gen Intel(R) Core(TM) i7-13700 / 32 GB DDR5
+gezilen_cozum    | 1,605,783,214
+toplam_cozum     | 8,642,871,600
+toplam_adim      | 922,188,543,525
+baslangic        | 2026-09-27 11:26
+bitis            | 2026-10-02 02:27
+duvar_saati      | 4 days 15:00:26.954396
+cozme_suresi     | 107:48:22.777794
+bosluk           | 03:12:04.176602
+yeniden_baslatma | 7
+olculmeyen_satir | 4
+cozum_sn         | 4137.52
+adim_sn          | 2376145.18
+en_kisa_aralik   | 00:00:00.437208
+en_uzun_aralik   | 00:06:53.110059
+notlar           | v2 bastan tek hesaplama; 2026-10-02 bitti, toplam 8.642.871.600 dogrulandi. 2026-09-28 oncesi elapsed created_at farkindan dolduruldu.
+
+=== Kare kare (temel bolge) ===
+ id | grid | surum |   kayit    | kare  | carpan |    cozum    |     katki     |      sure       
+----+------+-------+------------+-------+--------+-------------+---------------+-----------------
+  1 | 7x7  |     1 | checkpoint | (0,0) | x4     | 468,600,000 | 1,874,400,000 | 22:37:44.823247
+  1 | 7x7  |     1 | checkpoint | (1,0) | x8     | 89,946,502  | 719,572,016   | 04:51:54.21195
+  1 | 7x7  |     1 | checkpoint | (1,1) | x4     | 114,600,000 | 458,400,000   | 10:18:40.313685
+  1 | 7x7  |     1 | checkpoint | (2,0) | x8     | 276,653,498 | 2,213,227,984 | 26:52:34.855993
+  1 | 7x7  |     1 | checkpoint | (2,1) | x8     | 282,200,000 | 2,257,600,000 | 14:33:13.135775
+  1 | 7x7  |     1 | checkpoint | (2,2) | x4     | 63,400,000  | 253,600,000   | 07:19:02.740127
+  1 | 7x7  |     1 | checkpoint | (3,0) | x4     | 45,200,000  | 180,800,000   | 04:17:48.58278
+  1 | 7x7  |     1 | checkpoint | (3,1) | x4     | 80,700,000  | 322,800,000   | 06:50:46.789716
+  1 | 7x7  |     1 | checkpoint | (3,2) | x4     | 59,300,000  | 237,200,000   | 05:15:30.088994
+  1 | 7x7  |     1 | checkpoint | (3,3) | x1     | 125,183,214 | 125,183,214   | 07:29:52.704157
+  2 | 7x7  |     2 | checkpoint | (0,0) | x4     | 468,698,008 | 1,874,792,032 | 21:58:22.591248
+  2 | 7x7  |     2 | checkpoint | (1,0) | x8     | 233,127,829 | 1,865,022,632 | 17:22:01.827156
+  2 | 7x7  |     2 | checkpoint | (1,1) | x4     | 114,606,142 | 458,424,568   | 10:54:16.35739
+  2 | 7x7  |     2 | checkpoint | (2,0) | x8     | 133,472,037 | 1,067,776,296 | 10:54:14.479194
+  2 | 7x7  |     2 | checkpoint | (2,1) | x8     | 282,218,332 | 2,257,746,656 | 15:58:48.669429
+  2 | 7x7  |     2 | checkpoint | (2,2) | x4     | 63,457,066  | 253,828,264   | 05:43:21.786741
+  2 | 7x7  |     2 | checkpoint | (3,0) | x4     | 45,107,348  | 180,429,392   | 04:38:33.335513
+  2 | 7x7  |     2 | checkpoint | (3,1) | x4     | 80,679,890  | 322,719,560   | 07:08:41.012558
+  2 | 7x7  |     2 | checkpoint | (3,2) | x4     | 59,238,546  | 236,954,184   | 05:37:59.000546
+  2 | 7x7  |     2 | checkpoint | (3,3) | x1     | 125,178,016 | 125,178,016   | 07:32:03.718019
+(20 rows)
+
+=== Bilgisayarlar ===
+-[ RECORD 1 ]----+---------------------------------------------------------------------------------------------------------------------------------------------
+id               | 1
+hostname         | BTK0601D393
+model            | Dell Inc. OptiPlex SFF Plus 7010
+cpu_model        | 13th Gen Intel(R) Core(TM) i7-13700
+cpu_cores        | 16
+cpu_threads      | 24
+cpu_base_ghz     | 2.10
+cpu_max_ghz      | 5.20
+cpu_l3_mb        | 30
+ram_gb           | 32
+ram_type         | DDR5
+ram_mts          | 4400
+ram_modules      | 1
+disk             | PM9A1 NVMe Samsung 512GB NVMe 512 GB
+os               | Windows 11 10.0
+java             | JetBrains s.r.o. 21.0.11+1-b1163.116
+jvm_max_heap_mb  | 8116
+gc               | G1 Young Generation, G1 Concurrent GC, G1 Old Generation
+db_version       | PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2)
+power_plan       | Dengeli
+notes            | Ofis bilgisayari, gunluk kullanimda (IntelliJ, tarayici). Hibrit CPU: 8P + 8E cekirdek. Turbo 5,2 GHz Intel spesifikasyonundan elle girildi.
+created_at       | 2026-10-02 13:34:38.955063+00
+os_family_id     | 1
+chassis_type_id  | 1
+cpu_vendor_id    | 1
+cpu_arch         | x86_64
+cpu_l2_mb        | 24
+ram_rated_mts    | 4800
+ram_manufacturer | Micron
+ram_part         | MTC16C2085S1UC48BA1
+gpu_model        | Intel(R) UHD Graphics 770
+gpu_vram_mb      | 2048
+disk_type        | SSD
+disk_bus         | NVMe
+os_build         | Microsoft Windows 11 Enterprise (build 22621)
+

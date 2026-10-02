@@ -32,6 +32,8 @@ public class PlayGame {
     private long resumeFromIndex = 0;
     /** > 0 ise: solutionIndex bu degere ulasinca dongu kirilir (checkpoint araligi cikti). */
     private long stopAfterIndex = 0;
+    private boolean stoppedEarly = false;
+    private boolean completed = false;
     /** saveGameResultToScore() sirasinda hesaplanan gecen sure metni (bkz. getElapsedTimeText). */
     private String elapsedTimeText;
 
@@ -68,6 +70,11 @@ public class PlayGame {
     /** saveGameResultToScore() sonrasi konsola basilan gecen sure metniyle birebir ayni deger (bkz. TestRunLog). */
     public String getElapsedTimeText() {
         return elapsedTimeText;
+    }
+
+    /** Dongu oyun sonuna (tum baslangic kareleri tukendi) ulasarak mi bitti? Araliga gore erken durunca false. */
+    public boolean isCompleted() {
+        return completed;
     }
 
     public void playGame() {
@@ -107,6 +114,7 @@ public class PlayGame {
             calculatePlayerTotalWinScore();
 
             if (stopAfterIndex > 0 && solutionIndex >= stopAfterIndex) {
+                stoppedEarly = true;
                 break;   // checkpoint araligi cikti tamamlandi
             }
 
@@ -123,6 +131,8 @@ public class PlayGame {
 //            }
 
         }
+
+        completed = !stoppedEarly;
 
         solutionSink.endRun(new SolutionSink.RunResult(
                 player.getScore().getTotalGameFinishedScore(),

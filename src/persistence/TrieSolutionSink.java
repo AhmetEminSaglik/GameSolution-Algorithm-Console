@@ -75,10 +75,11 @@ public final class TrieSolutionSink implements SolutionSink {
         try (Connection c = dataSource.getConnection()) {
             gridMapId = GridMapIds.resolve(c, info.rowCount(), info.colCount());
             int runMapTypeId = RunMapType.selected().resolve(c);
+            Integer machineId = MachineInfo.resolve(c);
             algorithmId = resolveAlgorithmId(c, info.algorithm());
             String sql = """
-                    INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode, run_map_type_id)
-                    VALUES (?,?,?,?, 'RUNNING', ?, 'trie', ?)
+                    INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode, run_map_type_id, machine_id)
+                    VALUES (?,?,?,?, 'RUNNING', ?, 'trie', ?, ?)
                     """;
             try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setObject(1, UUID.randomUUID());
@@ -87,6 +88,7 @@ public final class TrieSolutionSink implements SolutionSink {
                 ps.setString(4, info.algorithm());
                 ps.setInt(5, gridMapId);
                 ps.setInt(6, runMapTypeId);
+                if (machineId == null) ps.setNull(7, java.sql.Types.SMALLINT); else ps.setInt(7, machineId);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     keys.next();
@@ -160,6 +162,7 @@ public final class TrieSolutionSink implements SolutionSink {
             ps.setLong(5, runId);
             ps.executeUpdate();
             runFinished = true;
+            RunResults.refresh(c, gridMapId);
         } catch (SQLException e) {
             throw new IllegalStateException("trie endRun: " + e.getMessage(), e);
         }

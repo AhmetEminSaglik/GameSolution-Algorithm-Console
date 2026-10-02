@@ -49,6 +49,15 @@ description: >
   `solver_run.run_map_type_id` ve `solving_checkpoint.run_map_type_id`
   (checkpoint tekillik kuralinda da var; loader sadece secilen tipi okur).
   Migration `11_run_map_type.sql`. Test: 5x5 ALL = 12.400, UNIQUE = 2.816.
+- **PC + sonuc istatistigi (2026-10-02, `12_machine_and_run_result.sql`):**
+  `machine` (PC; `MachineInfo` ilk kosuda ekler, id=1 ofis Dell i7-13700),
+  checkpoint ve solver_run `machine_id` tasir. `run_result` = her hesaplama
+  (grid+algoritma+surum+tarama+kayit modu) icin tek satir: toplam, wall_time,
+  solve_time (Σ elapsed), idle_time, restart, hiz. `run_result_square` kare
+  dokumu. `refresh_run_result(grid)` hesaplar; COMPLETED satirda sadece NULL
+  doldurur. Checkpoint kosusu tum kareleri bitirince writer COMPLETED yapar;
+  flat/trie bitince sink yeniler. Menu: `bash/menu.bat` 5) →
+  `bash/run-result.sh` → `rapor/RunResult/run-result.txt`.
 - `Move.changeStartLocationSpecialMovement()` sadece `0 <= y <= x <= half`
   karelerini gezer, `half = (rowCount-1)/2` - her NxN icin dinamik.
   Hesaplanan kare = `(half+1)(half+2)/2` (5x5/6x6: 6, 7x7/8x8: 10, 9x9/10x10: 15).

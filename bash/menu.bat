@@ -19,6 +19,7 @@ echo  1) En guncel cozumu goster (ENTER=yenile, exit=cik)
 echo  2) Tum checkpoint'leri txt'ye dok (her grid boyutu icin)
 echo  3) Sira araligina gore checkpoint cikar (checkpoint-N-M.txt)
 echo  4) Grid map degistir
+echo  5) Sonuc istatistigi (run_result) hesapla ve goster
 echo  0) Cikis
 echo ============================================
 set CHOICE=
@@ -28,6 +29,7 @@ if "%CHOICE%"=="1" goto :opt1
 if "%CHOICE%"=="2" goto :opt2
 if "%CHOICE%"=="3" goto :opt3
 if "%CHOICE%"=="4" goto :opt4
+if "%CHOICE%"=="5" goto :opt5
 if "%CHOICE%"=="0" goto :end
 echo Gecersiz secim.
 echo.
@@ -54,6 +56,12 @@ goto :menu
 :opt4
 "%BASH_EXE%" --norc --noprofile "%BASH_DIR%select-grid.sh"
 echo.
+goto :menu
+
+:opt5
+"%BASH_EXE%" --norc --noprofile "%BASH_DIR%run-result.sh"
+echo.
+pause
 goto :menu
 
 rem --- .selected-grid dosyasindan GRID'i okur (yoksa GRID tanimsiz kalir) ---

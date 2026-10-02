@@ -208,3 +208,63 @@ Total Dummy Back Step)  : 19_182
 
 ----------------------------------------
 
+Map: 5-5
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Bastan Calistir
+Db kayit Modu: FLAT
+Tarama: ALL
+
+Total Number Solved: 12_400
+Elapsed time : 0:0:1:139
+Total Back Step : 511_816
+Total Step : 1_023_656
+Total Dummy Back Step)  : 83_076
+
+----------------------------------------
+
+Map: 5-5
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Bastan Calistir
+Db kayit Modu: TRIE
+Tarama: ALL
+
+Total Number Solved: 12_400
+Elapsed time : 0:0:2:667
+Total Back Step : 511_816
+Total Step : 1_023_656
+Total Dummy Back Step)  : 83_076
+
+----------------------------------------
+
+Map: 5-5
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Bastan Calistir
+Db kayit Modu: CHECKPOINT
+Tarama: UNIQUE
+
+Total Number Solved: 2_816
+Elapsed time : 0:0:0:147
+Total Back Step : 117_406
+Total Step : 234_817
+Total Dummy Back Step)  : 19_182
+
+----------------------------------------
+
+Map: 5-5
+Cozum algoritmasi: FIRST
+Player: ROBOT
+Baslangic: Bastan Calistir
+Db kayit Modu: FLAT
+Tarama: ALL
+
+Total Number Solved: 12_400
+Elapsed time : 0:0:1:465
+Total Back Step : 2_404_856
+Total Step : 4_809_736
+Total Dummy Back Step)  : 603_928
+
+----------------------------------------
+

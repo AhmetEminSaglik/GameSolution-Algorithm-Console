@@ -17,6 +17,10 @@ public interface CheckpointRecorder extends AutoCloseable {
      */
     void maybeRecord(Game game, long solutionIndex);
 
+    /** Cozucu tum baslangic karelerini bitirdi (araliga gore erken durmadi). close()'tan once cagrilir. */
+    default void markCompleted() {
+    }
+
     @Override
     void close();
 

@@ -106,6 +106,9 @@ public class Main { // 7x7 eksikler: 5078-7072
         PlayGame playGame = new PlayGame(game, sink, checkpoint);
         try {
             playGame.playGame();
+            if (playGame.isCompleted()) {
+                checkpoint.markCompleted();
+            }
         } finally {
             checkpoint.close();
             sink.close();
@@ -508,6 +511,9 @@ public class Main { // 7x7 eksikler: 5078-7072
             }
             try {
                 playGame.playGame();
+                if (playGame.isCompleted()) {
+                    checkpoint.markCompleted();
+                }
             } finally {
                 checkpoint.close();
                 sink.close();

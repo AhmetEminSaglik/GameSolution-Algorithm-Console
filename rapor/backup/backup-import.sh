@@ -149,7 +149,7 @@ done
 # bagimli (child) tablolar. Once hepsini TEK bir TRUNCATE ile birlikte
 # temizlemek (CASCADE'in ayri ayri, sirasi gelmemis tablolari bosaltip
 # yariminda birakma riskini onler), sonra bu sirayla yeniden doldurmak icin.
-PARENT_ORDER=(grid_map solving_algorithm checkpoint_version solver_run)
+PARENT_ORDER=(grid_map solving_algorithm checkpoint_version run_map_type os_family chassis_type cpu_vendor machine solver_run run_result)
 ORDERED_TABLES=()
 for p in "${PARENT_ORDER[@]}"; do
   for t in "${EXISTING_TABLES[@]}"; do

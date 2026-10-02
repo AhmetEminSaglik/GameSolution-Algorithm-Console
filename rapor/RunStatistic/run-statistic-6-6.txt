@@ -138,3 +138,18 @@ Total Dummy Back Step)  : 22_964_306
 
 ----------------------------------------
 
+Map: 6-6
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Bastan Calistir
+Db kayit Modu: FLAT
+Tarama: ALL
+
+Total Number Solved: 8_250_272
+Elapsed time : 0:19:45:139
+Total Back Step : 735_409_099
+Total Step : 1_470_818_233
+Total Dummy Back Step)  : 138_336_510
+
+----------------------------------------
+
