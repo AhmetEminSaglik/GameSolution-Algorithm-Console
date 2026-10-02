@@ -1,0 +1,32 @@
+--
+-- PostgreSQL database dump
+--
+
+
+-- Dumped from database version 16.15 (Debian 16.15-1.pgdg13+2)
+-- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: run_result; Type: TABLE DATA; Schema: public; Owner: pathexplorer
+--
+
+INSERT INTO public.run_result (id, grid_map_id, algorithm_id, checkpoint_version, run_map_type_id, save_mode, solver_run_id, machine_id, status, visited_solutions, total_solutions, total_steps, back_steps, dummy_back_steps, started_at, finished_at, wall_time, solve_time, idle_time, unmeasured_rows, elapsed_min, elapsed_max, run_count, restart_count, checkpoint_interval, checkpoint_rows, solutions_per_sec, steps_per_sec, computed_at, notes) VALUES (1, 3, 2, 1, 2, 'checkpoint', NULL, 1, 'COMPLETED', 1605783214, 8642783214, 922188543525, 461094271734, 85325438970, '2026-09-16 14:41:20.056427+00', '2026-09-24 03:41:15.332467+00', '7 days 12:59:55.27604', '110:27:08.246424', '70:32:47.029616', 15, '00:00:02.848248', '14:46:37.035893', 15, 14, 100000, 14573, 4038.40, 2319222.92, '2026-10-02 13:39:23.035231+00', 'v1 (2026-09-16..24): kare gecisleri kaydedilmedigi ve resume''da kare sayaci sifirlandigi icin kare dokumu ve total_solutions YAKLASIK. Dogru deger v2 satirinda.');
+INSERT INTO public.run_result (id, grid_map_id, algorithm_id, checkpoint_version, run_map_type_id, save_mode, solver_run_id, machine_id, status, visited_solutions, total_solutions, total_steps, back_steps, dummy_back_steps, started_at, finished_at, wall_time, solve_time, idle_time, unmeasured_rows, elapsed_min, elapsed_max, run_count, restart_count, checkpoint_interval, checkpoint_rows, solutions_per_sec, steps_per_sec, computed_at, notes) VALUES (2, 3, 2, 2, 2, 'checkpoint', NULL, 1, 'COMPLETED', 1605783214, 8642871600, 922188543525, 461094271734, 85325438970, '2026-09-27 08:26:38.673856+00', '2026-10-01 23:27:05.628252+00', '4 days 15:00:26.954396', '107:48:22.777794', '03:12:04.176602', 4, '00:00:00.437208', '00:06:53.110059', 8, 7, 100000, 16071, 4137.52, 2376145.18, '2026-10-02 13:39:23.035231+00', 'v2 bastan tek hesaplama; 2026-10-02 bitti, toplam 8.642.871.600 dogrulandi. 2026-09-28 oncesi elapsed created_at farkindan dolduruldu.');
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+

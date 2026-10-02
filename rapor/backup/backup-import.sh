@@ -196,8 +196,8 @@ for t in "${ORDERED_TABLES[@]}"; do
   echo "[import] ${t}: tamam (${NEWCNT} satir)."
 done
 
-# id'ler dosyadan ACIKCA yuklendi; IDENTITY sayaclari (solver_run.id,
-# path_explorer_solution.id) ilerlemedi. Ayarlanmazsa import sonrasi ilk yeni
+# id'ler dosyadan ACIKCA yuklendi; IDENTITY / serial sayaclari (solver_run.id,
+# path_explorer_solution.id, machine.id, run_result.id) ilerlemedi. Ayarlanmazsa import sonrasi ilk yeni
 # kayit id=1 ile cakisir (duplicate key). Partition'lar parent'in sayacini
 # paylastigi icin sadece ust tablolara bakilir.
 echo "[import] IDENTITY sayaclari max(id)'ye ayarlaniyor..."
@@ -211,7 +211,8 @@ BEGIN
     FROM information_schema.columns c
     JOIN pg_class k ON k.relname = c.table_name AND k.relkind IN ('r', 'p')
     LEFT JOIN pg_inherits i ON i.inhrelid = k.oid
-    WHERE c.table_schema = 'public' AND c.is_identity = 'YES' AND i.inhrelid IS NULL
+    WHERE c.table_schema = 'public' AND i.inhrelid IS NULL
+      AND (c.is_identity = 'YES' OR c.column_default LIKE 'nextval(%')
   LOOP
     CONTINUE WHEN r.seq IS NULL;
     EXECUTE format('SELECT coalesce(max(%I), 0) FROM public.%I', r.col, r.tbl) INTO m;

@@ -1,3 +1,0 @@
-id,public_id,row_size,col_size,algorithm,total_solved,round_counter,total_back_steps,dummy_back_steps,elapsed_ms,status,started_at,finished_at,grid_map_id,save_mode
-4,eb795991-0f59-4340-b428-24781781e3f5,5,5,SecondSolution_CalculateForwardAvailableWays,2816,234817,117406,19182,,COMPLETED,2026-10-02 06:59:29.992796+00,2026-10-02 06:59:31.042945+00,1,trie
-6,b4536b8e-b867-4956-b547-cdb266e1d5d0,5,5,FirstSolution_Combination,2816,1110803,555399,139474,,COMPLETED,2026-10-02 06:59:44.746808+00,2026-10-02 06:59:45.594113+00,1,trie

@@ -72,6 +72,14 @@ col_list() {
   psql_c "SELECT string_agg('t.' || quote_ident(attname), ', ' ORDER BY attnum) FROM pg_attribute WHERE attrelid = 'public.$1'::regclass AND attnum > 0 AND NOT attisdropped AND attgenerated = '';"
 }
 
+# Cikti satiri: once saga yasli satir sayisi (binlik ayracli), sonra dosya adi.
+#   $1 satir sayisi  $2 dosya adi  $3 ek aciklama (istege bagli)
+row_line() {
+  local n
+  n=$(printf "%d" "$1" | sed -E ':a;s/([0-9])([0-9]{3})($|\.)/\1.\2\3/;ta')
+  printf "  - (%11s satir) %s%s\n" "$n" "$2" "${3:-}"
+}
+
 # Tablo icin satir secen FROM ifadesi (solving_checkpoint ise pin'li).
 table_from() {
   if [ "$1" = "solving_checkpoint" ]; then
@@ -109,7 +117,7 @@ while read -r T; do
       docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
         "COPY (SELECT ${COLS} FROM ${FROM} WHERE t.grid_map_id = ${GID}) TO STDOUT WITH CSV HEADER" \
         > "$OUT_DIR/csv/${T}_${GSIZE}.csv"
-      echo "  - ${T}_${GSIZE}.csv"
+      row_line "$(psql_c "SELECT count(*) FROM ${FROM} WHERE t.grid_map_id = ${GID};")" "${T}_${GSIZE}.csv"
     done <<< "$GRIDS"
     # grid_map_id'si bos (NULL) satirlar hicbir grid dosyasina girmez -> <tablo>.csv
     # (orn. solver_run'daki eski kayitlar; yoksa CSV yedeginden sessizce dusuyorlar).
@@ -117,13 +125,13 @@ while read -r T; do
       docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
         "COPY (SELECT ${COLS} FROM ${FROM} WHERE t.grid_map_id IS NULL) TO STDOUT WITH CSV HEADER" \
         > "$OUT_DIR/csv/${T}.csv"
-      echo "  - ${T}.csv (grid_map_id bos)"
+      row_line "$(psql_c "SELECT count(*) FROM ${FROM} WHERE t.grid_map_id IS NULL;")" "${T}.csv" " (grid_map_id bos)"
     fi
   else
     docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
       "COPY (SELECT ${COLS} FROM ${FROM}) TO STDOUT WITH CSV HEADER" \
       > "$OUT_DIR/csv/${T}.csv"
-    echo "  - ${T}.csv"
+    row_line "$(psql_c "SELECT count(*) FROM ${FROM};")" "${T}.csv"
   fi
 done <<< "$TABLES"
 
@@ -135,7 +143,7 @@ write_insert() {
   local T="$1" WHERE="$2" OUT="$3" TMP="backup_insert_tmp" CNT
   CNT=$(psql_c "SELECT count(*) FROM $(table_from "$T") WHERE ${WHERE};")
   if [ "$CNT" -gt "$INSERT_ROW_LIMIT" ]; then
-    echo "  - ${OUT}: ${CNT} satir, cok buyuk -> atlandi (pgdump/csv kullan)"
+    row_line "$CNT" "$OUT" "  -> cok buyuk, atlandi (pgdump/csv kullan)"
     return
   fi
   docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
@@ -145,7 +153,7 @@ write_insert() {
     | grep -vF '\restrict' | grep -vF '\unrestrict' \
     > "$OUT_DIR/sql-insert/${OUT}"
   docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c "DROP TABLE ${TMP};" > /dev/null
-  echo "  - ${OUT} (${CNT} satir)"
+  row_line "$CNT" "$OUT"
 }
 
 echo "[backup] 3/3 SQL-insert uretiliyor (grid bazli; ${INSERT_ROW_LIMIT} satiri asan dosyalar haric)..."

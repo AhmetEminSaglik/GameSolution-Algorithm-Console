@@ -1,0 +1,3 @@
+id,code,description
+1,ALL,Tum baslangic kareleri gezilir (simetri yok).
+2,UNIQUE,Sadece simetrinin temel bolgesi gezilir (0 <= y <= x <= half); toplam carpanlarla bulunur.

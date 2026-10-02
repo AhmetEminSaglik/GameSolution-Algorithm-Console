@@ -1,0 +1,50 @@
+--
+-- PostgreSQL database dump
+--
+
+
+-- Dumped from database version 16.15 (Debian 16.15-1.pgdg13+2)
+-- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: run_result_square; Type: TABLE DATA; Schema: public; Owner: pathexplorer
+--
+
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 0, 0, 4, 468600000, 1874400000, '22:37:44.823247', 196047220016);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 1, 0, 8, 89946502, 719572016, '04:51:54.21195', 37300943509);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 2, 0, 8, 276653498, 2213227984, '26:52:34.855993', 200367371005);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 3, 0, 4, 45200000, 180800000, '04:17:48.58278', 39528553561);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 1, 1, 4, 114600000, 458400000, '10:18:40.313685', 92632684549);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 2, 1, 8, 282200000, 2257600000, '14:33:13.135775', 136976305287);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 3, 1, 4, 80700000, 322800000, '06:50:46.789716', 61189789887);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 2, 2, 4, 63400000, 253600000, '07:19:02.740127', 48159323773);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 3, 2, 4, 59300000, 237200000, '05:15:30.088994', 44716234945);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (1, 3, 3, 1, 125183214, 125183214, '07:29:52.704157', 65270116993);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 0, 0, 4, 468698008, 1874792032, '21:58:22.591248', 196283126732);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 1, 0, 8, 233127829, 1865022632, '17:22:01.827156', 146313694715);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 2, 0, 8, 133472037, 1067776296, '10:54:14.479194', 91328551007);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 3, 0, 4, 45107348, 180429392, '04:38:33.335513', 39328396917);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 1, 1, 4, 114606142, 458424568, '10:54:16.35739', 92661455355);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 2, 1, 8, 282218332, 2257746656, '15:58:48.669429', 136993658551);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 3, 1, 4, 80679890, 322719560, '07:08:41.012558', 61178940705);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 2, 2, 4, 63457066, 253828264, '05:43:21.786741', 48537804887);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 3, 2, 4, 59238546, 236954184, '05:37:59.000546', 44335340495);
+INSERT INTO public.run_result_square (run_result_id, x, y, multiplier, solutions, contribution, solve_time, steps) VALUES (2, 3, 3, 1, 125178016, 125178016, '07:32:03.718019', 65227574161);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+
