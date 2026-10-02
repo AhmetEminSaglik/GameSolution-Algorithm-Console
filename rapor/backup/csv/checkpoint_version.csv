@@ -1,3 +1,0 @@
-id,description,created_at
-1,Ilk surum: her interval cozumde bir checkpoint + kosu kapanisinda son durum. Baslangic karesi (ilk lokasyon) degisimi kaydedilmez; kare sayaci resume'da sifirlaniyordu.,2026-09-27 08:05:22.846284+00
-2,Ilk lokasyon (baslangic karesi) degisince onceki karenin son cozumu de checkpoint olarak kaydedilir; kare basina cozum sayisi DB'den tam cikar. first_location yazilir. Surum 1 ile karismasin diye bastan kosuldu.,2026-09-27 08:05:22.846284+00

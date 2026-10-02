@@ -97,7 +97,7 @@ Bilgiler 2026-10-01'de makineden okundu (`Win32_*` CIM siniflari, `Get-PhysicalD
   - 7x7: cozum basina ~420-5.000 adim (bolgeye gore degisiyor)
   - 8x8 (0,0) karesi: ~10.600 cozum/sn (2026-09-25 olcumu)
 - 7x7 (checkpoint_version 2)
-  - 2026-09-30 itibariyla ~994 milyon cozum, ~66 saat toplam elapsed
+  - 2026-10-02 bitti: 1.605.783.214 wedge cozum (toplam 8.642.871.600), ~107 sa 48 dk elapsed
   - 5 karenin bitmis sayilari ve sureleri: `SESSION-OZET.md`
 
 ## 10. Bilgileri yeniden almak (baska makine icin)

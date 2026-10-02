@@ -91,23 +91,32 @@ y=0 │ A  B  C  D  C  B  A
 Kontrol: 4+8+8+4+4+8+4+4+4+1 = **49** = 7²
 
 **Gercek sonuc (7x7, Algoritma 2):**
-kaynak `rapor/FileTotalScoreCount/Solution-2-7x7_EverySingleSquareTotalValue.txt`
+kaynak: DB `solving_checkpoint`, `checkpoint_version = 2` (2026-09-27 → 2026-10-02
+bastan tek kosu). Kare sayisi = karenin son solution_index'i - onceki karenin
+son solution_index'i (kare gecislerinde son cozum ayrica yazildigi icin tam).
 
 ```
 A (0,0) = 468_698_008 × 4 = 1_874_792_032
 B (1,0) = 233_127_829 × 8 = 1_865_022_632
-C (2,0) =  30_197_874 × 8 =   241_582_992
+C (2,0) = 133_472_037 × 8 = 1_067_776_296
 D (3,0) =  45_107_348 × 4 =   180_429_392
 E (1,1) = 114_606_142 × 4 =   458_424_568
 F (2,1) = 282_218_332 × 8 = 2_257_746_656
-G (3,1) =   6_409_586 × 4 =    25_638_344
-H (2,2) =  14_066_652 × 4 =    56_266_608
+G (3,1) =  80_679_890 × 4 =   322_719_560
+H (2,2) =  63_457_066 × 4 =   253_828_264
 I (3,2) =  59_238_546 × 4 =   236_954_184
 J (3,3) = 125_178_016 × 1 =   125_178_016
 -------------------------------------------
-Wedge toplami (10 kare)  = 1_378_848_333
-7x7 TOPLAM               = 7_322_035_424
+Wedge toplami (10 kare)  = 1_605_783_214
+7x7 TOPLAM               = 8_642_871_600
 ```
+
+Sure: toplam elapsed ~107 sa 48 dk (saf cozme), 922_188_543_525 adim
+(461_094_271_734'u geri). Donanim: `calisma-ortami.md`.
+
+Eski deger 7_322_035_424 (`rapor/FileTotalScoreCount/Solution-2-7x7_EverySingleSquareTotalValue.txt`)
+YANLIS: eski kosuda resume'da kare sayaci sifirdan basladigi icin C (30_197_874),
+G (6_409_586) ve H (14_066_652) eksik yazilmisti. Diger 7 kare v2 ile birebir ayni.
 
 ## 8x8 (half = 3, N cift → merkez hucre yok)
 

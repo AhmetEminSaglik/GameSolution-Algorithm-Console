@@ -29,16 +29,16 @@
 |---|---|---|
 | 5x5 | 12.400 | dogrulandi |
 | 6x6 | 8.250.272 | dogrulandi |
-| 7x7 | **7.322.035.424** | `rapor/FileTotalScoreCount/Solution-2-7x7_EverySingleSquareTotalValue.txt` degerleriyle |
-| 8x8 | ~33 trilyon (TAHMIN, aralik 5–35T) | `tahmini-8x8-sonucu.txt` |
+| 7x7 | **8.642.871.600** | checkpoint_version 2 kosusu, 2026-10-02 bitti; dogrulandi |
+| 8x8 | ~42 trilyon (TAHMIN, aralik 10–45T) | `tahmini-8x8-sonucu.txt` (2026-10-02, v2 7x7 ile) |
 
-- **7x7 icin kullanicinin karari:** dosyadaki 10 deger esas alinir, DB'den
-  yeniden turetme YAPMA. (Ben DB'den C/G/H'nin resume yuzunden eksik yazildigini
-  iddia etmistim → toplam 8.642.871.600 demistim; kullanici "bosver, dosyadaki
-  degerleri kullan" dedi. Konuyu tekrar acma, sadece sorulursa bahset.)
-  Bilgi: dosyadaki wedge toplami 1.378.848.333, DB son solution_index 1.605.783.214.
+- **7x7 v2 (2026-09-27 → 2026-10-02 02:27):** wedge 1.605.783.214, toplam
+  8.642.871.600. ~107 sa 48 dk elapsed, 922.188.543.525 adim. Kare tablosu:
+  `unique-area-calculation.md`. Eski dosya degerleri (7.322.035.424) yanlisti:
+  (2,0), (3,1), (2,2) resume'da kare sayaci sifirlandigi icin eksik yazilmisti.
+  Kullanici 2026-10-02'de v2 sonucunu esas almayi onayladi.
 
-## 8x8 kosusu (DEVAM EDIYOR)
+## 8x8 kosusu (v1, 2026-09-27 1.573M civarinda DURDURULDU; v2 henuz baslamadi)
 - 2026-09-24 14:27'de basladi, run `9ac44ac0-...`. 2026-09-25 sabahi ~584M cozum,
   hala (0,0) karesinde.
 - Hiz: ~10.600 cozum/sn (7x7'nin ~2 kati). Normal: round/sn ayni (~2,4M), ama

@@ -82,3 +82,17 @@ Total Dummy Back Step)  : 22_964_306
 
 ----------------------------------------
 
+Map: 6-6
+Cozum algoritmasi: SECOND
+Player: ROBOT
+Baslangic: Bastan Calistir
+Db kayit Modu: CHECKPOINT
+
+Total Number Solved: 1_421_678
+Elapsed time : 0:2:26:899
+Total Back Step : 122_527_721
+Total Step : 245_055_447
+Total Dummy Back Step)  : 22_964_306
+
+----------------------------------------
+

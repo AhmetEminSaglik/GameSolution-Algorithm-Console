@@ -58,12 +58,14 @@ description: >
 |---|---|
 | 5x5 | 12.400 |
 | 6x6 | 8.250.272 |
-| 7x7 | 7.322.035.424 (dosyadaki degerlerle - kullanici karari) |
-| 8x8 | ~33 trilyon TAHMIN (5–35T), kosu devam ediyor |
+| 7x7 | 8.642.871.600 (checkpoint_version 2, 2026-10-02 bitti) |
+| 8x8 | ~42 trilyon TAHMIN (10–45T, 2026-10-02), v2 kosusu henuz baslamadi |
 
-7x7 dosya degerleri: (0,0)=468.698.008 (1,0)=233.127.829 (2,0)=30.197.874
-(3,0)=45.107.348 (1,1)=114.606.142 (2,1)=282.218.332 (3,1)=6.409.586
-(2,2)=14.066.652 (3,2)=59.238.546 (3,3)=125.178.016.
+7x7 kare degerleri (v2): (0,0)=468.698.008 (1,0)=233.127.829 (2,0)=133.472.037
+(3,0)=45.107.348 (1,1)=114.606.142 (2,1)=282.218.332 (3,1)=80.679.890
+(2,2)=63.457.066 (3,2)=59.238.546 (3,3)=125.178.016. Wedge 1.605.783.214.
+~107 sa 48 dk elapsed. `rapor/FileTotalScoreCount/...7x7...txt` dosyasindaki eski
+degerler (toplam 7.322.035.424) YANLIS - (2,0)/(3,1)/(2,2) resume bug'iyla eksik.
 
 ## 4. DB (Docker)
 - Container `dev-postgres`, user/db `pathexplorer`:
