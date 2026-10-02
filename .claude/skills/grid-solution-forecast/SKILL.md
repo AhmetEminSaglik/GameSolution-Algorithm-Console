@@ -44,9 +44,12 @@ eklerken de mutlaka ekle.
   - `[x][y] = deger` formatinda, o hucreden BASLAYAN toplam cozum sayisi
     (Algoritma 2, "her tekil kareye gore toplam" ozelligi - `BuildGame`'in
     simetri dongusu tamamlandikca hucre hucre yaziliyor).
-  - TAMAMLANMIS bir boyutta: butun `[x][y]` cifleri var (bazen ayni blok
-    birden fazla kez tekrar ediyor - 5x5 dosyasinda oldugu gibi; dedupe et,
-    ilk gorulen deger yeterli, cunku deterministik ayni sonucu verir).
+  - TAMAMLANMIS bir boyutta: butun `[x][y]` cifleri var. Dosyaya her kosu
+    ekleme yapar, bu yuzden ayni blok birden fazla kez gecebilir (5x5 gibi).
+    Bir hucre icin degerler farkliysa SON goruleni al: eski kosularda resume'da
+    kare sayaci sifirlaniyordu (7x7'de (2,0)/(3,1)/(2,2) eksik yazilmisti).
+    Kesin kaynak DB: `solving_checkpoint`, checkpoint_version 2, kare basina
+    son solution_index farki.
   - DEVAM EDEN bir boyutta: sadece o ana kadar TAMAMEN bitmis wedge
     hucreleri var (wedge, `BuildGame`'in simetri dongu sirasina gore
     dolduruluyor - genelde y=0 satiri once). Eksik satirlar o hucrenin

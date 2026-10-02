@@ -20,7 +20,7 @@ Portfolyo projendeki `(x<<4)|(y&0x0F)` = **hücre başına 1 byte, koordinat ba�
   indeksi, ≤256 hücre için 1 byte / değilse 2 byte) yorum olarak bırakılacak.
 
 ### 0.2 Ölçek gerçeği — "her çözümü saklamak"
-5x5=12.400 · 6x6≈8M · 7x7 (tek başlangıç)=49M → tüm başlangıçlar ≈ 2 milyar ·
+5x5=12.400 · 6x6=8.250.272 · 7x7=8.642.871.600 (gerçek, 2026-10-02) · 8x8 ≈ 42 trilyon (tahmin) ·
 10x10 = muhtemelen **trilyonlar**. Trilyon satır saklanamaz.
 
 **Karar:**
@@ -309,7 +309,7 @@ tutarlı, yaprak→kök geri kurulum geçerli 25-hücre çözüm. `mvn test` 21 
 
 ### Yapılmadı / ileriye (bilinçli)
 - **~7x7 üstü yalnız-aggregate mod** — `(rows,cols,open1,open2,open3)→count` tablosu.
-  Şema buna eklemeli geçişe hazır (`01_schema.sql` sonundaki yorum). 7x7 ~2 milyar,
+  Şema buna eklemeli geçişe hazır (`01_schema.sql` sonundaki yorum). 7x7 ~8,6 milyar,
   10x10 trilyon satır → her çözümü saklamak o ölçekte pratik değil.
 - `elapsed_ms` şu an solver_run'da null bırakılıyor (sink wall-clock ölçmüyor) —
   eklenebilir: `beginRun`'da `System.nanoTime()`, `endRun`'da fark.

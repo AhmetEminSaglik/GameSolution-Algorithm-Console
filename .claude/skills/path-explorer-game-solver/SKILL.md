@@ -51,7 +51,8 @@ description: >
 - **Sadece kare grid'de gecerli** - kod sadece rowCount'a bakiyor, 5x6 gibi
   dikdortgende yanlis kareleri atlar (dikdortgen = 4 simetri).
 - Hucre degerleri: `rapor/FileTotalScoreCount/Solution-2-<N>x<N>_EverySingleSquareTotalValue.txt`
-  (`[x][y] = deger`). 5x5 dosyasi ayni blogu tekrar eder - dedupe et.
+  (`[x][y] = deger`). Her kosu ekler; ayni hucre birden fazla gecerse SON degeri
+  al (eski kosular resume bug'iyla eksik yazabiliyordu). Kesin kaynak: DB v2.
 
 ## 3. Bilinen sonuclar
 | Grid | Toplam |

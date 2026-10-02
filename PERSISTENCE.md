@@ -169,8 +169,8 @@ SELECT s2.subtree_solution_count
 | grid | çözüm sayısı | flat satır | trie düğüm (tahmini) |
 |---|---|---|---|
 | 5x5 | 12.400 | 12.400 | ~150.000 (ölçüldü) |
-| 6x6 | ~8 milyon | ~8M | ??? (ortak öneke bağlı, muhtemelen çok daha az) |
-| 7x7 (tüm başlangıçlar) | ~2 milyar | ~2G | ??? |
+| 6x6 | 8.250.272 | ~8M | ??? (ortak öneke bağlı, muhtemelen çok daha az) |
+| 7x7 (tüm başlangıçlar) | 8.642.871.600 (gerçek, 2026-10-02) | ~8,6G | ??? |
 | 10x10 | trilyonlar | **imkansız** | derin ortak önekle çok daha küçük ama yine dev |
 
 - **flat** ~7x7 üstünde pratik değil (her çözüm 1 satır).

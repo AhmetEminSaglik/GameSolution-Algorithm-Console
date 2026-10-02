@@ -123,7 +123,7 @@
 4. (Istege bagli) resume'da kare sayacinin sifirlanmasi (FileTotalScoreCount'a
    eksik yazma) — kullanici simdilik ilgilenmiyor.
 5. (Istege bagli) dikdortgen grid icin simetri kurali.
-6. Eski notlar (`PERSISTENCE.md`, `todo-checklist.md`) hala "7x7 ~2 milyar" diyor.
+6. ~~Eski notlar "7x7 ~2 milyar"~~ — 2026-10-02 duzeltildi.
 
 ## Commit'ler (bu session)
 `e97eef5` (kullanici) backup grid bazli CSV · `18e1ada` 7x7 harita + sonuc ·

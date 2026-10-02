@@ -125,5 +125,5 @@ yuzden hucre tahminleri kaba; toplam icin mertebe (10 trilyonlar) daha
 anlamli. Gercek sayi ancak 8x8 kosusu ilerledikce netlesir - ilk hucre (0,0)
 bitince bu dosyayi onunla guncelle.
 
-Eski notlar (PERSISTENCE.md, todo-checklist.md) "7x7 ~2 milyar" diyor; gercek
+Eski notlar (PERSISTENCE.md, todo-checklist.md) "7x7 ~2 milyar" diyordu (2026-10-02 duzeltildi); gercek
 7x7 toplami bunun ~4,3 kati (8,64 milyar).
