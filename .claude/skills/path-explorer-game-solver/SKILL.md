@@ -118,6 +118,10 @@ FROM solving_checkpoint WHERE grid_map_id=:g GROUP BY 1 ORDER BY 2;
 - CSV grid bazli: `<tablo>_<R>x<C>.csv` (grid_map_id'li tablolar), NULL
   grid_map_id → `<tablo>.csv`, digerleri `<tablo>.csv`. `csv/*.csv` her
   calistirmada silinip yeniden yazilir.
+- sql-insert de grid bazli (2026-10-02'den beri): `<tablo>_<R>x<C>_insert.txt`
+  (orn. `solving_checkpoint_8x8_insert.txt`); satir limiti (100.000) dosya
+  basina. `sql-insert/*_insert.txt` de her calistirmada silinip yeniden yazilir.
+  `backup-import.sh` iki formatta da `_<R>x<C>` ekini tabloya esler.
 - solving_checkpoint pgdump ile ayni ana pinlenir: her `solving_run_id` icin
   pgdump'taki max `solution_index`.
 - `backup-import.sh` grid'li dosya adlarini tabloya esler (adi zaten NxM ile

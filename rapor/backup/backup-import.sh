@@ -6,6 +6,14 @@
 # YIKICI ISLEM: hedef tablolarda ZATEN VERI VARSA, once ONAY ister, sonra
 # o tablolari TAMAMEN SILIP (TRUNCATE ... CASCADE) dosyadan yeniden doldurur.
 # Boylece eski + yeni veri KARISMAZ. Onay verilmezse HICBIR SEY DEGISMEZ.
+#
+# Yeni (bos) bir bilgisayarda:
+#   1) docker compose up -d   (docker/initdb/*.sql semayi kurar; grid_map,
+#      solving_algorithm, checkpoint_version birkac hazir satirla gelir -
+#      bu yuzden "zaten veri var" onayi yine sorulur, SIL yaz)
+#   2) backup-import.bat -> 1) CSV (onerilen) ya da 3) SQL-insert.
+#      pgdump/ git'te YOK; sadece yedegin alindigi makinede vardir.
+#   path_explorer_solution_6x6.csv (~1.1 GB) git'te yok, o tablo bos kalir.
 set -euo pipefail
 
 CONTAINER="${PG_CONTAINER:-dev-postgres}"
@@ -83,12 +91,13 @@ for f in "${FILES[@]}"; do
   base="$(basename "$f")"
   if [ "$SRC" = "csv" ]; then
     t="${base%.csv}"
-    if [ -z "$(psql_c "SELECT 1 FROM information_schema.tables WHERE table_name='${t}';")" ] \
-       && [[ "$t" =~ ^(.+)_[0-9]+x[0-9]+$ ]]; then
-      t="${BASH_REMATCH[1]}"
-    fi
   else
     t="${base%_insert.txt}"
+  fi
+  # sql-insert de CSV gibi grid bazli: <tablo>_<R>x<C>_insert.txt
+  if [ -z "$(psql_c "SELECT 1 FROM information_schema.tables WHERE table_name='${t}';")" ] \
+     && [[ "$t" =~ ^(.+)_[0-9]+x[0-9]+$ ]]; then
+    t="${BASH_REMATCH[1]}"
   fi
   [ -z "${TABLE_FILES[$t]+x}" ] && TABLES+=("$t")
   TABLE_FILES[$t]+="${f}"$'\n'
@@ -172,12 +181,44 @@ for t in "${ORDERED_TABLES[@]}"; do
         "COPY ${t} (${HEADER_COLS}) FROM STDIN WITH CSV HEADER" < "$f"
     done <<< "${TABLE_FILES[$t]}"
   else
-    echo "[import] ${t}: SQL-insert'ten yukleniyor..."
-    docker exec -i "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" < "${BACKUP_DIR}/sql-insert/${t}_insert.txt" > /dev/null
+    while read -r f; do
+      [ -z "$f" ] && continue
+      echo "[import] ${t}: $(basename "$f") yukleniyor..."
+      # IDENTITY ALWAYS kolonlara (solver_run.id, path_explorer_solution.id)
+      # acik deger yazabilmek icin OVERRIDING SYSTEM VALUE eklenir (yoksa);
+      # identity'si olmayan tablolarda zararsiz. Hata olursa durur (ON_ERROR_STOP).
+      sed -E 's/^(INSERT INTO [^ ]+ \([^)]*\)) VALUES /\1 OVERRIDING SYSTEM VALUE VALUES /' "$f" \
+        | docker exec -i "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -q -v ON_ERROR_STOP=1 > /dev/null
+    done <<< "${TABLE_FILES[$t]}"
   fi
 
   NEWCNT=$(psql_c "SELECT count(*) FROM ${t};")
   echo "[import] ${t}: tamam (${NEWCNT} satir)."
 done
+
+# id'ler dosyadan ACIKCA yuklendi; IDENTITY sayaclari (solver_run.id,
+# path_explorer_solution.id) ilerlemedi. Ayarlanmazsa import sonrasi ilk yeni
+# kayit id=1 ile cakisir (duplicate key). Partition'lar parent'in sayacini
+# paylastigi icin sadece ust tablolara bakilir.
+echo "[import] IDENTITY sayaclari max(id)'ye ayarlaniyor..."
+docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -q -c "
+DO \$\$
+DECLARE r record; m bigint;
+BEGIN
+  FOR r IN
+    SELECT pg_get_serial_sequence(format('public.%I', c.table_name), c.column_name) AS seq,
+           c.table_name AS tbl, c.column_name AS col
+    FROM information_schema.columns c
+    JOIN pg_class k ON k.relname = c.table_name AND k.relkind IN ('r', 'p')
+    LEFT JOIN pg_inherits i ON i.inhrelid = k.oid
+    WHERE c.table_schema = 'public' AND c.is_identity = 'YES' AND i.inhrelid IS NULL
+  LOOP
+    CONTINUE WHEN r.seq IS NULL;
+    EXECUTE format('SELECT coalesce(max(%I), 0) FROM public.%I', r.col, r.tbl) INTO m;
+    PERFORM setval(r.seq, greatest(m, 1), m > 0);
+    RAISE NOTICE '% -> %', r.seq, m;
+  END LOOP;
+END
+\$\$;"
 
 echo "[import] Bitti."

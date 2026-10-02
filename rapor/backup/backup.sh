@@ -7,10 +7,13 @@
 #                                       grid boyutuna gore AYRI dosyalara bolunur
 #                                       (orn. solving_checkpoint_6x6.csv, _7x7.csv)
 #   sql-insert/<tablo>_insert.txt    -> calistirilabilir INSERT kodu (kucuk tablolar)
+#   sql-insert/<tablo>_<R>x<C>_insert.txt -> grid_map_id'li tablolar, CSV gibi
+#                                       grid bazli (orn. solving_checkpoint_8x8_insert.txt);
+#                                       tek dosya GitHub'in 100 MB sinirina dayanmasin diye
 #
-# csv/ klasorundeki eski .csv'ler HER CALISTIRMADA SILINIP yeniden uretilir
+# csv/*.csv ve sql-insert/*_insert.txt HER CALISTIRMADA SILINIP yeniden uretilir
 # (grid bazli isimler degisebildigi icin; eski dosya kalip import'ta cift
-# yuklenmesin). sql-insert/ dosyalari ustune yazilir (sabit isim).
+# yuklenmesin).
 # pgdump/ dosyasi HER CALISTIRMADA YENI, zaman damgali bir dosya olarak eklenir
 # (gecmis yedekler silinmez - eskilerini elle temizlemen gerekebilir).
 #
@@ -124,29 +127,47 @@ while read -r T; do
   fi
 done <<< "$TABLES"
 
-echo "[backup] 3/3 SQL-insert uretiliyor (${INSERT_ROW_LIMIT} satiri asanlar haric)..."
+# Secilen satirlari (WHERE) gecici bir tabloya alip INSERT metni olarak yazar;
+# INSERT'lerdeki tablo adi gercek tabloya cevrilir. Satir sayisi
+# INSERT_ROW_LIMIT'i asarsa dosya uretilmez.
+#   $1 tablo  $2 WHERE kosulu (t. ile)  $3 cikti dosya adi
+write_insert() {
+  local T="$1" WHERE="$2" OUT="$3" TMP="backup_insert_tmp" CNT
+  CNT=$(psql_c "SELECT count(*) FROM $(table_from "$T") WHERE ${WHERE};")
+  if [ "$CNT" -gt "$INSERT_ROW_LIMIT" ]; then
+    echo "  - ${OUT}: ${CNT} satir, cok buyuk -> atlandi (pgdump/csv kullan)"
+    return
+  fi
+  docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
+    "SET client_min_messages = warning; DROP TABLE IF EXISTS ${TMP}; CREATE TABLE ${TMP} AS SELECT $(col_list "$T") FROM $(table_from "$T") WHERE ${WHERE};" > /dev/null
+  docker exec "$CONTAINER" pg_dump -U "$PG_USER" -d "$PG_DB" -t "$TMP" --data-only --inserts --column-inserts \
+    | sed "s/${TMP}/${T}/g" \
+    | grep -vF '\restrict' | grep -vF '\unrestrict' \
+    > "$OUT_DIR/sql-insert/${OUT}"
+  docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c "DROP TABLE ${TMP};" > /dev/null
+  echo "  - ${OUT} (${CNT} satir)"
+}
+
+echo "[backup] 3/3 SQL-insert uretiliyor (grid bazli; ${INSERT_ROW_LIMIT} satiri asan dosyalar haric)..."
+# CSV gibi: dosya adlari grid'e gore degisebildigi icin eskiler silinir
+# (yoksa eski tek parca solving_checkpoint_insert.txt import'ta cift yuklenir).
+rm -f "$OUT_DIR/sql-insert/"*_insert.txt
 while read -r T; do
   [ -z "$T" ] && continue
-  ROWCOUNT=$(psql_c "SELECT count(*) FROM ${T};")
-  if [ "$ROWCOUNT" -gt "$INSERT_ROW_LIMIT" ]; then
-    echo "  - ${T}: ${ROWCOUNT} satir, cok buyuk -> atlandi (pgdump/csv kullan)"
-    continue
-  fi
-  if [ "$T" = "solving_checkpoint" ]; then
-    PIN_TABLE="solving_checkpoint_pin_tmp"
-    docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c \
-      "DROP TABLE IF EXISTS ${PIN_TABLE}; CREATE TABLE ${PIN_TABLE} AS SELECT $(col_list solving_checkpoint) FROM $(table_from solving_checkpoint);" > /dev/null
-    docker exec "$CONTAINER" pg_dump -U "$PG_USER" -d "$PG_DB" -t "$PIN_TABLE" --data-only --inserts --column-inserts \
-      | sed "s/${PIN_TABLE}/solving_checkpoint/g" \
-      | grep -vF '\restrict' | grep -vF '\unrestrict' \
-      > "$OUT_DIR/sql-insert/${T}_insert.txt"
-    docker exec "$CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -c "DROP TABLE ${PIN_TABLE};" > /dev/null
+  HAS_GRID=$(psql_c "SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='${T}' AND column_name='grid_map_id';")
+  if [ -n "$HAS_GRID" ]; then
+    # Her grid icin ayri dosya: <tablo>_<row>x<col>_insert.txt
+    GRIDS=$(psql_c "SELECT g.id || ' ' || g.row_size || 'x' || g.col_size FROM grid_map g WHERE EXISTS (SELECT 1 FROM ${T} x WHERE x.grid_map_id = g.id) ORDER BY g.id;")
+    while read -r GID GSIZE; do
+      [ -z "$GID" ] && continue
+      write_insert "$T" "t.grid_map_id = ${GID}" "${T}_${GSIZE}_insert.txt"
+    done <<< "$GRIDS"
+    if [ "$(psql_c "SELECT EXISTS (SELECT 1 FROM ${T} WHERE grid_map_id IS NULL);")" = "t" ]; then
+      write_insert "$T" "t.grid_map_id IS NULL" "${T}_insert.txt"
+    fi
   else
-    docker exec "$CONTAINER" pg_dump -U "$PG_USER" -d "$PG_DB" -t "${T}" --data-only --inserts --column-inserts \
-      | grep -vF '\restrict' | grep -vF '\unrestrict' \
-      > "$OUT_DIR/sql-insert/${T}_insert.txt"
+    write_insert "$T" "true" "${T}_insert.txt"
   fi
-  echo "  - ${T}_insert.txt"
 done <<< "$TABLES"
 
 echo "[backup] Bitti -> ${OUT_DIR}"
