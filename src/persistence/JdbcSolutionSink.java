@@ -64,17 +64,19 @@ public final class JdbcSolutionSink implements SolutionSink {
     @Override
     public void beginRun(RunInfo info) {
         String sql = """
-                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode)
-                VALUES (?,?,?,?, 'RUNNING', ?, 'flat')
+                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode, run_map_type_id)
+                VALUES (?,?,?,?, 'RUNNING', ?, 'flat', ?)
                 """;
         try (Connection c = dataSource.getConnection()) {
             gridMapId = GridMapIds.resolve(c, info.rowCount(), info.colCount());
+            int runMapTypeId = RunMapType.selected().resolve(c);
             try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setObject(1, UUID.randomUUID());
                 ps.setInt(2, info.rowCount());
                 ps.setInt(3, info.colCount());
                 ps.setString(4, info.algorithm());
                 ps.setInt(5, gridMapId);
+                ps.setInt(6, runMapTypeId);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     keys.next();

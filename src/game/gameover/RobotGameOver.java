@@ -3,6 +3,7 @@ package game.gameover;
 import check.CheckSquare;
 import game.Game;
 import game.location.Location;
+import persistence.RunMapType;
 
 
 public class RobotGameOver implements IGameOver {
@@ -31,13 +32,16 @@ public class RobotGameOver implements IGameOver {
 
 
     /**
-     * Kare simetrisi optimizasyonu: baslangic kareleri artik TUM tahtayi degil,
-     * sadece "temel bolgeyi" (0 <= y <= x <= half) geziyor (bkz.
-     * Move.changeStartLocationSpecialMovement). Bu bolgenin SON karesi (half, half) -
-     * (rowCount-1, colCount-1) DEGIL, oyuncu oraya artik hic gitmiyor.
+     * Son baslangic karesi tarama tipine gore (bkz. Move.changeStartLocationSpecialMovement):
+     * UNIQUE sadece "temel bolgeyi" (0 <= y <= x <= half) gezer, son karesi (half, half);
+     * ALL tum tahtayi gezer, son karesi (rowCount-1, colCount-1).
      */
     boolean isRobotFinishedAllLocations() {
         Location robotLocation = game.getPlayer().getLocation();
+        if (RunMapType.selected() == RunMapType.ALL) {
+            return robotLocation.getX() == rowCount - 1 &&
+                    robotLocation.getY() == colCount - 1;
+        }
         int half = (rowCount - 1) / 2;
         return robotLocation.getX() == half &&
                 robotLocation.getY() == half;

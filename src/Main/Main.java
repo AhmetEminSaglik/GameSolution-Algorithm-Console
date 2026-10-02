@@ -18,6 +18,7 @@ import game.play.report.RunReportWriter;
 import persistence.CompositeSolutionSink;
 import persistence.DbConfig;
 import persistence.DbSaveMode;
+import persistence.RunMapType;
 import persistence.JdbcSolutionSink;
 import persistence.NoOpSolutionSink;
 import persistence.SolutionSink;
@@ -93,6 +94,7 @@ public class Main { // 7x7 eksikler: 5078-7072
         // Hangi yol secilirse secilsin, DB kayit modu HER ZAMAN soruluyor (tutarlilik icin).
         boolean checkpointRange = wantsCheckpointList(args, main.baseSolution);
         DbSaveMode saveMode = readSaveMode(args);
+        RunMapType.select(readRunMapType(args));
 
         if (checkpointRange) {
             runCheckpointRange(game, saveMode, args, main.baseSolution);   // #from checkpoint'ten oynat, #to'da dur
@@ -136,6 +138,7 @@ public class Main { // 7x7 eksikler: 5078-7072
                 PlayerType.of(player),
                 startLabel,
                 saveMode,
+                RunMapType.selected(),
                 player.getScore().getTotalGameFinishedScore(),
                 playGame.getElapsedTimeText(),
                 player.getScore().getCounterTotalBackStep(),
@@ -556,6 +559,30 @@ public class Main { // 7x7 eksikler: 5078-7072
             case "4" -> DbSaveMode.ALL;
             default -> DbSaveMode.NONE;
         };
+    }
+
+    /**
+     * Tarama: hangi baslangic kareleri gezilecek. {@code --map=all|unique} argumani
+     * ya da sessiz mod (save argumani / DB env) → sormaz; argumansiz UNIQUE.
+     * Checkpoint'ler ve solver_run satirlari bu tipi (run_map_type_id) tasir.
+     */
+    private static RunMapType readRunMapType(String[] args) {
+        boolean silent = DbConfig.isDbEnabled();
+        for (String a : (args == null ? new String[0] : args)) {
+            if (a.startsWith("--map=")) {
+                RunMapType t = RunMapType.parse(a.substring("--map=".length()));
+                return t == null ? RunMapType.UNIQUE : t;
+            }
+            if (a.equals("--save-db") || a.startsWith("--save=")) {
+                silent = true;
+            }
+        }
+        if (silent) {
+            return RunMapType.UNIQUE;
+        }
+        System.out.println("Tarama sec:  1) ALL (tum kareler)   2) UNIQUE (sadece simetri temel bolgesi)   (bos = 2)");
+        RunMapType t = RunMapType.parse(ConsoleInput.readLine());
+        return t == null ? RunMapType.UNIQUE : t;
     }
 
     Player selectPlayer(Game game) {

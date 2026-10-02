@@ -3,6 +3,7 @@ package game.play.report;
 import game.gamerepo.player.PlayerType;
 import game.gamerepo.player.robot.solution.SolutionAlgorithm;
 import persistence.DbSaveMode;
+import persistence.RunMapType;
 
 /**
  * Bir PlayGame calismasinin ozeti: hangi mapte, hangi cozum algoritmasi/player,
@@ -15,6 +16,7 @@ public record RunReport(
         PlayerType player,
         String startMode,
         DbSaveMode dbSaveMode,
+        RunMapType runMapType,
         long totalSolved,
         String elapsedTime,
         long totalBackStep,

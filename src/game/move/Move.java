@@ -8,6 +8,7 @@ import game.Game;
 import game.location.DirectionLocation;
 import game.move.fundamental.MoveBack;
 import game.play.SelectFirstSqaureToStart;
+import persistence.RunMapType;
 import print.EasylyReadNumber;
 import validation.Validation;
 
@@ -72,15 +73,27 @@ public abstract class Move implements IMove { // ICalculateMove
         appendFileSquareTotalSolvedValue();
         int locationX = game.getPlayer().getLocation().getX();
         int locationY = game.getPlayer().getLocation().getY();
-        int half = (rowCount - 1) / 2;
+        boolean hasNext;
 
-        locationX++;
-        if (locationX > half) {
-            locationY++;
-            locationX = locationY;
+        if (RunMapType.selected() == RunMapType.ALL) {
+            // Tum tahta: satir satir (x, sonra y), simetri yok.
+            locationX++;
+            if (locationX >= rowCount) {
+                locationX = 0;
+                locationY++;
+            }
+            hasNext = locationY < colCount;
+        } else {
+            int half = (rowCount - 1) / 2;
+            locationX++;
+            if (locationX > half) {
+                locationY++;
+                locationX = locationY;
+            }
+            hasNext = locationY <= half;
         }
 
-        if (locationY <= half) {
+        if (hasNext) {
 
             try {
 
@@ -96,7 +109,8 @@ public abstract class Move implements IMove { // ICalculateMove
 
             }
         } else {
-            ErrorMessage.appearWarnings(getClass(), "Temel bolge tukendi - baslangic karesi daha fazla ilerletilemedi");
+            ErrorMessage.appearWarnings(getClass(), "Taranacak kare kalmadi (" + RunMapType.selected()
+                    + ") - baslangic karesi daha fazla ilerletilemedi");
         }
     }
 

@@ -22,6 +22,7 @@ public class RunReportWriter {
                 + "Player: " + report.player().name() + "\n"
                 + "Baslangic: " + report.startMode() + "\n"
                 + "Db kayit Modu: " + report.dbSaveMode().name() + "\n"
+                + "Tarama: " + report.runMapType().name() + "\n"
                 + "\n"
                 + "Total Number Solved: " + number.getReadableNumberInStringFormat(report.totalSolved()) + "\n"
                 + "Elapsed time : " + report.elapsedTime() + "\n"

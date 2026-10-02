@@ -6,6 +6,7 @@ import game.Game;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import persistence.DbConfig;
+import persistence.RunMapType;
 
 import java.nio.ByteBuffer;
 import java.sql.Connection;
@@ -61,9 +62,10 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
               (solving_run_id, solution_index, grid_map_id, algorithm_id, interval_size,
                step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                round_counter, round_counter_overlong, total_solved, total_solved_overlong,
-               total_back_steps, dummy_back_steps, locked_back_lose, checkpoint_version, first_location, elapsed)
-            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?, make_interval(secs => ?))
-            ON CONFLICT (checkpoint_version, solution_index, grid_map_id, algorithm_id, interval_size,
+               total_back_steps, dummy_back_steps, locked_back_lose, checkpoint_version, first_location, elapsed,
+               run_map_type_id)
+            VALUES (?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?, make_interval(secs => ?), ?)
+            ON CONFLICT (checkpoint_version, run_map_type_id, solution_index, grid_map_id, algorithm_id, interval_size,
                          step, path_len, dir_count, path, visited_dirs, exit_situation, one_way_list,
                          round_counter, total_back_steps, dummy_back_steps, locked_back_lose) DO NOTHING
             RETURNING solution_index
@@ -76,6 +78,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
     private final int algorithmId;
     private final int checkpointVersion;
     private int gridMapId = -1;
+    private int runMapTypeId = -1;
     private boolean disabled = false;
 
     private final List<Pending> buffer = new ArrayList<>();
@@ -122,6 +125,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
         try {
             this.gridMapId = resolveGridMapId(rowSize, colSize);
+            this.runMapTypeId = resolveRunMapTypeId();
         } catch (RuntimeException e) {
             disabled = true;
             logWarn("checkpoint devre disi - " + e.getMessage());
@@ -141,6 +145,15 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
 
     public int checkpointVersion() {
         return checkpointVersion;
+    }
+
+    /** run_map_type.id (yoksa eklenir). Main'de secilen tarama ({@link RunMapType#selected()}). */
+    private int resolveRunMapTypeId() {
+        try (Connection c = dataSource.getConnection()) {
+            return RunMapType.selected().resolve(c);
+        } catch (SQLException e) {
+            throw new IllegalStateException("run_map_type_id cozulemedi: " + e.getMessage(), e);
+        }
     }
 
     private int resolveGridMapId(int rowSize, int colSize) {
@@ -318,6 +331,7 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         sb.append("\n    grid_map_id      = ").append(gridMapId).append("  (").append(s.rowSize()).append('x').append(s.colSize()).append(')');
         sb.append("\n    algorithm_id     = ").append(algorithmId);
         sb.append("\n    checkpoint_version = ").append(checkpointVersion);
+        sb.append("\n    run_map_type_id  = ").append(runMapTypeId).append("  (").append(RunMapType.selected()).append(')');
         sb.append("\n    interval_size    = ").append(interval);
         sb.append("\n    step             = ").append(s.step());
         sb.append("\n    path_len         = ").append(s.step());
@@ -406,7 +420,8 @@ public final class Algo2CheckpointWriter implements CheckpointRecorder {
         ps.setShort(i++, (short) checkpointVersion);
         int firstCell = s.path()[0] & 0xFF;
         ps.setString(i++, (firstCell / s.colSize()) + "-" + (firstCell % s.colSize()));
-        ps.setDouble(i, pending.elapsedNanos() / 1e9);
+        ps.setDouble(i++, pending.elapsedNanos() / 1e9);
+        ps.setShort(i, (short) runMapTypeId);
     }
 
     private static void logWarn(String msg) {

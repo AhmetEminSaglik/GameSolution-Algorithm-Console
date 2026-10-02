@@ -41,6 +41,14 @@ description: >
   `.claude/skills/grid-solution-forecast` (tahmin skill'i - "8x8/9x9 tahmini" icin).
 
 ## 2. Simetri (unique area) ve toplam
+- **Tarama secimi (2026-10-02):** Main, DB modundan sonra "Tarama sec: 1) ALL
+  2) UNIQUE" sorar (`--map=all|unique`; sessiz mod = UNIQUE). `RunMapType`
+  (persistence) secimi tutar; `Move.changeStartLocationSpecialMovement` ve
+  `RobotGameOver` buna gore tum tahtayi ya da temel bolgeyi gezer.
+  `run_map_type` tablosu (1 ALL, 2 UNIQUE; yoksa uygulama ekler),
+  `solver_run.run_map_type_id` ve `solving_checkpoint.run_map_type_id`
+  (checkpoint tekillik kuralinda da var; loader sadece secilen tipi okur).
+  Migration `11_run_map_type.sql`. Test: 5x5 ALL = 12.400, UNIQUE = 2.816.
 - `Move.changeStartLocationSpecialMovement()` sadece `0 <= y <= x <= half`
   karelerini gezer, `half = (rowCount-1)/2` - her NxN icin dinamik.
   Hesaplanan kare = `(half+1)(half+2)/2` (5x5/6x6: 6, 7x7/8x8: 10, 9x9/10x10: 15).

@@ -74,10 +74,11 @@ public final class TrieSolutionSink implements SolutionSink {
     public void beginRun(RunInfo info) {
         try (Connection c = dataSource.getConnection()) {
             gridMapId = GridMapIds.resolve(c, info.rowCount(), info.colCount());
+            int runMapTypeId = RunMapType.selected().resolve(c);
             algorithmId = resolveAlgorithmId(c, info.algorithm());
             String sql = """
-                    INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode)
-                    VALUES (?,?,?,?, 'RUNNING', ?, 'trie')
+                    INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode, run_map_type_id)
+                    VALUES (?,?,?,?, 'RUNNING', ?, 'trie', ?)
                     """;
             try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setObject(1, UUID.randomUUID());
@@ -85,6 +86,7 @@ public final class TrieSolutionSink implements SolutionSink {
                 ps.setInt(3, info.colCount());
                 ps.setString(4, info.algorithm());
                 ps.setInt(5, gridMapId);
+                ps.setInt(6, runMapTypeId);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     keys.next();

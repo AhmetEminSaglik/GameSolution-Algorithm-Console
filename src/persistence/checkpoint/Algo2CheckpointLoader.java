@@ -3,6 +3,7 @@ package persistence.checkpoint;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import persistence.DbConfig;
+import persistence.RunMapType;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,7 +28,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
     private static final String FROM_WHERE = """
              FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
              WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
-               AND c.checkpoint_version = ?
+               AND c.checkpoint_version = ? AND c.run_map_type_id = ?
             """;
 
     private final HikariDataSource dataSource;
@@ -53,7 +54,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                        (extract(epoch FROM c.elapsed) * 1000)::bigint AS elapsed_ms
                   FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
                  WHERE g.row_size = ? AND g.col_size = ? AND c.algorithm_id = ?
-                   AND c.checkpoint_version = ?
+                   AND c.checkpoint_version = ? AND c.run_map_type_id = ?
                  ORDER BY c.solution_index ASC
                 """;
         List<CheckpointSummary> out = new ArrayList<>();
@@ -81,7 +82,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
                   FROM checkpoint_version v
                   LEFT JOIN (solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id
                                 AND g.row_size = ? AND g.col_size = ?)
-                         ON c.checkpoint_version = v.id AND c.algorithm_id = ?
+                         ON c.checkpoint_version = v.id AND c.algorithm_id = ? AND c.run_map_type_id = ?
                  GROUP BY v.id, v.description
                  ORDER BY v.id
                 """;
@@ -91,6 +92,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
             ps.setInt(1, row);
             ps.setInt(2, col);
             ps.setInt(3, algo);
+            ps.setShort(4, (short) RunMapType.selected().id());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(new CheckpointVersionInfo(rs.getInt(1), rs.getString(2), rs.getLong(3)));
@@ -107,7 +109,7 @@ final class Algo2CheckpointLoader implements AutoCloseable {
              PreparedStatement ps = c.prepareStatement(
                      "SELECT count(*) FROM solving_checkpoint c JOIN grid_map g ON g.id = c.grid_map_id"
                              + " WHERE g.row_size=? AND g.col_size=? AND c.algorithm_id=?"
-                             + " AND c.checkpoint_version = ?")) {
+                             + " AND c.checkpoint_version = ? AND c.run_map_type_id = ?")) {
             bindBase(ps, row, col, algo);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -202,13 +204,14 @@ final class Algo2CheckpointLoader implements AutoCloseable {
         }
     }
 
-    /** row, col, algo, checkpoint_version parametrelerini baglar; siradaki parametre indeksini dondurur. */
+    /** row, col, algo, checkpoint_version, run_map_type_id (secilen tarama) parametrelerini baglar; siradaki parametre indeksini dondurur. */
     private int bindBase(PreparedStatement ps, int row, int col, int algo) throws SQLException {
         ps.setInt(1, row);
         ps.setInt(2, col);
         ps.setInt(3, algo);
         ps.setShort(4, (short) checkpointVersion);
-        return 5;
+        ps.setShort(5, (short) RunMapType.selected().id());
+        return 6;
     }
 
     private static Algo2CheckpointRow map(ResultSet rs) throws SQLException {
