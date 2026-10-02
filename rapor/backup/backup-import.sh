@@ -13,7 +13,7 @@
 #      bu yuzden "zaten veri var" onayi yine sorulur, SIL yaz)
 #   2) backup-import.bat -> 1) CSV (onerilen) ya da 3) SQL-insert.
 #      pgdump/ git'te YOK; sadece yedegin alindigi makinede vardir.
-#   path_explorer_solution_6x6.csv (~1.1 GB) git'te yok, o tablo bos kalir.
+#   6x6 flat CSV (path_explorer_solution_m2_6x6.csv, ~1.1 GB) git'te yok, o tablo bos kalir.
 set -euo pipefail
 
 CONTAINER="${PG_CONTAINER:-dev-postgres}"
@@ -83,7 +83,7 @@ fi
 
 # Dosya -> tablo eslemesi. CSV'lerde grid bazli ayrilmis dosyalar
 # (<tablo>_<R>x<C>.csv, orn. solving_checkpoint_7x7.csv) ayni tabloya gider;
-# ama path_explorer_solution_6x6 gibi adi zaten NxM ile biten gercek tablolar
+# ama adi zaten NxM ile biten gercek tablolar (eski path_explorer_solution_6x6 gibi)
 # once birebir isimle aranir. TABLE_FILES[tablo] = o tabloya ait dosyalar.
 declare -A TABLE_FILES=()
 TABLES=()

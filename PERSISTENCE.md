@@ -78,8 +78,8 @@ PlayGame ──(çözüm bulununca)──> SolutionSink.accept(GridPath)
   tavan yapmaz.
 - **`solver_run`** — koşu başına bir satır (row/col, algoritma, toplam çözüm,
   round counter, back step'ler, `status`: RUNNING → COMPLETED / ABORTED).
-- **`path_explorer_solution`** — çözüm başına bir satır. `grid_size`
-  (= row*1000+col) üzerinden LIST partition. `open1/2/3` = ilk 3 adımın hücre
+- **`path_explorer_solution`** — çözüm başına bir satır. `grid_map_id`
+  üzerinden LIST partition (`_m1`..`_m6`; eskiden `grid_size` = row*1000+col idi). `open1/2/3` = ilk 3 adımın hücre
   indeksi (indexli → "şu açılıştan kaç çözüm" sorgusu ucuz).
 
 ## Ayarlar
@@ -193,11 +193,11 @@ FROM solver_run ORDER BY id DESC;
 
 -- adım 1 = (0,0) olan çözüm sayısı  (open1 = 0*cols + 0 = 0)
 SELECT COUNT(*) FROM path_explorer_solution
-WHERE grid_size = 5005 AND open1 = 0;
+WHERE grid_map_id = 1 AND open1 = 0;
 
 -- adım1=(0,0) adım2=(0,3) olan çözümler  (open2 = 0*5 + 3 = 3)
 SELECT COUNT(*) FROM path_explorer_solution
-WHERE grid_size = 5005 AND open1 = 0 AND open2 = 3;
+WHERE grid_map_id = 1 AND open1 = 0 AND open2 = 3;
 
 -- bir çözümün yolunu görmek: Java tarafında
 --   PathCodec.decode(path, start_x, start_y, path_len)

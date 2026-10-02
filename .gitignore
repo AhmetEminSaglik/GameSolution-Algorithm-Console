@@ -74,7 +74,7 @@ rapor/backup/pgdump/*.dump
 !.claude/skills/
 
 # rapor/backup/csv altindaki buyuk dump/arsiv dosyalari: GitHub 100MB sinirini
-# katlanarak asiyor (path_explorer_solution_6x6.csv ~1.1GB), asla commit'leme.
+# katlanarak asiyor (6x6 flat CSV ~1.1GB), asla commit'leme.
 rapor/backup/csv/*.zip
 rapor/backup/csv/*.rar
 rapor/backup/csv/path_explorer_solution_*.csv

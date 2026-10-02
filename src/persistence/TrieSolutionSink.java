@@ -73,7 +73,7 @@ public final class TrieSolutionSink implements SolutionSink {
     @Override
     public void beginRun(RunInfo info) {
         try (Connection c = dataSource.getConnection()) {
-            gridMapId = resolveGridMapId(c, info.rowCount(), info.colCount());
+            gridMapId = GridMapIds.resolve(c, info.rowCount(), info.colCount());
             algorithmId = resolveAlgorithmId(c, info.algorithm());
             String sql = """
                     INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode)
@@ -240,33 +240,6 @@ public final class TrieSolutionSink implements SolutionSink {
             throw new IllegalStateException("trie flush: " + e.getMessage(), e);
         } finally {
             flushBuffer.clear();
-        }
-    }
-
-    private int resolveGridMapId(Connection c, int rows, int cols) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "SELECT id FROM grid_map WHERE row_size = ? AND col_size = ?")) {
-            ps.setInt(1, rows);
-            ps.setInt(2, cols);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        }
-        // bilinmeyen boyut → yeni id ekle (mevcut max + 1)
-        try (Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery("SELECT COALESCE(MAX(id), 0) + 1 FROM grid_map")) {
-            rs.next();
-            int newId = rs.getInt(1);
-            try (PreparedStatement ps = c.prepareStatement(
-                    "INSERT INTO grid_map (id, row_size, col_size) VALUES (?,?,?)")) {
-                ps.setInt(1, newId);
-                ps.setInt(2, rows);
-                ps.setInt(3, cols);
-                ps.executeUpdate();
-            }
-            return newId;
         }
     }
 

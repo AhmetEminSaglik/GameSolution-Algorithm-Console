@@ -30,6 +30,7 @@ CREATE TABLE solver_run (
 --   created_at : Postgres timestamptz -> mikrosaniye tavani (nanosaniye YOK).
 --                Gercek siralama = solution_index.
 -- grid_size uzerinden LIST partition (row_size*1000 + col_size).
+-- NOT: 10_path_explorer_solution_grid_map.sql bu tabloyu grid_map_id ile yeniden kurar.
 -- =====================================================================
 -- grid_size = row_size * 1000 + col_size  (uygulama insert sirasinda doldurur;
 -- Postgres generated column'u partition key olarak kabul etmiyor).

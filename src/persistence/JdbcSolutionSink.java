@@ -31,7 +31,7 @@ public final class JdbcSolutionSink implements SolutionSink {
 
     private static final String INSERT_SOLUTION = """
             INSERT INTO path_explorer_solution
-              (public_id, solver_run_id, solution_index, row_size, col_size, grid_size,
+              (public_id, solver_run_id, solution_index, row_size, col_size, grid_map_id,
                start_x, start_y, path_len, path, open1, open2, open3)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             """;
@@ -43,6 +43,7 @@ public final class JdbcSolutionSink implements SolutionSink {
 
     private Connection batchConnection;
     private long runId = -1;
+    private int gridMapId = -1;
     private boolean runFinished = false;
     private boolean closed = false;
 
@@ -63,19 +64,22 @@ public final class JdbcSolutionSink implements SolutionSink {
     @Override
     public void beginRun(RunInfo info) {
         String sql = """
-                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, save_mode)
-                VALUES (?,?,?,?, 'RUNNING', 'flat')
+                INSERT INTO solver_run (public_id, row_size, col_size, algorithm, status, grid_map_id, save_mode)
+                VALUES (?,?,?,?, 'RUNNING', ?, 'flat')
                 """;
-        try (Connection c = dataSource.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setObject(1, UUID.randomUUID());
-            ps.setInt(2, info.rowCount());
-            ps.setInt(3, info.colCount());
-            ps.setString(4, info.algorithm());
-            ps.executeUpdate();
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                keys.next();
-                runId = keys.getLong(1);
+        try (Connection c = dataSource.getConnection()) {
+            gridMapId = GridMapIds.resolve(c, info.rowCount(), info.colCount());
+            try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setObject(1, UUID.randomUUID());
+                ps.setInt(2, info.rowCount());
+                ps.setInt(3, info.colCount());
+                ps.setString(4, info.algorithm());
+                ps.setInt(5, gridMapId);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    keys.next();
+                    runId = keys.getLong(1);
+                }
             }
             // Batch insert'ler icin ayri, uzun omurlu baglanti (autocommit kapali).
             batchConnection = dataSource.getConnection();
@@ -101,13 +105,12 @@ public final class JdbcSolutionSink implements SolutionSink {
         try (PreparedStatement ps = batchConnection.prepareStatement(INSERT_SOLUTION)) {
             for (FoundSolution fs : buffer) {
                 GridPath p = fs.path();
-                int gridSize = p.rowCount() * 1000 + p.colCount();
                 ps.setObject(1, UUID.randomUUID());
                 ps.setLong(2, runId);
                 ps.setLong(3, fs.solutionIndex());
                 ps.setInt(4, p.rowCount());
                 ps.setInt(5, p.colCount());
-                ps.setInt(6, gridSize);
+                ps.setInt(6, gridMapId);
                 ps.setInt(7, p.startX());
                 ps.setInt(8, p.startY());
                 ps.setInt(9, p.length());

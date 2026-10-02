@@ -32,7 +32,7 @@ PG_DB="${PG_DB:-pathexplorer}"
 OUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # INSERT metnine cevirmenin pratik olmadigi satir sinirini asan tablolar
-# icin sadece pgdump/csv uretilir (bkz. path_explorer_solution_6x6, ~1GB olurdu).
+# icin sadece pgdump/csv uretilir (bkz. 6x6 flat cozumleri, ~1GB olurdu).
 INSERT_ROW_LIMIT=100000
 
 mkdir -p "$OUT_DIR/pgdump" "$OUT_DIR/csv" "$OUT_DIR/sql-insert"

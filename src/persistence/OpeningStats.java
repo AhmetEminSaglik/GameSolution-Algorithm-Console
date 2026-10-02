@@ -28,21 +28,20 @@ public final class OpeningStats {
         int rows = Integer.parseInt(args[0]);
         int cols = Integer.parseInt(args[1]);
         int topN = (args.length > 2) ? Integer.parseInt(args[2]) : 20;
-        int gridSize = rows * 1000 + cols;
-
         DbConfig cfg = DbConfig.load();
         String sql = """
-                SELECT open1, open2, open3, COUNT(*) AS cnt
-                  FROM path_explorer_solution
-                 WHERE grid_size = ?
-                 GROUP BY open1, open2, open3
+                SELECT s.open1, s.open2, s.open3, COUNT(*) AS cnt
+                  FROM path_explorer_solution s JOIN grid_map g ON g.id = s.grid_map_id
+                 WHERE g.row_size = ? AND g.col_size = ?
+                 GROUP BY s.open1, s.open2, s.open3
                  ORDER BY cnt DESC
                  LIMIT ?
                 """;
         try (Connection c = DriverManager.getConnection(cfg.url(), cfg.user(), cfg.password());
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, gridSize);
-            ps.setInt(2, topN);
+            ps.setInt(1, rows);
+            ps.setInt(2, cols);
+            ps.setInt(3, topN);
             try (ResultSet rs = ps.executeQuery()) {
                 System.out.printf("%-10s %-10s %-10s %12s%n", "adim1", "adim2", "adim3", "cozum");
                 long total = 0;

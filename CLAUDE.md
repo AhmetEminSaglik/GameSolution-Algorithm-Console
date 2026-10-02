@@ -12,7 +12,7 @@ Bu projede asistanin adi **Kasif**. Her yeni session'da:
 ## Backup commit kurali (KESIN - kullanici defalarca soyledi, tekrar sordurma)
 "Backup'lari commitle" denince HER ZAMAN ayni sekilde yap:
 - `rapor/backup/pgdump/` → ASLA commit'e alma.
-- `rapor/backup/csv/path_explorer_solution_6x6.csv` (~1.1 GB) → ASLA alma.
+- `rapor/backup/csv/path_explorer_solution_*.csv` (6x6 ~1.1 GB; 2026-10-02 sonrasi adi `path_explorer_solution_m2_6x6.csv`) → ASLA alma.
 - Genel: GitHub siniri (100 MB) ustu HICBIR dosyayi alma. Commit'ten once
   stage'deki dosyalarin boyutunu kontrol et; 90 MB ustu varsa stage'den cikar
   ve kullaniciya soyle (gerekirse .gitignore'a ekle).

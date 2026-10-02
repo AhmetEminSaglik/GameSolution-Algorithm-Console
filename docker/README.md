@@ -71,9 +71,9 @@ Detay: kokte **`postgre-connection.md`** (lokal) ve **`postgre-prod.md`** (prod)
 
 - **`solver_run`** — bir cozucu kosusunun run-seviyesi metrikleri (bir satir/kosu).
   `status`: `RUNNING` → `COMPLETED` (normal bitis) / `ABORTED` (Ctrl+C).
-- **`path_explorer_solution`** — her bulunan cozum bir satir. `grid_size`
-  (= `row_size*1000 + col_size`) uzerinden LIST partition. Bilinen boyutlar
-  (5x5, 5x6, 6x6, 7x7, 10x10) icin ayri partition; digerleri `_default`'a.
+- **`path_explorer_solution`** — her bulunan cozum bir satir. `grid_map_id`
+  uzerinden LIST partition (2026-10-02, `10_...sql`): `_m1`..`_m6` = 5x5..10x10;
+  digerleri `_default`'a.
   - `path BYTEA` — yon-kodlamasi, adim basina 3 bit (`PathCodec`).
   - `open1/2/3` — ilk 3 adimin hucre indeksi (`x*col_size + y`), indexli.
     "Su acilistan kac cozum var" sorgusu icin (`GROUP BY open1, open2, open3`).
@@ -92,12 +92,12 @@ FROM solver_run ORDER BY id DESC;
 -- 5x5'te acilis (ilk 3 adim) bazinda cozum sayisi
 SELECT open1, open2, open3, COUNT(*)
 FROM path_explorer_solution
-WHERE grid_size = 5005
+WHERE grid_map_id = 1
 GROUP BY open1, open2, open3
 ORDER BY COUNT(*) DESC
 LIMIT 20;
 
 -- adim 1 = (0,0) [open1 = 0] olan cozumlerin sayisi
 SELECT COUNT(*) FROM path_explorer_solution
-WHERE grid_size = 5005 AND open1 = 0;
+WHERE grid_map_id = 1 AND open1 = 0;
 ```
