@@ -114,6 +114,13 @@
 - IntelliJ restart'inda eski java.exe sahipsiz kalip DB'ye yazmaya devam edebiliyor;
   yeni run ayni state'leri uretip [SKIP] basar (zararsiz). Once eski process'i kapat.
 
+## 2026-11-09: algoritma dokumanlari
+- `detayli-cozum-1.md` ve `detayli-cozum-2.md` yazildi (sozde kod + MathFunctionForSecondSolution dokumu).
+  Sozde kod ayri Java kopyasiyla 5x5 ALL golden sayaclariyla birebir dogrulandi.
+- Algoritma 2'de iki kacak budama bulundu, kod DEGISTIRILMEDI (bkz. detayli-cozum-2.md Bolum 9):
+  DEAD sonucu geri dondurmuyor; alt kayit varken MoveBack kilidi atlaniyor.
+  Ikisi birlikte 6x6 UNIQUE round -%60, cozum sayisi ayni. Kullanici 3. algoritmayi bunun uzerine kuracak.
+
 ## Acik isler / sonraki adimlar
 1. menu.bat degisiklikleri commitlendi; kullanici gercek konsolda uctan uca
    deneyecek (ozellikle grid secili degilken 1/3'e girince sorma adimi).
